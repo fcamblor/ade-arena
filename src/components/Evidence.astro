@@ -1,0 +1,259 @@
+---
+interface Props {
+  /** Short, all-lowercase reference shown in the card kicker — e.g. "vibe kanban · oss" */
+  refLabel: string;
+  sourceUrl: string;
+  sourceExtract: string;
+  /** 'cell' renders a built-in "▸ Proof" trigger. 'inline' uses the slot as the trigger
+   *  (caller is responsible for the visible element — typically a pre-styled pill/flag span). */
+  variant?: 'cell' | 'inline';
+  /** ARIA label for screen readers describing what this proof attests to. */
+  ariaLabel?: string;
+}
+
+const { refLabel, sourceUrl, sourceExtract, variant = 'cell', ariaLabel } = Astro.props;
+
+function prettyUrl(u: string): string {
+  try {
+    const url = new URL(u);
+    const host = url.hostname.replace(/^www\./, '');
+    const path = url.pathname.replace(/\/$/, '');
+    return path && path.length > 1 ? `${host}${path}` : host;
+  } catch {
+    return u;
+  }
+}
+---
+
+<details class={`evidence evidence--${variant}`} name="proof">
+  <summary class="evidence__trigger" aria-label={ariaLabel}>
+    {variant === 'cell' ? (
+      <>
+        <span class="evidence__chevron" aria-hidden="true"></span>
+        <span class="evidence__trigger-label">Proof</span>
+      </>
+    ) : (
+      <slot />
+    )}
+  </summary>
+  <div class="evidence__card" role="note">
+    <header class="evidence__head">
+      <span class="evidence__kicker">On record</span>
+      <span class="evidence__ref">{refLabel}</span>
+    </header>
+    <blockquote class="evidence__quote">
+      <span class="evidence__quote-mark" aria-hidden="true">&ldquo;</span>
+      <p>{sourceExtract}</p>
+    </blockquote>
+    <footer class="evidence__foot">
+      <span class="evidence__foot-label">Filed at</span>
+      <a class="evidence__foot-link" href={sourceUrl} target="_blank" rel="noreferrer">{prettyUrl(sourceUrl)}</a>
+    </footer>
+  </div>
+</details>
+
+<style is:global>
+  /* ============ Evidence (shared) — paper-clipping proof popover ============ */
+  .evidence__trigger {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  .evidence__trigger::-webkit-details-marker { display: none; }
+  .evidence__trigger::marker { content: ''; display: none; }
+
+  /* Inline variant: <details> itself becomes the anchor, sized to its trigger. */
+  .evidence--inline {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .evidence--inline > .evidence__trigger {
+    /* Trigger styling comes from the caller-provided triggerClass.
+       We just neutralise summary's default `list-item` display and hint at interactivity. */
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+  }
+  .evidence--inline > .evidence__trigger::after {
+    /* tiny disclosure caret tucked into pill triggers */
+    content: '▾';
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 0.78em;
+    line-height: 1;
+    opacity: 0.55;
+    transition: transform .18s ease, opacity .12s ease;
+  }
+  .evidence--inline[open] > .evidence__trigger::after { transform: rotate(180deg); opacity: 1; }
+  .evidence--inline > .evidence__trigger:hover::after,
+  .evidence--inline > .evidence__trigger:focus-visible::after { opacity: 1; }
+  .evidence--inline > .evidence__trigger:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: 2px;
+  }
+
+  /* Cell variant: small "▸ PROOF" text affordance below a comparison cell. */
+  .evidence--cell { margin-top: var(--s-3); }
+  .evidence--cell > .evidence__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.62rem;
+    line-height: 1;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    transition: color .12s ease;
+  }
+  .evidence--cell > .evidence__trigger:hover,
+  .evidence--cell > .evidence__trigger:focus-visible { color: var(--accent); outline: none; }
+  .evidence--cell > .evidence__trigger:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .evidence--cell[open] > .evidence__trigger { color: var(--accent); }
+  .evidence__chevron {
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform .18s ease;
+  }
+  .evidence--cell[open] .evidence__chevron { transform: rotate(45deg); }
+  .evidence__trigger-label { display: inline-block; }
+
+  /* Card — paper clipping pulled out of the trigger. */
+  .evidence__card {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: var(--s-2);
+    z-index: 20;
+    width: clamp(280px, 22rem, calc(100vw - 32px));
+    padding: var(--s-4);
+    color: oklch(0.22 0.025 35);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    /* Halftone-tinted cream paper */
+    background:
+      radial-gradient(circle at 22% 28%, oklch(0 0 0 / 0.045) 0.5px, transparent 1.2px),
+      radial-gradient(circle at 76% 78%, oklch(0 0 0 / 0.035) 0.5px, transparent 1.2px),
+      var(--canvas);
+    background-size: 6px 6px, 9px 9px, 100% 100%;
+    border-radius: 2px;
+    box-shadow:
+      0 1px 0 oklch(1 0 0 / 0.6) inset,
+      0 0 0 1px oklch(0.52 0.05 60 / 0.18),
+      0 18px 32px -14px oklch(0 0 0 / 0.7),
+      0 4px 10px -4px oklch(0 0 0 / 0.4);
+    text-align: left;
+    white-space: normal;
+  }
+  /* Anchor right edge in the last data column so the card doesn't escape the viewport */
+  td:last-child .evidence__card,
+  th:last-child .evidence__card { left: auto; right: 0; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .evidence[open] .evidence__card { animation: evidenceAppear .24s cubic-bezier(0.22, 1, 0.36, 1); }
+    @keyframes evidenceAppear {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  }
+
+  .evidence__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+    padding-bottom: var(--s-2);
+    border-bottom: 1px dashed oklch(0.62 0.04 60 / 0.55);
+  }
+  .evidence__kicker {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    font-size: 0.66rem;
+    font-weight: 900;
+    color: oklch(0.46 0.16 28);
+  }
+  .evidence__ref {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: oklch(0.42 0.03 60 / 0.85);
+    text-align: right;
+    line-height: 1.3;
+  }
+
+  .evidence__quote {
+    margin: 0;
+    padding: 0 0 0 var(--s-5);
+    position: relative;
+  }
+  .evidence__quote-mark {
+    position: absolute;
+    left: -4px;
+    top: -14px;
+    font-family: var(--font-display);
+    font-size: 2.75rem;
+    line-height: 1;
+    font-weight: 900;
+    color: oklch(0.50 0.18 28);
+  }
+  .evidence__quote p {
+    margin: 0;
+    font-style: italic;
+    font-weight: 500;
+    color: oklch(0.20 0.025 35);
+  }
+
+  .evidence__foot {
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid oklch(0.62 0.04 60 / 0.35);
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.72rem;
+  }
+  .evidence__foot-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 800;
+    color: oklch(0.46 0.04 50);
+    font-size: 0.6rem;
+    flex-shrink: 0;
+  }
+  .evidence__foot-link {
+    color: oklch(0.34 0.14 28);
+    text-decoration: underline;
+    text-decoration-color: oklch(0.68 0.06 50 / 0.7);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .evidence__foot-link:hover,
+  .evidence__foot-link:focus-visible {
+    color: oklch(0.28 0.16 28);
+    text-decoration-color: currentColor;
+  }
+
+  @media (max-width: 720px) {
+    .evidence__card { width: clamp(240px, 88vw, 320px); padding: var(--s-3); }
+    .evidence__quote-mark { font-size: 2.2rem; top: -10px; }
+  }
+</style>

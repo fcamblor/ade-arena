@@ -6,7 +6,7 @@ const data: OrchestratorVersion = {
   version: '0.52.3',
   homepage: 'https://conductor.build',
   vendor: 'Melty Labs',
-  pricing: 'paid',
+  pricing: 'free',
   platforms: ['macos'],
   features: [
     { featureId: 'parallel-agents', support: 'yes', note: 'Native parallel workspaces.', screenshots: [] },

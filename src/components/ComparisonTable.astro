@@ -1,6 +1,7 @@
 ---
 import { FEATURES, ORCHESTRATORS } from '../data';
 import type { SupportLevel, FeatureCategory, Feature, Platform } from '../data/schema';
+import Evidence from './Evidence.astro';
 
 const platformLabel: Record<Platform, string> = {
   macos: 'macOS',
@@ -46,17 +47,42 @@ const categoryOrder: FeatureCategory[] = [
   'platform',
 ];
 
+// Features rendered as orchestrator-header flags instead of table rows.
+// Data stays in src/data/* (with its sources); only the rendering is hoisted.
+const HEADER_FLAG_FEATURE_IDS = new Set<string>(['free-tier', 'oss']);
+
 const grouped = categoryOrder
   .map((cat) => ({
     category: cat,
-    features: FEATURES.filter((f) => f.category === cat),
+    features: FEATURES.filter((f) => f.category === cat && !HEADER_FLAG_FEATURE_IDS.has(f.id)),
   }))
   .filter((g) => g.features.length > 0);
+
+const freeTierByTool = ORCHESTRATORS.map(
+  (o) => o.features.find((f) => f.featureId === 'free-tier'),
+);
+const ossByTool = ORCHESTRATORS.map(
+  (o) => o.features.find((f) => f.featureId === 'oss'),
+);
+
+// A free-tier flag is redundant when pricing already implies free usage.
+// An OSS flag is redundant when the pricing pill already reads "oss".
+function showFreeTierFlag(orchIdx: number): boolean {
+  const orch = ORCHESTRATORS[orchIdx];
+  if (freeTierByTool[orchIdx]?.support !== 'yes') return false;
+  return orch.pricing !== 'free' && orch.pricing !== 'freemium' && orch.pricing !== 'oss';
+}
+function showOssFlag(orchIdx: number): boolean {
+  const orch = ORCHESTRATORS[orchIdx];
+  if (ossByTool[orchIdx]?.support !== 'yes') return false;
+  return orch.pricing !== 'oss';
+}
 
 function findSupport(toolIndex: number, featureId: string) {
   const orch = ORCHESTRATORS[toolIndex];
   return orch.features.find((f) => f.featureId === featureId);
 }
+
 
 // Pre-compute per-category breakdown (yes counts) per orchestrator
 const categoryScores = ORCHESTRATORS.map((o) =>
@@ -107,7 +133,7 @@ const featureCount = FEATURES.length;
               <span class="cell--corner__kicker">Feature</span>
               <span class="cell--corner__hint">vs.</span>
             </th>
-            {ORCHESTRATORS.map((o) => (
+            {ORCHESTRATORS.map((o, idx) => (
               <th scope="col" class="cell--tool">
                 <div class="tool">
                   <a class="tool__name" href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
@@ -123,7 +149,60 @@ const featureCount = FEATURES.length;
                         <span class="tool__version">v{o.version}</span>
                       );
                     })()}
-                    {o.pricing && <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>}
+                    {o.pricing && (
+                      o.pricingSource ? (
+                        <Evidence
+                          variant="inline"
+                          refLabel={`${o.toolId.replace(/-/g, ' ')} · pricing`}
+                          sourceUrl={o.pricingSource.sourceUrl}
+                          sourceExtract={o.pricingSource.sourceExtract}
+                          ariaLabel={`Show source for pricing on ${o.toolName}`}
+                        >
+                          <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>
+                        </Evidence>
+                      ) : (
+                        <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>
+                      )
+                    )}
+                    {showFreeTierFlag(idx) && (
+                      freeTierByTool[idx]?.sourceUrl && freeTierByTool[idx]?.sourceExtract ? (
+                        <Evidence
+                          variant="inline"
+                          refLabel={`${o.toolId.replace(/-/g, ' ')} · free tier`}
+                          sourceUrl={freeTierByTool[idx]!.sourceUrl!}
+                          sourceExtract={freeTierByTool[idx]!.sourceExtract!}
+                          ariaLabel={`Show source for free tier on ${o.toolName}`}
+                        >
+                          <span class="tool__flag tool__flag--free-tier">
+                            <span class="tool__flag-mark" aria-hidden="true">✦</span>
+                            <span>free tier</span>
+                          </span>
+                        </Evidence>
+                      ) : (
+                        <span
+                          class="tool__flag tool__flag--free-tier"
+                          title="Free plan usable without a credit card"
+                        >
+                          <span class="tool__flag-mark" aria-hidden="true">✦</span>
+                          <span>free tier</span>
+                        </span>
+                      )
+                    )}
+                    {showOssFlag(idx) && (
+                      ossByTool[idx]?.sourceUrl && ossByTool[idx]?.sourceExtract ? (
+                        <Evidence
+                          variant="inline"
+                          refLabel={`${o.toolId.replace(/-/g, ' ')} · oss`}
+                          sourceUrl={ossByTool[idx]!.sourceUrl!}
+                          sourceExtract={ossByTool[idx]!.sourceExtract!}
+                          ariaLabel={`Show source for open source on ${o.toolName}`}
+                        >
+                          <span class="tool__flag tool__flag--oss">oss</span>
+                        </Evidence>
+                      ) : (
+                        <span class="tool__flag tool__flag--oss" title="Source available under a permissive license">oss</span>
+                      )
+                    )}
                   </p>
                   {o.releaseDate && (
                     <p class="tool__release" title={`Released ${o.releaseDate}`}>
@@ -133,11 +212,28 @@ const featureCount = FEATURES.length;
                   )}
                   {o.platforms && o.platforms.length > 0 && (
                     <ul class="tool__platforms" aria-label="Supported platforms">
-                      {o.platforms.map((p) => (
-                        <li class={`tool__platform tool__platform--${p}`} title={platformTooltip[p]}>
-                          {platformLabel[p]}
-                        </li>
-                      ))}
+                      {o.platforms.map((p) => {
+                        const src = o.platformSources?.[p];
+                        return (
+                          <li class="tool__platform-item">
+                            {src ? (
+                              <Evidence
+                                variant="inline"
+                                refLabel={`${o.toolId.replace(/-/g, ' ')} · ${p}`}
+                                sourceUrl={src.sourceUrl}
+                                sourceExtract={src.sourceExtract}
+                                ariaLabel={`Show source for ${platformTooltip[p]} on ${o.toolName}`}
+                              >
+                                <span class={`tool__platform tool__platform--${p}`}>{platformLabel[p]}</span>
+                              </Evidence>
+                            ) : (
+                              <span class={`tool__platform tool__platform--${p}`} title={platformTooltip[p]}>
+                                {platformLabel[p]}
+                              </span>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                   {o.misc && (
@@ -187,13 +283,23 @@ const featureCount = FEATURES.length;
                       </div>
                     </details>
                   </th>
-                  {ORCHESTRATORS.map((_, i) => {
+                  {ORCHESTRATORS.map((orch, i) => {
                     const s = findSupport(i, feature.id);
                     const level: SupportLevel = s?.support ?? 'unknown';
+                    const hasEvidence = !!(s?.sourceUrl && s?.sourceExtract);
                     return (
                       <td class={`cell cell--${level}`} data-support={level}>
                         <span class="cell__glyph" aria-label={supportLabel[level]} role="img">{supportGlyph[level]}</span>
                         {s?.note && <p class="cell__note">{s.note}</p>}
+                        {hasEvidence && (
+                          <Evidence
+                            variant="cell"
+                            refLabel={`${orch.toolId.replace(/-/g, ' ')} · ${feature.id.replace(/-/g, ' ')}`}
+                            sourceUrl={s!.sourceUrl!}
+                            sourceExtract={s!.sourceExtract!}
+                            ariaLabel={`Show source for ${feature.label} on ${orch.toolName}`}
+                          />
+                        )}
                       </td>
                     );
                   })}
@@ -391,6 +497,35 @@ const featureCount = FEATURES.length;
   .tool__pill--free     { color: oklch(0.82 0.11 220); border-color: oklch(0.4 0.05 220); }
   .tool__pill--freemium { color: oklch(0.85 0.12 85);  border-color: oklch(0.4 0.06 85); }
   .tool__pill--paid     { color: oklch(0.85 0.12 28);  border-color: oklch(0.4 0.07 28); }
+
+  /* Free-tier flag — visually distinct from pricing pill (filled rectangle vs. rounded outline)
+     to communicate "perk available" rather than "pricing model". */
+  .tool__flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px var(--s-2) 2px 6px;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    border-radius: 2px;
+    cursor: help;
+    /* Coupon / ticket-stub treatment, picks up the canvas (cream) accent */
+    color: oklch(0.30 0.06 80);
+    background: var(--canvas);
+    box-shadow:
+      0 1px 0 oklch(0 0 0 / 0.35),
+      0 0 0 1px oklch(0.55 0.05 60 / 0.35);
+  }
+  .tool__flag-mark {
+    color: oklch(0.46 0.16 28);
+    font-size: 0.82em;
+    line-height: 1;
+    transform: translateY(-0.5px);
+  }
 
   .tool__release {
     margin: var(--s-2) 0 0;
@@ -622,6 +757,9 @@ const featureCount = FEATURES.length;
     line-height: 1.45;
     color: var(--fg-soft);
   }
+
+  /* Cell-level evidence margin (parent .cell is position:relative — see below) */
+  .evidence--cell { margin-top: var(--s-3); }
 
   @media (max-width: 720px) {
     .col--feature { width: 220px; }

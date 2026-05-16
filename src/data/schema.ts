@@ -42,6 +42,15 @@ export type FeatureSupport = z.infer<typeof FeatureSupportSchema>;
 export const PlatformSchema = z.enum(['macos', 'windows', 'linux', 'web']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
+// A single piece of evidence backing a meta-field (pricing, platform, …).
+// Same shape as the source fields on FeatureSupport, hoisted here so it can
+// be attached to orchestrator-level metadata.
+export const MetaSourceSchema = z.object({
+  sourceUrl: z.string().url(),
+  sourceExtract: z.string(),
+});
+export type MetaSource = z.infer<typeof MetaSourceSchema>;
+
 export const OrchestratorVersionSchema = z.object({
   toolId: z.string().regex(/^[a-z0-9-]+$/),
   toolName: z.string(),
@@ -57,7 +66,9 @@ export const OrchestratorVersionSchema = z.object({
   logo: z.string().optional(),
   vendor: z.string().optional(),
   pricing: z.enum(['free', 'freemium', 'paid', 'oss']).optional(),
+  pricingSource: MetaSourceSchema.optional(),
   platforms: z.array(PlatformSchema).optional(),
+  platformSources: z.record(PlatformSchema, MetaSourceSchema).optional(),
   notes: z.string().optional(),
   misc: z
     .object({
