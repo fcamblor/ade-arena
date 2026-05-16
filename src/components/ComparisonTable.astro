@@ -66,16 +66,30 @@ const ossByTool = ORCHESTRATORS.map(
 );
 
 // A free-tier flag is redundant when pricing already implies free usage.
-// An OSS flag is redundant when the pricing pill already reads "oss".
 function showFreeTierFlag(orchIdx: number): boolean {
   const orch = ORCHESTRATORS[orchIdx];
   if (freeTierByTool[orchIdx]?.support !== 'yes') return false;
   return orch.pricing !== 'free' && orch.pricing !== 'freemium' && orch.pricing !== 'oss';
 }
-function showOssFlag(orchIdx: number): boolean {
+
+// Pricing + license are always rendered as a duo: PAID + CLOSED SOURCE,
+// FREE + CLOSED SOURCE, FREEMIUM + CLOSED SOURCE, or FREE + OSS. The pricing
+// 'oss' value implies free distribution and is normalized to a FREE pill.
+type PricingDisplay = 'free' | 'freemium' | 'paid';
+function getPricingDisplay(orchIdx: number): PricingDisplay | null {
   const orch = ORCHESTRATORS[orchIdx];
-  if (ossByTool[orchIdx]?.support !== 'yes') return false;
-  return orch.pricing !== 'oss';
+  if (!orch.pricing) return null;
+  if (orch.pricing === 'oss') return 'free';
+  return orch.pricing;
+}
+type LicenseKind = 'oss' | 'closed-source';
+function getLicenseKind(orchIdx: number): LicenseKind | null {
+  const orch = ORCHESTRATORS[orchIdx];
+  if (orch.pricing === 'oss') return 'oss';
+  const support = ossByTool[orchIdx]?.support;
+  if (support === 'yes') return 'oss';
+  if (support === 'no') return 'closed-source';
+  return null;
 }
 
 function findSupport(toolIndex: number, featureId: string) {
@@ -150,32 +164,46 @@ const featureCount = visibleFeatures.length;
               <span class="cell--corner__kicker">Feature</span>
               <span class="cell--corner__hint">vs.</span>
             </th>
-            {ORCHESTRATORS.map((o, idx) => (
+            {ORCHESTRATORS.map((o, idx) => {
+              const pricingDisplay = getPricingDisplay(idx);
+              const licenseKind = getLicenseKind(idx);
+              const vd = o.versionDetails;
+              const versionTooltip = vd
+                ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
+                : undefined;
+              return (
               <th scope="col" class="cell--tool">
                 <div class="tool">
+                  {/* 1/ Title */}
                   <a class="tool__name" href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
-                  {(() => {
-                    const score = globalScores[idx];
-                    return (
-                      <div
-                        class="score score--global"
-                        aria-label={`${score.yes} supported plus ${score.partial} partial out of ${score.total} visible features for ${o.toolName}`}
-                      >
-                        <span class="score__item score__item--yes">
-                          <span class="score__glyph" aria-hidden="true">●</span>
-                          <span class="score__value">{score.yes}</span>
-                        </span>
-                        <span class="score__operator" aria-hidden="true">+</span>
-                        <span class="score__item score__item--partial">
-                          <span class="score__glyph" aria-hidden="true">◐</span>
-                          <span class="score__value">{score.partial}</span>
-                        </span>
-                        <span class="score__den">/ {score.total}</span>
-                      </div>
-                    );
-                  })()}
-                  <p class="tool__meta tool__meta--pricing">
-                    {o.pricing && (
+
+                  {/* 2/ Global stats */}
+                  <div class="tool__row tool__row--score">
+                    {(() => {
+                      const score = globalScores[idx];
+                      return (
+                        <div
+                          class="score score--global"
+                          aria-label={`${score.yes} supported plus ${score.partial} partial out of ${score.total} visible features for ${o.toolName}`}
+                        >
+                          <span class="score__item score__item--yes">
+                            <span class="score__glyph" aria-hidden="true">●</span>
+                            <span class="score__value">{score.yes}</span>
+                          </span>
+                          <span class="score__operator" aria-hidden="true">+</span>
+                          <span class="score__item score__item--partial">
+                            <span class="score__glyph" aria-hidden="true">◐</span>
+                            <span class="score__value">{score.partial}</span>
+                          </span>
+                          <span class="score__den">/ {score.total}</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* 3/ Licensing + pricing duo */}
+                  <div class="tool__row tool__row--pricing">
+                    {pricingDisplay && (
                       o.pricingSource ? (
                         <Evidence
                           variant="inline"
@@ -184,10 +212,28 @@ const featureCount = visibleFeatures.length;
                           sourceExtract={o.pricingSource.sourceExtract}
                           ariaLabel={`Show source for pricing on ${o.toolName}`}
                         >
-                          <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>
+                          <span class={`tool__pill tool__pill--${pricingDisplay}`}>{pricingDisplay}</span>
                         </Evidence>
                       ) : (
-                        <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>
+                        <span class={`tool__pill tool__pill--${pricingDisplay}`}>{pricingDisplay}</span>
+                      )
+                    )}
+                    {licenseKind && (
+                      ossByTool[idx]?.sourceUrl && ossByTool[idx]?.sourceExtract ? (
+                        <Evidence
+                          variant="inline"
+                          refLabel={`${o.toolId.replace(/-/g, ' ')} · ${licenseKind === 'oss' ? 'oss' : 'closed source'}`}
+                          sourceUrl={ossByTool[idx]!.sourceUrl!}
+                          sourceExtract={ossByTool[idx]!.sourceExtract!}
+                          ariaLabel={`Show source for ${licenseKind === 'oss' ? 'open source' : 'closed source'} on ${o.toolName}`}
+                        >
+                          <span class={`tool__flag tool__flag--${licenseKind}`}>{licenseKind === 'oss' ? 'oss' : 'closed source'}</span>
+                        </Evidence>
+                      ) : (
+                        <span
+                          class={`tool__flag tool__flag--${licenseKind}`}
+                          title={licenseKind === 'oss' ? 'Source available under a permissive license' : 'Proprietary — source code is not publicly available'}
+                        >{licenseKind === 'oss' ? 'oss' : 'closed source'}</span>
                       )
                     )}
                     {showFreeTierFlag(idx) && (
@@ -214,90 +260,84 @@ const featureCount = visibleFeatures.length;
                         </span>
                       )
                     )}
-                    {showOssFlag(idx) && (
-                      ossByTool[idx]?.sourceUrl && ossByTool[idx]?.sourceExtract ? (
-                        <Evidence
-                          variant="inline"
-                          refLabel={`${o.toolId.replace(/-/g, ' ')} · oss`}
-                          sourceUrl={ossByTool[idx]!.sourceUrl!}
-                          sourceExtract={ossByTool[idx]!.sourceExtract!}
-                          ariaLabel={`Show source for open source on ${o.toolName}`}
-                        >
-                          <span class="tool__flag tool__flag--oss">oss</span>
-                        </Evidence>
-                      ) : (
-                        <span class="tool__flag tool__flag--oss" title="Source available under a permissive license">oss</span>
-                      )
+                  </div>
+
+                  {/* 4/ Version + release date */}
+                  <div class="tool__row tool__row--version">
+                    {versionTooltip ? (
+                      <span class="tool__version tool__version--has-tooltip" title={versionTooltip}>v{o.version}</span>
+                    ) : (
+                      <span class="tool__version">v{o.version}</span>
                     )}
-                  </p>
-                  <p class="tool__meta tool__meta--version">
-                    {(() => {
-                      const vd = o.versionDetails;
-                      const tooltip = vd
-                        ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
-                        : undefined;
-                      return tooltip ? (
-                        <span class="tool__version tool__version--has-tooltip" title={tooltip}>v{o.version}</span>
-                      ) : (
-                        <span class="tool__version">v{o.version}</span>
-                      );
-                    })()}
-                  </p>
-                  {o.releaseDate && (
-                    <p class="tool__release" title={`Released ${o.releaseDate}`}>
-                      <span class="tool__release-label">Released</span>
-                      <time datetime={o.releaseDate}>{o.releaseDate}</time>
-                    </p>
-                  )}
-                  {o.platforms && o.platforms.length > 0 && (
-                    <ul class="tool__platforms" aria-label="Supported platforms">
-                      {o.platforms.map((p) => {
-                        const src = o.platformSources?.[p];
-                        return (
-                          <li class="tool__platform-item">
-                            {src ? (
-                              <Evidence
-                                variant="inline"
-                                refLabel={`${o.toolId.replace(/-/g, ' ')} · ${p}`}
-                                sourceUrl={src.sourceUrl}
-                                sourceExtract={src.sourceExtract}
-                                ariaLabel={`Show source for ${platformTooltip[p]} on ${o.toolName}`}
-                              >
-                                <span class={`tool__platform tool__platform--${p}`}>{platformLabel[p]}</span>
-                              </Evidence>
-                            ) : (
-                              <span class={`tool__platform tool__platform--${p}`} title={platformTooltip[p]}>
-                                {platformLabel[p]}
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {o.modelRestriction && (
-                    <p class="tool__notice tool__notice--models" role="note">
-                      <span class="tool__notice-icon" aria-hidden="true">⚠</span>
-                      <span class="tool__notice-text">
-                        {o.modelRestriction.sourceUrl
-                          ? <a href={o.modelRestriction.sourceUrl} target="_blank" rel="noreferrer">{o.modelRestriction.message}</a>
-                          : o.modelRestriction.message}
+                    {o.releaseDate ? (
+                      <span class="tool__release" title={`Released ${o.releaseDate}`}>
+                        <span class="tool__release-label">Released</span>
+                        <time datetime={o.releaseDate}>{o.releaseDate}</time>
                       </span>
-                    </p>
-                  )}
-                  {o.misc && (
-                    <p class="tool__notice" role="note">
-                      <span class="tool__notice-icon" aria-hidden="true">⚠</span>
-                      <span class="tool__notice-text">
-                        {o.misc.sourceUrl
-                          ? <a href={o.misc.sourceUrl} target="_blank" rel="noreferrer">{o.misc.message}</a>
-                          : o.misc.message}
-                      </span>
-                    </p>
-                  )}
+                    ) : (
+                      <span class="tool__release tool__release--placeholder" aria-hidden="true">&nbsp;</span>
+                    )}
+                  </div>
+
+                  {/* 5/ Supported platforms */}
+                  <div class="tool__row tool__row--platforms">
+                    {o.platforms && o.platforms.length > 0 ? (
+                      <ul class="tool__platforms" aria-label="Supported platforms">
+                        {o.platforms.map((p) => {
+                          const src = o.platformSources?.[p];
+                          return (
+                            <li class="tool__platform-item">
+                              {src ? (
+                                <Evidence
+                                  variant="inline"
+                                  refLabel={`${o.toolId.replace(/-/g, ' ')} · ${p}`}
+                                  sourceUrl={src.sourceUrl}
+                                  sourceExtract={src.sourceExtract}
+                                  ariaLabel={`Show source for ${platformTooltip[p]} on ${o.toolName}`}
+                                >
+                                  <span class={`tool__platform tool__platform--${p}`}>{platformLabel[p]}</span>
+                                </Evidence>
+                              ) : (
+                                <span class={`tool__platform tool__platform--${p}`} title={platformTooltip[p]}>
+                                  {platformLabel[p]}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <span class="tool__platforms-placeholder" aria-hidden="true">&nbsp;</span>
+                    )}
+                  </div>
+
+                  {/* 6/ Warnings */}
+                  <div class="tool__row tool__row--notices">
+                    {o.modelRestriction && (
+                      <p class="tool__notice tool__notice--models" role="note">
+                        <span class="tool__notice-icon" aria-hidden="true">⚠</span>
+                        <span class="tool__notice-text">
+                          {o.modelRestriction.sourceUrl
+                            ? <a href={o.modelRestriction.sourceUrl} target="_blank" rel="noreferrer">{o.modelRestriction.message}</a>
+                            : o.modelRestriction.message}
+                        </span>
+                      </p>
+                    )}
+                    {o.misc && (
+                      <p class="tool__notice" role="note">
+                        <span class="tool__notice-icon" aria-hidden="true">⚠</span>
+                        <span class="tool__notice-text">
+                          {o.misc.sourceUrl
+                            ? <a href={o.misc.sourceUrl} target="_blank" rel="noreferrer">{o.misc.message}</a>
+                            : o.misc.message}
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 </div>
               </th>
-            ))}
+              );
+            })}
           </tr>
         </thead>
 
@@ -509,7 +549,7 @@ const featureCount = visibleFeatures.length;
      headers so the card isn't clipped by the next column's stacking context. */
   .cell--tool:has(.evidence[open]) { z-index: 6; }
   .cell--corner:has(.evidence[open]) { z-index: 7; }
-  .tool { display: flex; flex-direction: column; gap: var(--s-1); position: relative; }
+  .tool { display: flex; flex-direction: column; gap: var(--s-2); position: relative; }
   .tool__name {
     display: block;
     min-height: 2.9rem;
@@ -524,13 +564,32 @@ const featureCount = visibleFeatures.length;
     word-break: break-word;
   }
   .tool__name:hover, .tool__name:focus-visible { color: var(--accent); text-decoration: none; }
-  .tool__meta {
-    margin: var(--s-2) 0 0;
+
+  /* Vertically aligned header rows. Every column reserves the same vertical
+     space per row — empty placeholders are inserted when a tool is missing
+     data — so titles, scores, pricing duos, versions, platforms and warnings
+     all line up horizontally across the lineup. */
+  .tool__row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--s-2);
   }
+  .tool__row--score    { min-height: 2rem; }
+  .tool__row--pricing  { min-height: 1.5rem; }
+  .tool__row--version  {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-height: 2.1rem;
+  }
+  .tool__row--platforms { min-height: 1.5rem; align-items: flex-start; }
+  .tool__row--notices  {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s-2);
+  }
+  .tool__row--notices:empty { display: none; }
   .tool__version {
     font-family: var(--font-display);
     font-weight: 700;
@@ -548,9 +607,9 @@ const featureCount = visibleFeatures.length;
   .tool__pill {
     font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.10em;
     font-weight: 700;
-    padding: 2px var(--s-2);
+    padding: 2px 7px;
     border-radius: 999px;
     border: 1px solid var(--border);
     color: var(--fg-soft);
@@ -567,12 +626,12 @@ const featureCount = visibleFeatures.length;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px var(--s-2) 2px 6px;
+    padding: 2px 6px;
     font-family: var(--font-display);
     font-size: 0.62rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.08em;
     line-height: 1;
     border-radius: 2px;
     cursor: help;
@@ -590,9 +649,21 @@ const featureCount = visibleFeatures.length;
     transform: translateY(-0.5px);
   }
 
+  /* License chips paired with the pricing pill. Closed-source reads red,
+     OSS reads green — keeping the licensing signal scannable at a glance. */
+  .tool__flag--closed-source {
+    color: oklch(0.82 0.14 28);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px oklch(0.45 0.12 28);
+  }
+  .tool__flag--oss {
+    color: oklch(0.82 0.14 145);
+    background: transparent;
+    box-shadow: inset 0 0 0 1px oklch(0.45 0.11 145);
+  }
+
   .tool__release {
-    margin: 2px 0 0;
-    display: flex;
+    display: inline-flex;
     align-items: baseline;
     gap: 6px;
     font-family: var(--font-display);
@@ -600,6 +671,7 @@ const featureCount = visibleFeatures.length;
     color: var(--fg-muted);
     letter-spacing: 0.06em;
   }
+  .tool__release--placeholder { visibility: hidden; }
   .tool__release-label {
     text-transform: uppercase;
     font-weight: 700;
@@ -656,7 +728,7 @@ const featureCount = visibleFeatures.length;
 
   .tool__platforms {
     list-style: none;
-    margin: var(--s-2) 0 0;
+    margin: 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
@@ -684,7 +756,7 @@ const featureCount = visibleFeatures.length;
   .tool__platform--web     { color: oklch(0.85 0.1 145);  border-color: oklch(0.4 0.05 145); }
 
   .tool__notice {
-    margin: var(--s-3) 0 0;
+    margin: 0;
     padding: var(--s-2) var(--s-3);
     display: flex;
     align-items: flex-start;
