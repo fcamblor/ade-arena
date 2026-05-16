@@ -1,0 +1,82 @@
+---
+import { FEATURES, ORCHESTRATORS } from '../data';
+import type { SupportLevel } from '../data/schema';
+
+const supportGlyph: Record<SupportLevel, string> = {
+  yes: '✅',
+  partial: '🟡',
+  no: '❌',
+  unknown: '❔',
+};
+const supportClass: Record<SupportLevel, string> = {
+  yes: 'cell-yes',
+  partial: 'cell-partial',
+  no: 'cell-no',
+  unknown: 'cell-unknown',
+};
+
+function findSupport(toolIndex: number, featureId: string) {
+  const orch = ORCHESTRATORS[toolIndex];
+  return orch.features.find((f) => f.featureId === featureId);
+}
+---
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th class="sticky-corner">Feature</th>
+        {ORCHESTRATORS.map((o) => (
+          <th>
+            <a href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
+            <small>v{o.version}</small>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {FEATURES.map((feature) => (
+        <tr>
+          <th class="feature-cell" scope="row">
+            <details>
+              <summary>{feature.label}</summary>
+              <p>{feature.longDescription ?? feature.shortDescription}</p>
+            </details>
+          </th>
+          {ORCHESTRATORS.map((_, i) => {
+            const s = findSupport(i, feature.id);
+            const level: SupportLevel = s?.support ?? 'unknown';
+            return (
+              <td class={supportClass[level]}>
+                <span class="glyph" aria-label={level}>{supportGlyph[level]}</span>
+                {s?.note && <p class="note">{s.note}</p>}
+              </td>
+            );
+          })}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 700px; }
+  th, td { padding: 0.75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+  thead th {
+    background: #161a24;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    font-weight: 600;
+  }
+  thead th small { display: block; color: var(--muted); font-weight: normal; }
+  .feature-cell { background: #131722; min-width: 220px; }
+  .feature-cell summary { cursor: pointer; font-weight: 500; }
+  .feature-cell p { color: var(--muted); font-size: 0.875rem; margin: 0.5rem 0 0; }
+  .glyph { font-size: 1.25rem; }
+  .note { margin: 0.35rem 0 0; font-size: 0.8125rem; color: var(--muted); }
+  .cell-yes { background: var(--cell-yes); }
+  .cell-no { background: var(--cell-no); }
+  .cell-partial { background: var(--cell-partial); }
+  .cell-unknown { background: var(--cell-unknown); }
+</style>
