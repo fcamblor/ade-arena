@@ -12,6 +12,21 @@ const data: OrchestratorVersion = {
     sourceUrl: 'https://cursor.com/pricing',
     sourceExtract: 'Hobby — Free. No credit card required. Individual — $20 / mo. Teams — $40 / user / mo. Enterprise — Custom.',
   },
+  platforms: ['macos', 'windows', 'linux'],
+  platformSources: {
+    macos: {
+      sourceUrl: 'https://cursor.com/downloads',
+      sourceExtract: 'The Cursor desktop app is available for macOS, Windows, and Linux. […] Mac (ARM64), Mac (x64), Mac Universal.',
+    },
+    windows: {
+      sourceUrl: 'https://cursor.com/downloads',
+      sourceExtract: 'The Cursor desktop app is available for macOS, Windows, and Linux. […] Windows (x64) (System), Windows (x64) (User), Windows (ARM64) (System), Windows (ARM64) (User).',
+    },
+    linux: {
+      sourceUrl: 'https://cursor.com/downloads',
+      sourceExtract: 'The Cursor desktop app is available for macOS, Windows, and Linux. […] Linux .deb (ARM64/x64), Linux RPM (ARM64/x64), Linux AppImage (ARM64/x64).',
+    },
+  },
   trackingSources: [
     {
       kind: 'changelog',
@@ -36,13 +51,6 @@ const data: OrchestratorVersion = {
     },
   ],
   features: [
-    {
-      featureId: 'parallel-agents',
-      support: 'yes',
-      screenshots: [],
-      sourceUrl: 'https://cursor.com/blog/cursor-3',
-      sourceExtract: 'Run many agents in parallel — All local and cloud agents appear in the sidebar, including the ones you kick off from mobile, web, desktop, Slack, GitHub, and Linear.',
-    },
     {
       featureId: 'sandbox-isolation',
       support: 'no',

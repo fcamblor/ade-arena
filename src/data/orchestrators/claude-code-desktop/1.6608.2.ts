@@ -17,6 +17,16 @@ const data: OrchestratorVersion = {
     sourceExtract: 'A Claude subscription (Pro, Max, Team, or Enterprise), Claude Console account, or access through a supported cloud provider.',
   },
   platforms: ['macos', 'windows'],
+  platformSources: {
+    macos: {
+      sourceUrl: 'https://code.claude.com/docs/en/desktop',
+      sourceExtract: 'Download for macOS — Universal build for Intel and Apple Silicon.',
+    },
+    windows: {
+      sourceUrl: 'https://code.claude.com/docs/en/desktop',
+      sourceExtract: 'Download for Windows — For x64 processors. For Windows ARM64, download the ARM64 installer. […] The desktop app is not available on Linux; use the CLI instead.',
+    },
+  },
   modelRestriction: {
     message: 'Anthropic Claude models only (Opus / Sonnet / Haiku).',
     sourceUrl: 'https://code.claude.com/docs/en/model-config',
@@ -44,14 +54,6 @@ const data: OrchestratorVersion = {
     },
   ],
   features: [
-    {
-      featureId: 'parallel-agents',
-      support: 'yes',
-      note: 'Agent view dispatches multiple background sessions in parallel, each in its own worktree.',
-      screenshots: [],
-      sourceUrl: 'https://code.claude.com/docs/en/agent-view',
-      sourceExtract: "Agent view, opened with `claude agents`, is one screen for all your background sessions: what's running, what needs your input, and what's done. Dispatch new sessions, watch their state at a glance instead of scrolling through transcripts, and step in only when one needs you.",
-    },
     {
       featureId: 'sandbox-isolation',
       support: 'no',

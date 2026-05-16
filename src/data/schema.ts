@@ -89,14 +89,14 @@ export const OrchestratorVersionSchema = z.object({
       buildDate: z.string().optional(),
     })
     .optional(),
-  releaseDate: z.string().optional(),
+  releaseDate: z.string(),
   homepage: z.string().url(),
   logo: z.string().optional(),
   vendor: z.string().optional(),
   pricing: z.enum(['free', 'freemium', 'paid', 'oss']).optional(),
   pricingSource: MetaSourceSchema.optional(),
-  platforms: z.array(PlatformSchema).optional(),
-  platformSources: z.record(PlatformSchema, MetaSourceSchema).optional(),
+  platforms: z.array(PlatformSchema).min(1),
+  platformSources: z.record(PlatformSchema, MetaSourceSchema),
   /** Strong restriction on the underlying model/agent the ADE can drive — only
    *  populated when meaningful (single vendor / closed set). Rendered as a
    *  warning notice in the header. Tools that broadly support BYOK or many
@@ -117,5 +117,15 @@ export const OrchestratorVersionSchema = z.object({
     })
     .optional(),
   features: z.array(FeatureSupportSchema),
+}).superRefine((data, ctx) => {
+  for (const platform of data.platforms) {
+    if (!data.platformSources[platform]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['platformSources', platform],
+        message: `Missing platformSources entry for platform "${platform}". Every supported platform must be backed by a sourceUrl + sourceExtract.`,
+      });
+    }
+  }
 });
 export type OrchestratorVersion = z.infer<typeof OrchestratorVersionSchema>;

@@ -2,15 +2,7 @@ import { FeatureSchema, type Feature } from './schema';
 import { z } from 'zod';
 
 const features: Feature[] = [
-  {
-    id: 'parallel-agents',
-    label: 'Parallel agents',
-    category: 'workflow',
-    shortDescription: 'Run multiple agents in parallel on independent tasks.',
-    longDescription:
-      'Spin up N agents simultaneously in isolated sandboxes (worktrees, containers, VMs) to work on multiple branches/tasks at once.',
-  },
-  {
+{
     id: 'git-worktrees',
     label: 'Git worktree isolation',
     category: 'workflow',

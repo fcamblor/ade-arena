@@ -4,12 +4,28 @@ const data: OrchestratorVersion = {
   toolId: 'docker-agent',
   toolName: 'Docker Agent (cagent)',
   version: '1.59.0',
+  releaseDate: '2026-05-13',
   homepage: 'https://docs.docker.com/ai/docker-agent/',
   vendor: 'Docker, Inc.',
   pricing: 'oss',
   pricingSource: {
     sourceUrl: 'https://github.com/docker/cagent',
     sourceExtract: 'Apache-2.0 license.',
+  },
+  platforms: ['macos', 'windows', 'linux'],
+  platformSources: {
+    macos: {
+      sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
+      sourceExtract: 'Homebrew: `brew install docker-agent`.',
+    },
+    windows: {
+      sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
+      sourceExtract: 'Winget: `winget install Docker.Agent`.',
+    },
+    linux: {
+      sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
+      sourceExtract: 'Homebrew: `brew install docker-agent`. Pre-built binaries available from GitHub releases.',
+    },
   },
   notes:
     'Docker Agent (binary: cagent) is a CLI framework for building YAML-defined teams of AI agents. It is not a parallel-task / kanban orchestrator: a single `cagent run` executes one agent (optionally delegating to sub-agents) inside the current working directory.',
@@ -31,15 +47,6 @@ const data: OrchestratorVersion = {
     },
   ],
   features: [
-    {
-      featureId: 'parallel-agents',
-      support: 'no',
-      note: 'A `cagent run` invocation runs one agent team. Sub-agents collaborate via delegation, not parallel sandboxed tasks on independent branches.',
-      screenshots: [],
-      sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
-      sourceExtract:
-        'The root agent investigates and explains the problem. When it understands the issue, it hands off to `fixer` for implementation.',
-    },
     {
       featureId: 'sandbox-isolation',
       support: 'yes',

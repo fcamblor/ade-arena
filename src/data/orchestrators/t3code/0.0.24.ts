@@ -58,14 +58,6 @@ const data: OrchestratorVersion = {
   ],
   features: [
     {
-      featureId: 'parallel-agents',
-      support: 'yes',
-      note: 'Multiple chat threads run in parallel, each on its own branch/worktree.',
-      screenshots: [],
-      sourceUrl: 'https://t3.codes/',
-      sourceExtract: 'Every agent thread writes to its own branch. […] T3 Code app showing multiple coding agent threads in one workspace.',
-    },
-    {
       featureId: 'git-worktrees',
       support: 'yes',
       screenshots: [],

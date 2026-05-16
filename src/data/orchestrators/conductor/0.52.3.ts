@@ -4,6 +4,7 @@ const data: OrchestratorVersion = {
   toolId: 'conductor',
   toolName: 'Conductor',
   version: '0.52.3',
+  releaseDate: '2026-05-07',
   homepage: 'https://conductor.build',
   vendor: 'Melty Labs',
   pricing: 'free',
@@ -41,14 +42,6 @@ const data: OrchestratorVersion = {
     },
   ],
   features: [
-    {
-      featureId: 'parallel-agents',
-      support: 'yes',
-      screenshots: [],
-      sourceUrl: 'https://www.conductor.build/docs/concepts/parallel-agents',
-      sourceExtract:
-        'Parallel agent work starts with one decision: should these agents share a workspace, or should they move independently?',
-    },
     {
       featureId: 'sandbox-isolation',
       support: 'no',

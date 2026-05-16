@@ -4,11 +4,27 @@ const data: OrchestratorVersion = {
   toolId: 'vibe-kanban',
   toolName: 'Vibe Kanban',
   version: '0.1.44',
+  releaseDate: '2026-04-24',
   homepage: 'https://www.vibekanban.com',
   pricing: 'oss',
   pricingSource: {
     sourceUrl: 'https://github.com/BloopAI/vibe-kanban',
     sourceExtract: 'Apache-2.0 license.',
+  },
+  platforms: ['macos', 'windows', 'linux'],
+  platformSources: {
+    macos: {
+      sourceUrl: 'https://github.com/BloopAI/vibe-kanban/releases/tag/v0.1.44-20260424091429',
+      sourceExtract: 'Release assets include `Vibe.Kanban_0.1.44_aarch64.dmg` and `Vibe.Kanban_0.1.44_x64.dmg` macOS installers.',
+    },
+    windows: {
+      sourceUrl: 'https://github.com/BloopAI/vibe-kanban/releases/tag/v0.1.44-20260424091429',
+      sourceExtract: 'Release assets include `Vibe-Kanban-0.1.44-aarch64.msi`, `Vibe-Kanban-0.1.44-x86_64.msi`, `Vibe.Kanban_0.1.44_arm64-setup.exe` and `Vibe.Kanban_0.1.44_x64-setup.exe` Windows installers.',
+    },
+    linux: {
+      sourceUrl: 'https://github.com/BloopAI/vibe-kanban/releases/tag/v0.1.44-20260424091429',
+      sourceExtract: 'Release assets include `Vibe.Kanban_0.1.44_amd64.deb`, `Vibe.Kanban_0.1.44_arm64.deb`, `Vibe.Kanban_0.1.44_amd64.AppImage` and `Vibe.Kanban_0.1.44_aarch64.AppImage` Linux packages.',
+    },
   },
   misc: {
     message: 'The company behind Vibe Kanban announced its shutdown.',
@@ -38,13 +54,6 @@ const data: OrchestratorVersion = {
     },
   ],
   features: [
-    {
-      featureId: 'parallel-agents',
-      support: 'yes',
-      screenshots: [],
-      sourceUrl: 'https://www.vibekanban.com',
-      sourceExtract: 'Run coding agents in parallel to eliminate idle time.',
-    },
     {
       featureId: 'git-worktrees',
       support: 'yes',
