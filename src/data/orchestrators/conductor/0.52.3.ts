@@ -44,6 +44,13 @@ const data: OrchestratorVersion = {
     { featureId: 'context-fill-indicator', support: 'unknown', screenshots: [] },
     { featureId: 'switch-model-mid-session', support: 'unknown', screenshots: [] },
     { featureId: 'model-effort-support', support: 'yes', note: 'Fast mode toggle for Claude Opus.', screenshots: [] },
+    { featureId: 'multi-model-integration', support: 'partial', note: 'Wraps assistant CLIs as subprocesses (Claude Code, Codex).', screenshots: [] },
+    { featureId: 'web-preview', support: 'unknown', screenshots: [] },
+    { featureId: 'plugin-system', support: 'unknown', screenshots: [] },
+    { featureId: 'quick-chat', support: 'unknown', screenshots: [] },
+    { featureId: 'mission-control', support: 'unknown', screenshots: [] },
+    { featureId: 'copy-from-origin-workspace', support: 'unknown', screenshots: [] },
+    { featureId: 'symlink-from-origin-workspace', support: 'unknown', screenshots: [] },
   ],
 };
 

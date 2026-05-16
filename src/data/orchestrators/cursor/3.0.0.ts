@@ -1,13 +1,11 @@
 import { OrchestratorVersionSchema, type OrchestratorVersion } from '../../schema';
 
 const data: OrchestratorVersion = {
-  toolId: 't3code',
-  toolName: 't3code',
-  version: '0.0.24',
-  versionDetails: {
-    buildHash: 'ea20e8002164',
-  },
-  homepage: 'https://t3.codes/',
+  toolId: 'cursor',
+  toolName: 'Cursor 3',
+  version: '3.0.0',
+  homepage: 'https://cursor.com',
+  vendor: 'Anysphere',
   features: [
     { featureId: 'parallel-agents', support: 'unknown', screenshots: [] },
     { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },

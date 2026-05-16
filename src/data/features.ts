@@ -226,6 +226,56 @@ const features: Feature[] = [
     category: 'integrations',
     shortDescription: 'Tune reasoning/thinking effort for models that expose it (e.g. Anthropic extended thinking).',
   },
+  {
+    id: 'multi-model-integration',
+    label: 'Multi-model integration mechanism',
+    category: 'integrations',
+    shortDescription: 'How the orchestrator plugs into each model: direct SDK, ACP, OpenAI-compatible API, CLI wrap…',
+    longDescription:
+      'When the tool supports several models, the way each integration is wired matters — direct provider SDK, Agent Client Protocol (ACP), OpenAI-compatible HTTP API, CLI subprocess wrapping, MCP — because it impacts pricing (BYOK vs. bundled), capability parity (tool use, thinking, caching) and latency.',
+  },
+  {
+    id: 'web-preview',
+    label: 'Embedded web preview',
+    category: 'ux',
+    shortDescription: 'Built-in browser preview of a local web server, ideally bound to a run configuration / allocated port.',
+    longDescription:
+      'In-app web preview pane that renders the output of a local HTTP server. Ideally couples with a run configuration that launches the server on a per-worktree allocated port, so the preview updates as the agent edits the code.',
+  },
+  {
+    id: 'plugin-system',
+    label: 'Plugin system',
+    category: 'platform',
+    shortDescription: 'Extend the orchestrator with third-party or user-authored plugins.',
+  },
+  {
+    id: 'quick-chat',
+    label: 'Repo-less quick chat',
+    category: 'workflow',
+    shortDescription: 'Chat with a model without attaching the conversation to a repository / worktree.',
+    longDescription:
+      'A lightweight, repo-less chat surface for ad-hoc questions to a model — useful for one-off prompts, brainstorming, or scripting tasks that should not pollute a worktree session.',
+  },
+  {
+    id: 'mission-control',
+    label: 'Mission-control dashboard',
+    category: 'ux',
+    shortDescription: 'Central dashboard aggregating in-progress, awaiting-input and completed tasks across worktrees.',
+    longDescription:
+      'A unified control-tower view listing every running, idle, awaiting-input and recently completed task across all worktrees / projects, so the user can keep an eye on the fleet without opening each workspace.',
+  },
+  {
+    id: 'copy-from-origin-workspace',
+    label: 'Copy files from origin workspace',
+    category: 'workflow',
+    shortDescription: 'Bring files (e.g. .env, local secrets) from the source repo into the agent worktree by copy.',
+  },
+  {
+    id: 'symlink-from-origin-workspace',
+    label: 'Symlink files from origin workspace',
+    category: 'workflow',
+    shortDescription: 'Expose files from the source repo inside the agent worktree via symlinks (ln -s).',
+  },
 ];
 
 export const FEATURES: readonly Feature[] = z.array(FeatureSchema).parse(features);

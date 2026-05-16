@@ -49,6 +49,13 @@ const data: OrchestratorVersion = {
     { featureId: 'context-fill-indicator', support: 'yes', note: 'Shows remaining context %.', screenshots: [] },
     { featureId: 'switch-model-mid-session', support: 'yes', note: 'Via /model command.', screenshots: [] },
     { featureId: 'model-effort-support', support: 'yes', note: 'Extended thinking budget control.', screenshots: [] },
+    { featureId: 'multi-model-integration', support: 'no', note: 'Single-vendor (Anthropic Claude only).', screenshots: [] },
+    { featureId: 'web-preview', support: 'no', screenshots: [] },
+    { featureId: 'plugin-system', support: 'yes', note: 'Plugins, skills, sub-agents and MCP servers.', screenshots: [] },
+    { featureId: 'quick-chat', support: 'unknown', screenshots: [] },
+    { featureId: 'mission-control', support: 'no', screenshots: [] },
+    { featureId: 'copy-from-origin-workspace', support: 'no', note: 'No worktree concept.', screenshots: [] },
+    { featureId: 'symlink-from-origin-workspace', support: 'no', note: 'No worktree concept.', screenshots: [] },
   ],
 };
 
