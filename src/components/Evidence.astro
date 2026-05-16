@@ -76,8 +76,8 @@ function prettyUrl(u: string): string {
     align-items: center;
     position: relative;
   }
-  .evidence--inline > .evidence__trigger::after {
-    /* tiny disclosure caret tucked into pill triggers */
+  .evidence--inline > .evidence__trigger > *::after {
+    /* tiny disclosure caret rendered inside the pill itself */
     content: '▾';
     display: inline-block;
     margin-left: 5px;
@@ -86,9 +86,9 @@ function prettyUrl(u: string): string {
     opacity: 0.55;
     transition: transform .18s ease, opacity .12s ease;
   }
-  .evidence--inline[open] > .evidence__trigger::after { transform: rotate(180deg); opacity: 1; }
-  .evidence--inline > .evidence__trigger:hover::after,
-  .evidence--inline > .evidence__trigger:focus-visible::after { opacity: 1; }
+  .evidence--inline[open] > .evidence__trigger > *::after { transform: rotate(180deg); opacity: 1; }
+  .evidence--inline > .evidence__trigger:hover > *::after,
+  .evidence--inline > .evidence__trigger:focus-visible > *::after { opacity: 1; }
   .evidence--inline > .evidence__trigger:focus-visible {
     outline: 1px dotted currentColor;
     outline-offset: 2px;

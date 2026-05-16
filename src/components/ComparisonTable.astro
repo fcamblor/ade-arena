@@ -174,18 +174,7 @@ const featureCount = visibleFeatures.length;
                       </div>
                     );
                   })()}
-                  <p class="tool__meta">
-                    {(() => {
-                      const vd = o.versionDetails;
-                      const tooltip = vd
-                        ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
-                        : undefined;
-                      return tooltip ? (
-                        <span class="tool__version tool__version--has-tooltip" title={tooltip}>v{o.version}</span>
-                      ) : (
-                        <span class="tool__version">v{o.version}</span>
-                      );
-                    })()}
+                  <p class="tool__meta tool__meta--pricing">
                     {o.pricing && (
                       o.pricingSource ? (
                         <Evidence
@@ -241,6 +230,19 @@ const featureCount = visibleFeatures.length;
                       )
                     )}
                   </p>
+                  <p class="tool__meta tool__meta--version">
+                    {(() => {
+                      const vd = o.versionDetails;
+                      const tooltip = vd
+                        ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
+                        : undefined;
+                      return tooltip ? (
+                        <span class="tool__version tool__version--has-tooltip" title={tooltip}>v{o.version}</span>
+                      ) : (
+                        <span class="tool__version">v{o.version}</span>
+                      );
+                    })()}
+                  </p>
                   {o.releaseDate && (
                     <p class="tool__release" title={`Released ${o.releaseDate}`}>
                       <span class="tool__release-label">Released</span>
@@ -272,6 +274,16 @@ const featureCount = visibleFeatures.length;
                         );
                       })}
                     </ul>
+                  )}
+                  {o.modelRestriction && (
+                    <p class="tool__notice tool__notice--models" role="note">
+                      <span class="tool__notice-icon" aria-hidden="true">⚠</span>
+                      <span class="tool__notice-text">
+                        {o.modelRestriction.sourceUrl
+                          ? <a href={o.modelRestriction.sourceUrl} target="_blank" rel="noreferrer">{o.modelRestriction.message}</a>
+                          : o.modelRestriction.message}
+                      </span>
+                    </p>
                   )}
                   {o.misc && (
                     <p class="tool__notice" role="note">
@@ -323,15 +335,10 @@ const featureCount = visibleFeatures.length;
               {group.features.map((feature: Feature) => (
                 <tr class="row--feature">
                   <th scope="row" class="cell--feature">
-                    <details class="feature">
-                      <summary class="feature__summary">
-                        <span class="feature__chevron" aria-hidden="true"></span>
-                        <span class="feature__label">{feature.label}</span>
-                      </summary>
-                      <div class="feature__body">
-                        <p>{feature.longDescription ?? feature.shortDescription}</p>
-                      </div>
-                    </details>
+                    <div class="feature">
+                      <p class="feature__label">{feature.label}</p>
+                      <p class="feature__body">{feature.longDescription ?? feature.shortDescription}</p>
+                    </div>
                   </th>
                   {ORCHESTRATORS.map((orch, i) => {
                     const s = findSupport(i, feature.id);
@@ -498,6 +505,10 @@ const featureCount = visibleFeatures.length;
     border-bottom: 1px solid var(--border);
     padding: var(--s-4) var(--s-3);
   }
+  /* When a header cell has an open proof popover, lift it above sibling sticky
+     headers so the card isn't clipped by the next column's stacking context. */
+  .cell--tool:has(.evidence[open]) { z-index: 6; }
+  .cell--corner:has(.evidence[open]) { z-index: 7; }
   .tool { display: flex; flex-direction: column; gap: var(--s-1); position: relative; }
   .tool__name {
     display: block;
@@ -580,8 +591,8 @@ const featureCount = visibleFeatures.length;
   }
 
   .tool__release {
-    margin: var(--s-2) 0 0;
-    display: inline-flex;
+    margin: 2px 0 0;
+    display: flex;
     align-items: baseline;
     gap: 6px;
     font-family: var(--font-display);
@@ -757,48 +768,24 @@ const featureCount = visibleFeatures.length;
   }
   .row--feature:nth-child(even) .cell--feature { background: var(--bg-row-alt); }
 
-  /* Disclosure */
-  .feature { width: 100%; }
-  .feature__summary {
-    list-style: none;
-    cursor: pointer;
-    display: flex;
-    align-items: flex-start;
-    gap: var(--s-3);
+  .feature {
+    width: 100%;
     padding: var(--s-4);
-    user-select: none;
-    transition: background .12s ease;
-  }
-  .feature__summary::-webkit-details-marker { display: none; }
-  .feature__summary:hover { background: oklch(0.22 0.014 25); }
-
-  .feature__chevron {
-    flex-shrink: 0;
-    width: 10px;
-    height: 10px;
-    margin-top: 6px;
-    border-right: 2px solid var(--fg-muted);
-    border-bottom: 2px solid var(--fg-muted);
-    transform: rotate(-45deg);
-    transition: transform .2s ease, border-color .2s ease;
-  }
-  .feature[open] .feature__chevron {
-    transform: rotate(45deg);
-    border-color: var(--accent);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
   }
   .feature__label {
+    margin: 0;
     line-height: 1.35;
     font-weight: 500;
   }
-  .feature[open] .feature__label { color: var(--canvas); }
-
   .feature__body {
-    padding: 0 var(--s-4) var(--s-4) calc(var(--s-4) + 10px + var(--s-3));
+    margin: 0;
     color: var(--fg-muted);
     font-size: 0.825rem;
     line-height: 1.5;
   }
-  .feature__body p { margin: 0; }
 
   /* ============ Support cells ============ */
   .cell {
@@ -860,7 +847,7 @@ const featureCount = visibleFeatures.length;
     .cell--category-score .score__value,
     .score--global .score__value { font-size: 1rem; }
     th, td { padding: var(--s-3); }
-    .feature__summary { padding: var(--s-3); }
+    .feature { padding: var(--s-3); }
   }
 
   @media (prefers-reduced-motion: reduce) {

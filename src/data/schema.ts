@@ -69,6 +69,17 @@ export const OrchestratorVersionSchema = z.object({
   pricingSource: MetaSourceSchema.optional(),
   platforms: z.array(PlatformSchema).optional(),
   platformSources: z.record(PlatformSchema, MetaSourceSchema).optional(),
+  /** Strong restriction on the underlying model/agent the ADE can drive — only
+   *  populated when meaningful (single vendor / closed set). Rendered as a
+   *  warning notice in the header. Tools that broadly support BYOK or many
+   *  providers should leave this empty: model details belong to the
+   *  multi-model feature row. */
+  modelRestriction: z
+    .object({
+      message: z.string(),
+      sourceUrl: z.string().url().optional(),
+    })
+    .optional(),
   notes: z.string().optional(),
   misc: z
     .object({
