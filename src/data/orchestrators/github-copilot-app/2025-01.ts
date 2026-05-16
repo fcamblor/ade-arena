@@ -7,6 +7,7 @@ const data: OrchestratorVersion = {
   homepage: 'https://github.com/features/copilot',
   vendor: 'GitHub',
   pricing: 'paid',
+  platforms: ['web'],
   features: [
     { featureId: 'parallel-agents', support: 'yes', screenshots: [] },
     { featureId: 'git-worktrees', support: 'no', screenshots: [] },
@@ -40,6 +41,9 @@ const data: OrchestratorVersion = {
     { featureId: 'shared-config-levels', support: 'partial', note: 'Repo-level config files.', screenshots: [] },
     { featureId: 'pr-status-sync', support: 'yes', note: 'Native — runs on the PR itself.', screenshots: [] },
     { featureId: 'remote-session-control', support: 'yes', note: 'Triggered from any GitHub client.', screenshots: [] },
+    { featureId: 'context-fill-indicator', support: 'no', screenshots: [] },
+    { featureId: 'switch-model-mid-session', support: 'unknown', screenshots: [] },
+    { featureId: 'model-effort-support', support: 'unknown', screenshots: [] },
   ],
 };
 

@@ -35,19 +35,36 @@ export const FeatureSupportSchema = z.object({
   note: z.string().max(280).optional(),
   screenshots: z.array(ScreenshotSchema).default([]),
   sourceUrl: z.string().url().optional(),
+  sourceExtract: z.string().optional(),
 });
 export type FeatureSupport = z.infer<typeof FeatureSupportSchema>;
+
+export const PlatformSchema = z.enum(['macos', 'windows', 'linux', 'web']);
+export type Platform = z.infer<typeof PlatformSchema>;
 
 export const OrchestratorVersionSchema = z.object({
   toolId: z.string().regex(/^[a-z0-9-]+$/),
   toolName: z.string(),
   version: z.string(),
+  versionDetails: z
+    .object({
+      buildHash: z.string().optional(),
+      buildDate: z.string().optional(),
+    })
+    .optional(),
   releaseDate: z.string().optional(),
   homepage: z.string().url(),
   logo: z.string().optional(),
   vendor: z.string().optional(),
   pricing: z.enum(['free', 'freemium', 'paid', 'oss']).optional(),
+  platforms: z.array(PlatformSchema).optional(),
   notes: z.string().optional(),
+  misc: z
+    .object({
+      message: z.string(),
+      sourceUrl: z.string().url().optional(),
+    })
+    .optional(),
   features: z.array(FeatureSupportSchema),
 });
 export type OrchestratorVersion = z.infer<typeof OrchestratorVersionSchema>;

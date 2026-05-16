@@ -2,7 +2,7 @@
 interface Props {
   title?: string;
 }
-const { title = 'Orch Showdown' } = Astro.props;
+const { title = 'Orch Showdown — ADE & coding-agent orchestrators compared' } = Astro.props;
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -12,50 +12,312 @@ const { title = 'Orch Showdown' } = Astro.props;
     <title>{title}</title>
     <meta
       name="description"
-      content="Feature comparison of coding agent orchestrators"
+      content="Side-by-side comparison of Agentic Development Environments (ADE) and coding-agent orchestrators — Conductor, Vibe Kanban, GitHub Copilot Coding Agent, t3.codes and more."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;900&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
     />
   </head>
   <body>
-    <header>
-      <h1>🥊 Orch Showdown</h1>
-      <p>Coding agent orchestrators, side by side</p>
+    <a class="skip-link" href="#main">Skip to comparison</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <div class="brand">
+          <div class="brand__type">
+            <p class="brand__kicker">
+              <span class="brand__mark">Orch&nbsp;Showdown</span>
+              <span class="brand__sep" aria-hidden="true">/</span>
+              <span>{new Date().getFullYear()} edition</span>
+            </p>
+            <h1 class="brand__title">
+              Agentic Dev Environments &amp; orchestrators,<br />scored side by side.
+            </h1>
+            <p class="brand__tagline">
+              An opinionated, feature-by-feature comparison of the tools that run coding agents
+              for you — Conductor, Vibe Kanban, Copilot Coding Agent, t3.codes and friends.
+              Updated as the field moves.
+            </p>
+          </div>
+        </div>
+        <nav class="site-header__meta" aria-label="Repository">
+          <a class="repo-link" href="https://github.com/fcamblor/orch-showdown" target="_blank" rel="noreferrer">
+            <svg class="repo-link__icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+              <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            <span class="repo-link__text">
+              <span class="repo-link__handle">fcamblor / orch-showdown</span>
+              <span class="repo-link__author">by Frédéric Camblor</span>
+            </span>
+          </a>
+        </nav>
+      </div>
+      <div class="site-header__rule" aria-hidden="true">
+        <span>★</span>
+        <span>round 01</span>
+        <span>★</span>
+        <span>{new Date().getFullYear()} edition</span>
+        <span>★</span>
+        <span>weight class · coding agents</span>
+        <span>★</span>
+      </div>
     </header>
-    <main>
+    <main id="main">
       <slot />
     </main>
-    <footer>
-      <p>
-        Contribute: add an orchestrator via a PR — see the
-        <a href="https://github.com/">repo</a>.
-      </p>
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p class="site-footer__credit">
+          A side project by
+          <a href="https://github.com/fcamblor" target="_blank" rel="noreferrer">Frédéric&nbsp;Camblor</a>.
+          Source &amp; data on
+          <a href="https://github.com/fcamblor/orch-showdown" target="_blank" rel="noreferrer">github.com/fcamblor/orch-showdown</a>.
+        </p>
+        <p class="site-footer__contrib">
+          Spotted something wrong? Got a tool to add?
+          <a href="https://github.com/fcamblor/orch-showdown/pulls" target="_blank" rel="noreferrer">Open a PR</a>.
+        </p>
+      </div>
     </footer>
+
     <style is:global>
       :root {
-        --bg: #0f1115;
-        --fg: #e7ecf3;
-        --muted: #8a93a6;
-        --accent: #6ee7b7;
-        --border: #232735;
-        --cell-yes: #16331f;
-        --cell-no: #3a1818;
-        --cell-partial: #3a3318;
-        --cell-unknown: #1d2230;
+        color-scheme: dark;
+
+        /* Neutrals — charcoal tinted very slightly toward brand red (hue 25) */
+        --bg:           oklch(0.16 0.012 25);
+        --bg-elev:      oklch(0.20 0.014 25);
+        --bg-row:       oklch(0.22 0.014 25);
+        --bg-row-alt:   oklch(0.205 0.013 25);
+        --bg-sticky:    oklch(0.18 0.013 25);
+        --surface:      oklch(0.24 0.014 25);
+
+        --fg:           oklch(0.95 0.012 80);
+        --fg-soft:      oklch(0.82 0.015 70);
+        --fg-muted:     oklch(0.62 0.018 60);
+        --fg-faint:     oklch(0.48 0.020 50);
+
+        --border:       oklch(0.30 0.018 30);
+        --border-soft:  oklch(0.25 0.014 30);
+        --border-strong: oklch(0.42 0.022 30);
+
+        /* Brand accents */
+        --accent:       oklch(0.66 0.20 28);   /* boxing-corner red */
+        --accent-ink:   oklch(0.28 0.10 28);
+        --accent-soft:  oklch(0.55 0.14 28);
+        --canvas:       oklch(0.88 0.045 85);  /* cream / canvas tape */
+
+        /* Support state cells — muted, no shouting */
+        --cell-yes:        oklch(0.30 0.060 150);
+        --cell-yes-ink:    oklch(0.86 0.110 145);
+        --cell-no:         oklch(0.30 0.075 28);
+        --cell-no-ink:     oklch(0.82 0.130 28);
+        --cell-partial:    oklch(0.32 0.060 75);
+        --cell-partial-ink: oklch(0.86 0.130 85);
+        --cell-unknown:    oklch(0.24 0.010 250);
+        --cell-unknown-ink: oklch(0.62 0.018 250);
+
+        /* Typography */
+        --font-display: 'Big Shoulders Display', 'Arial Narrow', system-ui, sans-serif;
+        --font-body:    'Hanken Grotesk', system-ui, sans-serif;
+
+        /* Spacing scale (4pt) */
+        --s-1: 4px;
+        --s-2: 8px;
+        --s-3: 12px;
+        --s-4: 16px;
+        --s-5: 24px;
+        --s-6: 32px;
+        --s-7: 48px;
+        --s-8: 64px;
+        --s-9: 96px;
+
+        --radius-sm: 4px;
+        --radius-md: 8px;
+        --radius-lg: 14px;
+
+        --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.02) inset,
+                       0 12px 32px -16px oklch(0 0 0 / 0.6);
       }
+
       * { box-sizing: border-box; }
+
+      html, body { margin: 0; padding: 0; }
+
       body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          'Helvetica Neue', Arial, sans-serif;
+        font-family: var(--font-body);
         background: var(--bg);
         color: var(--fg);
-        line-height: 1.5;
+        line-height: 1.55;
+        font-feature-settings: 'ss01', 'cv11';
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background-image:
+          radial-gradient(1200px 600px at 85% -10%, oklch(0.30 0.08 28 / 0.18), transparent 60%),
+          radial-gradient(900px 500px at -10% 0%, oklch(0.30 0.04 60 / 0.10), transparent 60%);
+        background-attachment: fixed;
       }
-      header, main, footer { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
-      header { padding-bottom: 0; }
-      header h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
-      header p { margin: 0; color: var(--muted); }
-      footer { color: var(--muted); font-size: 0.875rem; border-top: 1px solid var(--border); margin-top: 3rem; }
-      a { color: var(--accent); }
+
+      a {
+        color: var(--canvas);
+        text-decoration: none;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition: color .15s ease;
+      }
+      a:hover, a:focus-visible {
+        color: var(--accent);
+        text-decoration: underline;
+      }
+
+      .skip-link {
+        position: absolute;
+        top: -100px;
+        left: var(--s-3);
+        background: var(--accent);
+        color: var(--bg);
+        padding: var(--s-2) var(--s-4);
+        border-radius: var(--radius-sm);
+        font-weight: 700;
+        z-index: 100;
+      }
+      .skip-link:focus { top: var(--s-3); }
+
+      /* ===== Site header ===== */
+      .site-header {
+        position: relative;
+        padding: clamp(var(--s-5), 4vw, var(--s-7)) clamp(var(--s-4), 4vw, var(--s-7)) 0;
+        max-width: 1480px;
+        margin: 0 auto;
+      }
+      .site-header__inner {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--s-5);
+        flex-wrap: wrap;
+      }
+      .brand { flex: 1 1 auto; min-width: 0; }
+      .brand__kicker {
+        margin: 0 0 var(--s-3);
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--s-2);
+        font-family: var(--font-display);
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        color: var(--fg-muted);
+      }
+      .brand__mark {
+        color: var(--accent);
+        letter-spacing: 0.18em;
+        border: 1px solid color-mix(in oklch, var(--accent) 50%, transparent);
+        padding: 4px var(--s-2) 3px;
+        border-radius: var(--radius-sm);
+        background: color-mix(in oklch, var(--accent) 10%, transparent);
+      }
+      .brand__sep { color: var(--fg-faint); padding: 0 2px; }
+      .brand__title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: clamp(2.2rem, 5vw, 3.2rem);
+        line-height: 0.95;
+        letter-spacing: -0.005em;
+        color: var(--fg);
+        text-wrap: balance;
+      }
+      .brand__tagline {
+        margin: var(--s-4) 0 0;
+        color: var(--fg-soft);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        max-width: 75ch;
+      }
+
+      .repo-link {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-3);
+        padding: var(--s-3) var(--s-4);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--bg-elev);
+        color: var(--fg);
+        font-size: 0.875rem;
+        transition: border-color .15s ease, background .15s ease, transform .15s ease;
+      }
+      .repo-link:hover,
+      .repo-link:focus-visible {
+        text-decoration: none;
+        border-color: var(--accent);
+        background: oklch(0.22 0.018 28);
+        color: var(--fg);
+        transform: translateY(-1px);
+      }
+      .repo-link__icon { flex-shrink: 0; color: var(--fg-soft); }
+      .repo-link__text { display: flex; flex-direction: column; line-height: 1.2; }
+      .repo-link__handle { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.95rem; }
+      .repo-link__author { color: var(--fg-muted); font-size: 0.78rem; }
+
+      .site-header__rule {
+        margin-top: var(--s-6);
+        display: flex;
+        align-items: center;
+        gap: var(--s-3);
+        font-family: var(--font-display);
+        text-transform: uppercase;
+        letter-spacing: 0.22em;
+        font-size: 0.75rem;
+        color: var(--fg-muted);
+        border-top: 1px solid var(--border-soft);
+        border-bottom: 1px solid var(--border-soft);
+        padding: var(--s-2) 0;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .site-header__rule span:nth-child(even) { color: var(--fg-soft); }
+      .site-header__rule span:first-child,
+      .site-header__rule span:nth-child(3),
+      .site-header__rule span:nth-child(5),
+      .site-header__rule span:nth-child(7) { color: var(--accent); }
+
+      /* ===== Main ===== */
+      main {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: clamp(var(--s-5), 3vw, var(--s-6)) clamp(var(--s-4), 4vw, var(--s-7)) var(--s-7);
+      }
+
+      /* ===== Footer ===== */
+      .site-footer {
+        border-top: 1px solid var(--border-soft);
+        margin-top: var(--s-8);
+      }
+      .site-footer__inner {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: var(--s-5) clamp(var(--s-4), 4vw, var(--s-7));
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--s-3);
+        color: var(--fg-muted);
+        font-size: 0.875rem;
+      }
+      .site-footer p { margin: 0; }
+      .site-footer a { color: var(--fg-soft); }
+      .site-footer a:hover { color: var(--accent); }
+
+      @media (max-width: 720px) {
+        .site-header__rule { gap: var(--s-2); font-size: 0.65rem; letter-spacing: 0.16em; }
+        .repo-link__text { display: none; }
+        .repo-link { padding: var(--s-3); }
+      }
     </style>
   </body>
 </html>

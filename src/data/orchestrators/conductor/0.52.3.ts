@@ -3,10 +3,11 @@ import { OrchestratorVersionSchema, type OrchestratorVersion } from '../../schem
 const data: OrchestratorVersion = {
   toolId: 'conductor',
   toolName: 'Conductor',
-  version: '1.0',
+  version: '0.52.3',
   homepage: 'https://conductor.build',
   vendor: 'Melty Labs',
   pricing: 'paid',
+  platforms: ['macos'],
   features: [
     { featureId: 'parallel-agents', support: 'yes', note: 'Native parallel workspaces.', screenshots: [] },
     { featureId: 'git-worktrees', support: 'yes', screenshots: [] },
@@ -40,6 +41,9 @@ const data: OrchestratorVersion = {
     { featureId: 'shared-config-levels', support: 'unknown', screenshots: [] },
     { featureId: 'pr-status-sync', support: 'yes', screenshots: [] },
     { featureId: 'remote-session-control', support: 'partial', note: 'Remote trigger of agents.', screenshots: [] },
+    { featureId: 'context-fill-indicator', support: 'unknown', screenshots: [] },
+    { featureId: 'switch-model-mid-session', support: 'unknown', screenshots: [] },
+    { featureId: 'model-effort-support', support: 'yes', note: 'Fast mode toggle for Claude Opus.', screenshots: [] },
   ],
 };
 

@@ -1,82 +1,638 @@
 ---
 import { FEATURES, ORCHESTRATORS } from '../data';
-import type { SupportLevel } from '../data/schema';
+import type { SupportLevel, FeatureCategory, Feature, Platform } from '../data/schema';
 
+const platformLabel: Record<Platform, string> = {
+  macos: 'macOS',
+  windows: 'Windows',
+  linux: 'Linux',
+  web: 'Any OS · web',
+};
+const platformTooltip: Record<Platform, string> = {
+  macos: 'Runs on macOS',
+  windows: 'Runs on Windows',
+  linux: 'Runs on Linux',
+  web: 'Browser-based — runs on any OS',
+};
+
+const supportLabel: Record<SupportLevel, string> = {
+  yes: 'Yes',
+  partial: 'Partial',
+  no: 'No',
+  unknown: 'Unknown',
+};
 const supportGlyph: Record<SupportLevel, string> = {
-  yes: '✅',
-  partial: '🟡',
-  no: '❌',
-  unknown: '❔',
+  yes: '●',
+  partial: '◐',
+  no: '○',
+  unknown: '–',
 };
-const supportClass: Record<SupportLevel, string> = {
-  yes: 'cell-yes',
-  partial: 'cell-partial',
-  no: 'cell-no',
-  unknown: 'cell-unknown',
+const categoryLabel: Record<FeatureCategory, string> = {
+  workflow: 'Workflow',
+  collaboration: 'Collaboration',
+  integrations: 'Integrations',
+  observability: 'Observability',
+  pricing: 'Licensing',
+  ux: 'User experience',
+  platform: 'Platform',
 };
+const categoryOrder: FeatureCategory[] = [
+  'pricing',
+  'workflow',
+  'ux',
+  'integrations',
+  'observability',
+  'collaboration',
+  'platform',
+];
+
+const grouped = categoryOrder
+  .map((cat) => ({
+    category: cat,
+    features: FEATURES.filter((f) => f.category === cat),
+  }))
+  .filter((g) => g.features.length > 0);
 
 function findSupport(toolIndex: number, featureId: string) {
   const orch = ORCHESTRATORS[toolIndex];
   return orch.features.find((f) => f.featureId === featureId);
 }
+
+// Pre-compute per-category breakdown (yes counts) per orchestrator
+const categoryScores = ORCHESTRATORS.map((o) =>
+  Object.fromEntries(
+    grouped.map(({ category, features }) => {
+      const yes = features.filter((f) => {
+        const s = o.features.find((sup) => sup.featureId === f.id);
+        return s?.support === 'yes';
+      }).length;
+      return [category, { yes, total: features.length }];
+    }),
+  ) as Record<FeatureCategory, { yes: number; total: number }>,
+);
+
+const toolCount = ORCHESTRATORS.length;
+const featureCount = FEATURES.length;
 ---
-<div class="table-wrap">
-  <table>
-    <thead>
-      <tr>
-        <th class="sticky-corner">Feature</th>
-        {ORCHESTRATORS.map((o) => (
-          <th>
-            <a href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
-            <small>v{o.version}</small>
-          </th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {FEATURES.map((feature) => (
-        <tr>
-          <th class="feature-cell" scope="row">
-            <details>
-              <summary>{feature.label}</summary>
-              <p>{feature.longDescription ?? feature.shortDescription}</p>
-            </details>
-          </th>
-          {ORCHESTRATORS.map((_, i) => {
-            const s = findSupport(i, feature.id);
-            const level: SupportLevel = s?.support ?? 'unknown';
-            return (
-              <td class={supportClass[level]}>
-                <span class="glyph" aria-label={level}>{supportGlyph[level]}</span>
-                {s?.note && <p class="note">{s.note}</p>}
-              </td>
-            );
-          })}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+
+<section class="comparator" aria-labelledby="comparator-title">
+  <header class="comparator__intro">
+    <div>
+      <p class="comparator__eyebrow">Main event</p>
+      <h2 id="comparator-title" class="comparator__title">
+        {toolCount}&nbsp;contenders&nbsp;·&nbsp;{featureCount}&nbsp;rounds
+      </h2>
+      <p class="comparator__lede">
+        Every feature, every tool, every verdict. Headers stay pinned — scroll vertically through the card, horizontally through the lineup.
+      </p>
+    </div>
+    <ul class="legend" aria-label="Verdict legend">
+      <li><span class="legend__dot legend__dot--yes" aria-hidden="true">●</span>Supported</li>
+      <li><span class="legend__dot legend__dot--partial" aria-hidden="true">◐</span>Partial</li>
+      <li><span class="legend__dot legend__dot--no" aria-hidden="true">○</span>No</li>
+      <li><span class="legend__dot legend__dot--unknown" aria-hidden="true">–</span>Unknown</li>
+    </ul>
+  </header>
+
+  <div class="table-shell" role="region" aria-label="Comparison table" tabindex="0">
+      <table class="grid">
+        <colgroup>
+          <col class="col--feature" />
+          {ORCHESTRATORS.map(() => <col class="col--tool" />)}
+        </colgroup>
+
+        <thead>
+          <tr>
+            <th scope="col" class="cell--corner">
+              <span class="cell--corner__kicker">Feature</span>
+              <span class="cell--corner__hint">vs.</span>
+            </th>
+            {ORCHESTRATORS.map((o) => (
+              <th scope="col" class="cell--tool">
+                <div class="tool">
+                  <a class="tool__name" href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
+                  <p class="tool__meta">
+                    {(() => {
+                      const vd = o.versionDetails;
+                      const tooltip = vd
+                        ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
+                        : undefined;
+                      return tooltip ? (
+                        <span class="tool__version tool__version--has-tooltip" title={tooltip}>v{o.version}</span>
+                      ) : (
+                        <span class="tool__version">v{o.version}</span>
+                      );
+                    })()}
+                    {o.pricing && <span class={`tool__pill tool__pill--${o.pricing}`}>{o.pricing}</span>}
+                  </p>
+                  {o.releaseDate && (
+                    <p class="tool__release" title={`Released ${o.releaseDate}`}>
+                      <span class="tool__release-label">Released</span>
+                      <time datetime={o.releaseDate}>{o.releaseDate}</time>
+                    </p>
+                  )}
+                  {o.platforms && o.platforms.length > 0 && (
+                    <ul class="tool__platforms" aria-label="Supported platforms">
+                      {o.platforms.map((p) => (
+                        <li class={`tool__platform tool__platform--${p}`} title={platformTooltip[p]}>
+                          {platformLabel[p]}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {o.misc && (
+                    <p class="tool__notice" role="note">
+                      <span class="tool__notice-icon" aria-hidden="true">⚠</span>
+                      <span class="tool__notice-text">
+                        {o.misc.sourceUrl
+                          ? <a href={o.misc.sourceUrl} target="_blank" rel="noreferrer">{o.misc.message}</a>
+                          : o.misc.message}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {grouped.map((group) => (
+            <>
+              <tr class="row--category">
+                <th scope="rowgroup" class="cell--category">
+                  <span class="cell--category__label">{categoryLabel[group.category]}</span>
+                  <span class="cell--category__count">{group.features.length} feature{group.features.length > 1 ? 's' : ''}</span>
+                </th>
+                {ORCHESTRATORS.map((_, i) => {
+                  const s = categoryScores[i][group.category];
+                  return (
+                    <td class="cell--category-score" aria-label={`${s.yes} of ${s.total} ${categoryLabel[group.category]} features supported`}>
+                      <span class="cell--category-score__num">{s.yes}</span>
+                      <span class="cell--category-score__den">/ {s.total}</span>
+                    </td>
+                  );
+                })}
+              </tr>
+              {group.features.map((feature: Feature) => (
+                <tr class="row--feature">
+                  <th scope="row" class="cell--feature">
+                    <details class="feature">
+                      <summary class="feature__summary">
+                        <span class="feature__chevron" aria-hidden="true"></span>
+                        <span class="feature__label">{feature.label}</span>
+                      </summary>
+                      <div class="feature__body">
+                        <p>{feature.longDescription ?? feature.shortDescription}</p>
+                      </div>
+                    </details>
+                  </th>
+                  {ORCHESTRATORS.map((_, i) => {
+                    const s = findSupport(i, feature.id);
+                    const level: SupportLevel = s?.support ?? 'unknown';
+                    return (
+                      <td class={`cell cell--${level}`} data-support={level}>
+                        <span class="cell__glyph" aria-label={supportLabel[level]} role="img">{supportGlyph[level]}</span>
+                        {s?.note && <p class="cell__note">{s.note}</p>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </>
+          ))}
+        </tbody>
+      </table>
+  </div>
+</section>
 
 <style>
-  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-  table { border-collapse: collapse; width: 100%; min-width: 700px; }
-  th, td { padding: 0.75rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
-  thead th {
-    background: #161a24;
+  /* ============ Intro ============ */
+  .comparator { display: flex; flex-direction: column; gap: var(--s-5); }
+  .comparator__intro {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--s-5);
+    flex-wrap: wrap;
+  }
+  .comparator__eyebrow {
+    margin: 0 0 var(--s-2);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .comparator__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(1.4rem, 2.6vw, 2rem);
+    letter-spacing: 0.005em;
+    color: var(--fg);
+    line-height: 1;
+  }
+  .comparator__lede {
+    margin: var(--s-3) 0 0;
+    color: var(--fg-soft);
+    max-width: 60ch;
+  }
+
+  .legend {
+    list-style: none;
+    margin: 0;
+    padding: var(--s-3) var(--s-4);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    background: var(--bg-elev);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+    font-size: 0.8rem;
+    color: var(--fg-soft);
+  }
+  .legend li { display: inline-flex; align-items: center; gap: var(--s-2); }
+  .legend__dot {
+    display: inline-grid;
+    place-items: center;
+    width: 1.2em;
+    font-size: 1.05em;
+    line-height: 1;
+  }
+  .legend__dot--yes      { color: var(--cell-yes-ink); }
+  .legend__dot--partial  { color: var(--cell-partial-ink); }
+  .legend__dot--no       { color: var(--cell-no-ink); }
+  .legend__dot--unknown  { color: var(--cell-unknown-ink); }
+
+  /* ============ Table shell ============ */
+  .table-shell {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elev);
+    box-shadow: var(--shadow-card);
+    /* Single scrollbar = the page's. No internal scroll container, so sticky
+       cells anchor to the viewport itself. */
+    overflow: visible;
+  }
+  .table-shell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .grid {
+    table-layout: fixed; /* fixed widths => toggling feature details doesn't reflow columns */
+    border-collapse: separate;
+    border-spacing: 0;
+    width: max-content;
+    min-width: 100%;
+    font-size: 0.9rem;
+  }
+
+  /* Column widths — fixed-layout means these are authoritative */
+  .col--feature { width: 300px; }
+  .col--tool    { width: 200px; }
+
+  /* ============ Cells ============ */
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: var(--s-4);
+    border-bottom: 1px solid var(--border-soft);
+    border-right: 1px solid var(--border-soft);
+  }
+  td:last-child, th:last-child { border-right: none; }
+  tbody tr:last-child td,
+  tbody tr:last-child th { border-bottom: none; }
+
+  /* ============ Corner (top-left) ============ */
+  .cell--corner {
     position: sticky;
     top: 0;
-    z-index: 1;
-    font-weight: 600;
+    left: 0;
+    z-index: 5;
+    background: var(--bg-row);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    padding: var(--s-4) var(--s-4) var(--s-3);
   }
-  thead th small { display: block; color: var(--muted); font-weight: normal; }
-  .feature-cell { background: #131722; min-width: 220px; }
-  .feature-cell summary { cursor: pointer; font-weight: 500; }
-  .feature-cell p { color: var(--muted); font-size: 0.875rem; margin: 0.5rem 0 0; }
-  .glyph { font-size: 1.25rem; }
-  .note { margin: 0.35rem 0 0; font-size: 0.8125rem; color: var(--muted); }
-  .cell-yes { background: var(--cell-yes); }
-  .cell-no { background: var(--cell-no); }
-  .cell-partial { background: var(--cell-partial); }
-  .cell-unknown { background: var(--cell-unknown); }
+  .cell--corner__kicker {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    color: var(--fg);
+  }
+  .cell--corner__hint {
+    display: block;
+    margin-top: var(--s-2);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ============ Tool header column ============ */
+  .cell--tool {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg-row);
+    border-bottom: 1px solid var(--border);
+    padding: var(--s-4) var(--s-3);
+  }
+  .tool { display: flex; flex-direction: column; gap: var(--s-1); position: relative; }
+  .tool__name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 1.45rem;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--fg);
+    letter-spacing: 0.005em;
+    margin-top: 2px;
+    word-break: break-word;
+  }
+  .tool__name:hover, .tool__name:focus-visible { color: var(--accent); text-decoration: none; }
+  .tool__meta {
+    margin: var(--s-2) 0 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .tool__version {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .tool__version--has-tooltip {
+    cursor: help;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--fg-faint);
+  }
+  .tool__pill {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    padding: 2px var(--s-2);
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--fg-soft);
+    background: oklch(0.22 0.012 28);
+  }
+  .tool__pill--oss      { color: oklch(0.82 0.13 145); border-color: oklch(0.4 0.06 145); }
+  .tool__pill--free     { color: oklch(0.82 0.11 220); border-color: oklch(0.4 0.05 220); }
+  .tool__pill--freemium { color: oklch(0.85 0.12 85);  border-color: oklch(0.4 0.06 85); }
+  .tool__pill--paid     { color: oklch(0.85 0.12 28);  border-color: oklch(0.4 0.07 28); }
+
+  .tool__release {
+    margin: var(--s-2) 0 0;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    color: var(--fg-muted);
+    letter-spacing: 0.06em;
+  }
+  .tool__release-label {
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--fg-faint);
+    font-size: 0.6rem;
+  }
+  .tool__release time { font-variant-numeric: tabular-nums; }
+
+  .tool__platforms {
+    list-style: none;
+    margin: var(--s-2) 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .tool__platform {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: oklch(0.22 0.012 28);
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    line-height: 1;
+    cursor: help;
+  }
+  .tool__platform--macos   { color: oklch(0.92 0.02 250); border-color: oklch(0.4 0.03 250); }
+  .tool__platform--windows { color: oklch(0.85 0.1 220);  border-color: oklch(0.4 0.05 220); }
+  .tool__platform--linux   { color: oklch(0.85 0.1 85);   border-color: oklch(0.4 0.06 85); }
+  .tool__platform--web     { color: oklch(0.85 0.1 145);  border-color: oklch(0.4 0.05 145); }
+
+  .tool__notice {
+    margin: var(--s-3) 0 0;
+    padding: var(--s-2) var(--s-3);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    border: 1px solid oklch(0.4 0.09 60);
+    border-radius: var(--radius-sm, 6px);
+    background: oklch(0.28 0.06 60 / 0.35);
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: oklch(0.92 0.08 80);
+  }
+  .tool__notice-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    color: oklch(0.85 0.14 70);
+  }
+  .tool__notice-text { min-width: 0; }
+  .tool__notice a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: oklch(0.6 0.1 70);
+  }
+  .tool__notice a:hover,
+  .tool__notice a:focus-visible {
+    text-decoration-color: currentColor;
+  }
+
+  /* ============ Category rows ============ */
+  .row--category .cell--category {
+    position: sticky;
+    left: 0;
+    background: var(--bg-elev);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: var(--s-3) var(--s-4);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.72rem;
+    color: var(--fg-muted);
+    z-index: 2;
+    /* z-index lower than thead (3/5) but above body cells (1) */
+  }
+  .row--category .cell--category-score {
+    background: var(--bg-elev);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: var(--s-3) var(--s-4);
+    font-family: var(--font-display);
+    text-align: left;
+    vertical-align: baseline;
+    white-space: nowrap;
+  }
+  .cell--category-score__num {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .cell--category-score__den {
+    font-size: 0.72rem;
+    color: var(--fg-muted);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-left: 4px;
+  }
+  .cell--category__label {
+    color: var(--canvas);
+    font-weight: 900;
+    letter-spacing: 0.24em;
+    font-size: 0.78rem;
+    margin-right: var(--s-3);
+  }
+  .cell--category__count {
+    color: var(--fg-faint);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+  }
+
+  /* ============ Feature column (sticky-left) ============ */
+  .cell--feature {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    font-weight: 500;
+    color: var(--fg);
+    padding: 0;
+  }
+  .row--feature:nth-child(even) .cell--feature { background: var(--bg-row-alt); }
+
+  /* Disclosure */
+  .feature { width: 100%; }
+  .feature__summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    user-select: none;
+    transition: background .12s ease;
+  }
+  .feature__summary::-webkit-details-marker { display: none; }
+  .feature__summary:hover { background: oklch(0.22 0.014 25); }
+
+  .feature__chevron {
+    flex-shrink: 0;
+    width: 10px;
+    height: 10px;
+    margin-top: 6px;
+    border-right: 2px solid var(--fg-muted);
+    border-bottom: 2px solid var(--fg-muted);
+    transform: rotate(-45deg);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .feature[open] .feature__chevron {
+    transform: rotate(45deg);
+    border-color: var(--accent);
+  }
+  .feature__label {
+    line-height: 1.35;
+    font-weight: 500;
+  }
+  .feature[open] .feature__label { color: var(--canvas); }
+
+  .feature__body {
+    padding: 0 var(--s-4) var(--s-4) calc(var(--s-4) + 10px + var(--s-3));
+    color: var(--fg-muted);
+    font-size: 0.825rem;
+    line-height: 1.5;
+  }
+  .feature__body p { margin: 0; }
+
+  /* ============ Support cells ============ */
+  .cell {
+    background: var(--bg);
+    transition: background .15s ease;
+    position: relative;
+  }
+  .row--feature:nth-child(even) .cell { background: var(--bg-row-alt); }
+
+  /* State backgrounds (subtle, no stripes) */
+  .cell--yes      { background: color-mix(in oklch, var(--cell-yes) 60%, var(--bg)); }
+  .cell--no       { background: color-mix(in oklch, var(--cell-no) 55%, var(--bg)); }
+  .cell--partial  { background: color-mix(in oklch, var(--cell-partial) 55%, var(--bg)); }
+  .cell--unknown  { background: var(--bg); }
+
+  .row--feature:nth-child(even) .cell--yes     { background: color-mix(in oklch, var(--cell-yes) 65%, var(--bg-row-alt)); }
+  .row--feature:nth-child(even) .cell--no      { background: color-mix(in oklch, var(--cell-no) 60%, var(--bg-row-alt)); }
+  .row--feature:nth-child(even) .cell--partial { background: color-mix(in oklch, var(--cell-partial) 60%, var(--bg-row-alt)); }
+
+  /* Highlight the row on hover for cross-reference */
+  .row--feature:hover .cell--feature,
+  .row--feature:hover .cell { background-color: oklch(0.25 0.018 28 / 0.45); }
+  .row--feature:hover .cell--yes     { background-color: color-mix(in oklch, var(--cell-yes) 75%, oklch(0.25 0.018 28)); }
+  .row--feature:hover .cell--no      { background-color: color-mix(in oklch, var(--cell-no) 75%, oklch(0.25 0.018 28)); }
+  .row--feature:hover .cell--partial { background-color: color-mix(in oklch, var(--cell-partial) 75%, oklch(0.25 0.018 28)); }
+
+  .cell__glyph {
+    display: inline-block;
+    font-size: 1.4rem;
+    line-height: 1;
+    font-family: var(--font-body);
+  }
+  .cell--yes     .cell__glyph { color: var(--cell-yes-ink); }
+  .cell--no      .cell__glyph { color: var(--cell-no-ink); }
+  .cell--partial .cell__glyph { color: var(--cell-partial-ink); }
+  .cell--unknown .cell__glyph { color: var(--cell-unknown-ink); font-size: 1.2rem; }
+
+  .cell__note {
+    margin: var(--s-2) 0 0;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: var(--fg-soft);
+  }
+
+  @media (max-width: 720px) {
+    .col--feature { width: 220px; }
+    .col--tool { width: 170px; }
+    .tool__name { font-size: 1.2rem; }
+    .cell--category-score__num { font-size: 1rem; }
+    th, td { padding: var(--s-3); }
+    .feature__summary { padding: var(--s-3); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
 </style>

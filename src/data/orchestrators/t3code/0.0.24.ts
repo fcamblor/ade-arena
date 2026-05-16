@@ -3,7 +3,10 @@ import { OrchestratorVersionSchema, type OrchestratorVersion } from '../../schem
 const data: OrchestratorVersion = {
   toolId: 't3code',
   toolName: 't3code',
-  version: '1.0',
+  version: '0.0.24',
+  versionDetails: {
+    buildHash: 'ea20e8002164',
+  },
   homepage: 'https://t3.codes/',
   features: [
     { featureId: 'parallel-agents', support: 'unknown', screenshots: [] },
@@ -38,6 +41,9 @@ const data: OrchestratorVersion = {
     { featureId: 'shared-config-levels', support: 'unknown', screenshots: [] },
     { featureId: 'pr-status-sync', support: 'unknown', screenshots: [] },
     { featureId: 'remote-session-control', support: 'unknown', screenshots: [] },
+    { featureId: 'context-fill-indicator', support: 'unknown', screenshots: [] },
+    { featureId: 'switch-model-mid-session', support: 'unknown', screenshots: [] },
+    { featureId: 'model-effort-support', support: 'unknown', screenshots: [] },
   ],
 };
 

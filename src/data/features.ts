@@ -208,6 +208,24 @@ const features: Feature[] = [
     category: 'workflow',
     shortDescription: 'Drive and control agent sessions remotely (e.g. from a phone or another device).',
   },
+  {
+    id: 'context-fill-indicator',
+    label: 'Context usage indicator',
+    category: 'observability',
+    shortDescription: 'Visualize the current context window fill ratio in the ongoing discussion.',
+  },
+  {
+    id: 'switch-model-mid-session',
+    label: 'Switch model mid-session',
+    category: 'workflow',
+    shortDescription: 'Change the underlying LLM at any point during a discussion.',
+  },
+  {
+    id: 'model-effort-support',
+    label: 'Reasoning effort control',
+    category: 'integrations',
+    shortDescription: 'Tune reasoning/thinking effort for models that expose it (e.g. Anthropic extended thinking).',
+  },
 ];
 
 export const FEATURES: readonly Feature[] = z.array(FeatureSchema).parse(features);

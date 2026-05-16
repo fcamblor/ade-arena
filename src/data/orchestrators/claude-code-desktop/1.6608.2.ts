@@ -3,10 +3,16 @@ import { OrchestratorVersionSchema, type OrchestratorVersion } from '../../schem
 const data: OrchestratorVersion = {
   toolId: 'claude-code-desktop',
   toolName: 'Claude Code Desktop',
-  version: '1.0',
+  version: '1.6608.2',
+  releaseDate: '2026-05-08',
+  versionDetails: {
+    buildHash: 'ebf1a1',
+    buildDate: '2026-05-08T23:17:27.000Z',
+  },
   homepage: 'https://claude.com/claude-code',
   vendor: 'Anthropic',
   pricing: 'paid',
+  platforms: ['macos', 'windows'],
   features: [
     { featureId: 'parallel-agents', support: 'partial', note: 'Via sub-agents within a session.', screenshots: [] },
     { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
@@ -40,6 +46,9 @@ const data: OrchestratorVersion = {
     { featureId: 'shared-config-levels', support: 'yes', note: 'User, project, and project-local settings.json.', screenshots: [] },
     { featureId: 'pr-status-sync', support: 'no', screenshots: [] },
     { featureId: 'remote-session-control', support: 'no', screenshots: [] },
+    { featureId: 'context-fill-indicator', support: 'yes', note: 'Shows remaining context %.', screenshots: [] },
+    { featureId: 'switch-model-mid-session', support: 'yes', note: 'Via /model command.', screenshots: [] },
+    { featureId: 'model-effort-support', support: 'yes', note: 'Extended thinking budget control.', screenshots: [] },
   ],
 };
 

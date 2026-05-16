@@ -3,9 +3,13 @@ import { OrchestratorVersionSchema, type OrchestratorVersion } from '../../schem
 const data: OrchestratorVersion = {
   toolId: 'vibe-kanban',
   toolName: 'Vibe Kanban',
-  version: '0.5',
+  version: '0.1.44',
   homepage: 'https://www.vibekanban.com',
   pricing: 'oss',
+  misc: {
+    message: 'The company behind Vibe Kanban announced its shutdown.',
+    sourceUrl: 'https://vibekanban.com/blog/shutdown',
+  },
   features: [
     { featureId: 'parallel-agents', support: 'yes', screenshots: [] },
     { featureId: 'git-worktrees', support: 'yes', screenshots: [] },
@@ -39,6 +43,9 @@ const data: OrchestratorVersion = {
     { featureId: 'shared-config-levels', support: 'unknown', screenshots: [] },
     { featureId: 'pr-status-sync', support: 'unknown', screenshots: [] },
     { featureId: 'remote-session-control', support: 'unknown', screenshots: [] },
+    { featureId: 'context-fill-indicator', support: 'unknown', screenshots: [] },
+    { featureId: 'switch-model-mid-session', support: 'unknown', screenshots: [] },
+    { featureId: 'model-effort-support', support: 'unknown', screenshots: [] },
   ],
 };
 
