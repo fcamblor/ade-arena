@@ -14,6 +14,29 @@ const data: OrchestratorVersion = {
     message: 'The company behind Vibe Kanban announced its shutdown.',
     sourceUrl: 'https://vibekanban.com/blog/shutdown',
   },
+  trackingSources: [
+    {
+      kind: 'github-releases',
+      label: 'vibe-kanban GitHub releases',
+      url: 'https://github.com/BloopAI/vibe-kanban/releases',
+    },
+    {
+      kind: 'github-commits',
+      label: 'vibe-kanban main commits',
+      url: 'https://github.com/BloopAI/vibe-kanban/commits/main',
+    },
+    {
+      kind: 'docs',
+      label: 'Vibe Kanban documentation',
+      url: 'https://vibekanban.com/docs/getting-started',
+    },
+    {
+      kind: 'blog',
+      label: 'Vibe Kanban blog',
+      url: 'https://vibekanban.com/blog/shutdown',
+      notes: 'Only the shutdown announcement is currently linked; no public blog index found.',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

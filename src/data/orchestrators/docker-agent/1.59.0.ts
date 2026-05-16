@@ -13,6 +13,23 @@ const data: OrchestratorVersion = {
   },
   notes:
     'Docker Agent (binary: cagent) is a CLI framework for building YAML-defined teams of AI agents. It is not a parallel-task / kanban orchestrator: a single `cagent run` executes one agent (optionally delegating to sub-agents) inside the current working directory.',
+  trackingSources: [
+    {
+      kind: 'github-releases',
+      label: 'cagent GitHub releases',
+      url: 'https://github.com/docker/cagent/releases',
+    },
+    {
+      kind: 'github-commits',
+      label: 'cagent main commits',
+      url: 'https://github.com/docker/cagent/commits/main',
+    },
+    {
+      kind: 'docs',
+      label: 'Docker Agent docs',
+      url: 'https://docs.docker.com/ai/docker-agent/',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

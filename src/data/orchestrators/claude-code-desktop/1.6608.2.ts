@@ -21,6 +21,28 @@ const data: OrchestratorVersion = {
     message: 'Anthropic Claude models only (Opus / Sonnet / Haiku).',
     sourceUrl: 'https://code.claude.com/docs/en/model-config',
   },
+  trackingSources: [
+    {
+      kind: 'github-releases',
+      label: 'claude-code GitHub releases',
+      url: 'https://github.com/anthropics/claude-code/releases',
+    },
+    {
+      kind: 'docs',
+      label: 'Claude Code docs (overview)',
+      url: 'https://code.claude.com/docs/en/overview',
+    },
+    {
+      kind: 'docs',
+      label: 'Claude Code desktop docs',
+      url: 'https://code.claude.com/docs/en/desktop',
+    },
+    {
+      kind: 'other',
+      label: 'Claude Code homepage',
+      url: 'https://claude.com/claude-code',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

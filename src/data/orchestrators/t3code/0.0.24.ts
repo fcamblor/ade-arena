@@ -34,6 +34,28 @@ const data: OrchestratorVersion = {
       sourceExtract: 'The hosted web app at `https://app.t3.codes` can save a remote backend in browser local storage from a URL like: https://app.t3.codes/pair?host=...',
     },
   },
+  trackingSources: [
+    {
+      kind: 'github-releases',
+      label: 't3code GitHub releases',
+      url: 'https://github.com/pingdotgg/t3code/releases',
+    },
+    {
+      kind: 'github-commits',
+      label: 't3code main commits',
+      url: 'https://github.com/pingdotgg/t3code/commits/main',
+    },
+    {
+      kind: 'docs',
+      label: 't3code README',
+      url: 'https://github.com/pingdotgg/t3code/blob/main/README.md',
+    },
+    {
+      kind: 'other',
+      label: 't3.codes homepage',
+      url: 'https://t3.codes/',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

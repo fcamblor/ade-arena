@@ -12,6 +12,29 @@ const data: OrchestratorVersion = {
     sourceUrl: 'https://cursor.com/pricing',
     sourceExtract: 'Hobby — Free. No credit card required. Individual — $20 / mo. Teams — $40 / user / mo. Enterprise — Custom.',
   },
+  trackingSources: [
+    {
+      kind: 'changelog',
+      label: 'Cursor changelog',
+      url: 'https://cursor.com/changelog',
+    },
+    {
+      kind: 'blog',
+      label: 'Cursor blog',
+      url: 'https://cursor.com/blog',
+    },
+    {
+      kind: 'docs',
+      label: 'Cursor documentation',
+      url: 'https://cursor.com/docs',
+    },
+    {
+      kind: 'other',
+      label: 'Cursor community forum',
+      url: 'https://forum.cursor.com',
+      notes: 'User-driven feature requests and roadmap signals.',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

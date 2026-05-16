@@ -23,6 +23,23 @@ const data: OrchestratorVersion = {
     message: 'Only Claude Code and Codex agents are supported.',
     sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
   },
+  trackingSources: [
+    {
+      kind: 'changelog',
+      label: 'Conductor changelog',
+      url: 'https://www.conductor.build/changelog',
+    },
+    {
+      kind: 'docs',
+      label: 'Conductor documentation',
+      url: 'https://www.conductor.build/docs/installation',
+    },
+    {
+      kind: 'other',
+      label: 'Conductor homepage',
+      url: 'https://conductor.build',
+    },
+  ],
   features: [
     {
       featureId: 'parallel-agents',

@@ -51,6 +51,34 @@ export const MetaSourceSchema = z.object({
 });
 export type MetaSource = z.infer<typeof MetaSourceSchema>;
 
+// Where to watch for new versions / feature changes. Primarily consumed by
+// the agent refreshing this dataset for a new version: instead of re-hunting
+// for changelogs, blogs and docs each cycle, the curated source list is the
+// starting point. Also surfaced to readers in a section under the table.
+export const TrackingSourceKindSchema = z.enum([
+  'release-notes',
+  'changelog',
+  'blog',
+  'docs',
+  'docs-diff',
+  'rss',
+  'github-releases',
+  'github-commits',
+  'discord',
+  'twitter',
+  'youtube',
+  'other',
+]);
+export type TrackingSourceKind = z.infer<typeof TrackingSourceKindSchema>;
+
+export const TrackingSourceSchema = z.object({
+  kind: TrackingSourceKindSchema,
+  label: z.string(),
+  url: z.string().url(),
+  notes: z.string().optional(),
+});
+export type TrackingSource = z.infer<typeof TrackingSourceSchema>;
+
 export const OrchestratorVersionSchema = z.object({
   toolId: z.string().regex(/^[a-z0-9-]+$/),
   toolName: z.string(),
@@ -81,6 +109,7 @@ export const OrchestratorVersionSchema = z.object({
     })
     .optional(),
   notes: z.string().optional(),
+  trackingSources: z.array(TrackingSourceSchema).optional(),
   misc: z
     .object({
       message: z.string(),
