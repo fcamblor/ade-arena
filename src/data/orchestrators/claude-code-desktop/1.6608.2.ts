@@ -31,6 +31,12 @@ const data: OrchestratorVersion = {
       sourceExtract: "Agent view, opened with `claude agents`, is one screen for all your background sessions: what's running, what needs your input, and what's done. Dispatch new sessions, watch their state at a glance instead of scrolling through transcripts, and step in only when one needs you.",
     },
     {
+      featureId: 'sandbox-isolation',
+      support: 'no',
+      note: 'No orchestrator-managed sandbox: the desktop app launches Claude Code with the host user’s permissions. Any per-tool confinement is whatever Claude Code itself exposes.',
+      screenshots: [],
+    },
+    {
       featureId: 'git-worktrees',
       support: 'yes',
       note: 'Background sessions and `claude --worktree` create per-session worktrees under `.claude/worktrees/`.',

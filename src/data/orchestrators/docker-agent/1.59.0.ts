@@ -24,6 +24,15 @@ const data: OrchestratorVersion = {
         'The root agent investigates and explains the problem. When it understands the issue, it hands off to `fixer` for implementation.',
     },
     {
+      featureId: 'sandbox-isolation',
+      support: 'yes',
+      note: 'Tool capabilities can be wired through Docker-based MCP servers, so external tools run inside their own container instead of on the host.',
+      screenshots: [],
+      sourceUrl: 'https://github.com/docker/cagent',
+      sourceExtract:
+        'Rich tool ecosystem — Built-in tools + any MCP server (local, remote, or Docker-based).',
+    },
+    {
       featureId: 'git-worktrees',
       support: 'no',
       note: 'No worktree concept; the agent runs against the directory passed via --working-dir.',

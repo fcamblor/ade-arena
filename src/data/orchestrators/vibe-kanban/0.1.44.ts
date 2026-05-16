@@ -29,6 +29,12 @@ const data: OrchestratorVersion = {
       sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
       sourceExtract: 'Vibe Kanban creates a git worktree — a separate working directory with its own branch.',
     },
+    {
+      featureId: 'sandbox-isolation',
+      support: 'no',
+      note: 'No orchestrator-managed sandbox: agent CLIs run with the host user’s permissions inside the worktree. Any confinement is whatever the underlying agent provides.',
+      screenshots: [],
+    },
     { featureId: 'cloud-execution', support: 'no', screenshots: [] },
     {
       featureId: 'local-execution',

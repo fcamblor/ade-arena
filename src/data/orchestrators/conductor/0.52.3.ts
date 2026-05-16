@@ -33,6 +33,12 @@ const data: OrchestratorVersion = {
         'Parallel agent work starts with one decision: should these agents share a workspace, or should they move independently?',
     },
     {
+      featureId: 'sandbox-isolation',
+      support: 'no',
+      note: 'No orchestrator-level sandbox: agents run with the host user’s permissions inside the worktree. Any confinement comes from the underlying agent CLI (Claude Code / Codex).',
+      screenshots: [],
+    },
+    {
       featureId: 'git-worktrees',
       support: 'yes',
       screenshots: [],

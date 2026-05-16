@@ -51,6 +51,12 @@ const data: OrchestratorVersion = {
       sourceExtract: 'Worktree — A Git worktree used as an isolated workspace for a thread. If a thread has a `worktreePath` in the contracts, it runs there instead of in the main working tree.',
     },
     {
+      featureId: 'sandbox-isolation',
+      support: 'no',
+      note: 'No orchestrator-managed sandbox: threads run agent CLIs with the host user’s permissions inside the worktree. Any confinement is whatever the underlying agent provides.',
+      screenshots: [],
+    },
+    {
       featureId: 'cloud-execution',
       support: 'no',
       note: 'No SaaS cloud runtime; T3 Code is a local Node.js server (loopback) optionally exposed over LAN/Tailscale/SSH.',

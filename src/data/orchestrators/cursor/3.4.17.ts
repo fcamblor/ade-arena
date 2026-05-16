@@ -21,6 +21,12 @@ const data: OrchestratorVersion = {
       sourceExtract: 'Run many agents in parallel — All local and cloud agents appear in the sidebar, including the ones you kick off from mobile, web, desktop, Slack, GitHub, and Linear.',
     },
     {
+      featureId: 'sandbox-isolation',
+      support: 'no',
+      note: 'No orchestrator-managed sandbox: Background Agents run in Cursor-hosted containers, but the local Agents Window executes tools with host user permissions; no Docker/VM confinement at the orchestrator layer.',
+      screenshots: [],
+    },
+    {
       featureId: 'git-worktrees',
       support: 'yes',
       screenshots: [],

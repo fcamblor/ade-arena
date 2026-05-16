@@ -17,6 +17,14 @@ const features: Feature[] = [
     shortDescription: 'Each agent works in its own isolated git worktree.',
   },
   {
+    id: 'sandbox-isolation',
+    label: 'Agent sandbox isolation',
+    category: 'workflow',
+    shortDescription: 'Orchestrator-level sandboxing of agent execution (Docker, micro-VM, chroot…) — distinct from git worktrees.',
+    longDescription:
+      'Whether the orchestrator itself confines agent tool-calls inside a sandbox (container, micro-VM, chroot, macOS sandbox-exec…), independently of git-worktree filesystem separation. Tools that simply delegate sandboxing to the underlying agent CLI count as "no" at the orchestrator layer. The note records the underlying technology when supported.',
+  },
+  {
     id: 'cloud-execution',
     label: 'Cloud execution',
     category: 'platform',
