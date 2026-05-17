@@ -52,6 +52,16 @@ const data: OrchestratorVersion = {
       label: 'Claude Code homepage',
       url: 'https://claude.com/claude-code',
     },
+    {
+      kind: 'twitter',
+      label: 'ClaudeCodeLog on X',
+      url: 'https://x.com/ClaudeCodeLog',
+    },
+    {
+      kind: 'twitter',
+      label: 'ClaudeDevs on X',
+      url: 'https://x.com/ClaudeDevs',
+    },
   ],
   features: [
     {
