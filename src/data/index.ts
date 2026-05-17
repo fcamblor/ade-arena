@@ -30,11 +30,11 @@ export function isApproved(v: OrchestratorVersion): boolean {
   return (v.status ?? 'approved') === 'approved';
 }
 
-// Public table: latest approved version per tool, plus every waiting-for-review
-// version (rendered but hidden by default — revealed by the preview query
-// param). For each tool, the approved column comes first, followed by any
-// pending columns in newest-first order. Tools that only have pending versions
-// still produce columns so the preview link can surface them.
+// Public table: every known version of every tool, rendered as columns. One
+// column per tool is "default-visible" (the latest approved one); all others
+// — older approved versions and waiting-for-review versions — are hidden until
+// a viewer opts in via the `?version=<toolId>@<version>` query param. The
+// dropdown switcher in each header lets readers jump between versions.
 export const ORCHESTRATORS: OrchestratorVersion[] = (() => {
   const toolIds = Object.keys(ORCHESTRATORS_BY_TOOL).sort((a, b) => {
     const an = ORCHESTRATORS_BY_TOOL[a][0].toolName;
@@ -44,13 +44,21 @@ export const ORCHESTRATORS: OrchestratorVersion[] = (() => {
   const out: OrchestratorVersion[] = [];
   for (const id of toolIds) {
     const versions = ORCHESTRATORS_BY_TOOL[id];
-    const approved = versions.find(isApproved);
-    if (approved) out.push(approved);
+    const defaultVisible = versions.find(isApproved);
+    if (defaultVisible) out.push(defaultVisible);
     for (const v of versions) {
-      if (!isApproved(v)) out.push(v);
+      if (v !== defaultVisible) out.push(v);
     }
   }
   return out;
 })();
+
+// True for the single column shown per tool by default (the latest approved
+// version). Every other version is rendered but kept invisible until opted in
+// via the version query param.
+export function isDefaultVisible(v: OrchestratorVersion): boolean {
+  const versions = ORCHESTRATORS_BY_TOOL[v.toolId];
+  return versions.find(isApproved) === v;
+}
 
 export { FEATURES } from './features';

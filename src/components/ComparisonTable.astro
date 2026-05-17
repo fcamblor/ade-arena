@@ -1,14 +1,22 @@
 ---
-import { FEATURES, ORCHESTRATORS, isApproved } from '../data';
+import { FEATURES, ORCHESTRATORS, ORCHESTRATORS_BY_TOOL, isApproved, isDefaultVisible } from '../data';
 import type { SupportLevel, FeatureCategory, Feature, Platform, TrackingSourceKind } from '../data/schema';
 import Evidence from './Evidence.astro';
 
 // Each orchestrator column carries a stable `<toolId>@<version>` key. The
-// preview query param (?preview=tool@version[,tool@version…]) opts a viewer
-// into one or more waiting-for-review versions; matching pending columns are
-// shown and any approved column for the same toolId is hidden so a single
-// "current" column per tool stays visible.
+// version query param (?version=tool@ver[,tool@ver…]) selects one or more
+// non-default versions to display (older approved versions or
+// waiting-for-review ones); matching alternate columns are shown and the
+// default column for the same toolId is hidden so a single column per tool
+// stays visible. The version-switcher dropdown in each header rewrites this
+// query param client-side (no reload) so toggling stays cheap and shareable.
 const previewKey = (o: typeof ORCHESTRATORS[number]) => `${o.toolId}@${o.version}`;
+const displayMode = (o: typeof ORCHESTRATORS[number]) =>
+  isDefaultVisible(o) ? 'default' : 'alternate';
+const defaultVersionFor = (toolId: string) => {
+  const versions = ORCHESTRATORS_BY_TOOL[toolId];
+  return versions.find(isDefaultVisible)?.version ?? versions[0]?.version ?? '';
+};
 
 const trackingKindLabel: Record<TrackingSourceKind, string> = {
   'release-notes': 'Release notes',
@@ -150,7 +158,7 @@ const categoryScores = ORCHESTRATORS.map((o) =>
 );
 const globalScores = ORCHESTRATORS.map((o) => scoreFeatures(visibleFeatures, o.features));
 
-const toolCount = ORCHESTRATORS.length;
+const toolCount = Object.keys(ORCHESTRATORS_BY_TOOL).length;
 const featureCount = visibleFeatures.length;
 ---
 
@@ -182,7 +190,7 @@ const featureCount = visibleFeatures.length;
               class="col--tool"
               data-preview-key={previewKey(o)}
               data-tool-id={o.toolId}
-              data-version-status={isApproved(o) ? 'approved' : 'waiting-for-review'}
+              data-display-mode={displayMode(o)}
             />
           ))}
         </colgroup>
@@ -201,13 +209,15 @@ const featureCount = visibleFeatures.length;
                 ? [vd.buildHash && `(${vd.buildHash})`, vd.buildDate].filter(Boolean).join(' ')
                 : undefined;
               const pending = !isApproved(o);
+              const toolVersions = ORCHESTRATORS_BY_TOOL[o.toolId];
+              const defaultVersion = defaultVersionFor(o.toolId);
               return (
               <th
                 scope="col"
                 class="cell--tool"
                 data-preview-key={previewKey(o)}
                 data-tool-id={o.toolId}
-                data-version-status={pending ? 'waiting-for-review' : 'approved'}
+                data-display-mode={displayMode(o)}
               >
                 <div class="tool">
                   {/* 1/ Title */}
@@ -298,12 +308,34 @@ const featureCount = visibleFeatures.length;
                     )}
                   </div>
 
-                  {/* 4/ Version + release date */}
+                  {/* 4/ Version + release date — when the tool has multiple
+                       versions on file, the version label itself becomes a
+                       dropdown so readers can pivot without a separate row. */}
                   <div class="tool__row tool__row--version">
-                    {versionTooltip ? (
-                      <span class="tool__version tool__version--has-tooltip" title={versionTooltip}>v{o.version}</span>
+                    {toolVersions.length > 1 ? (
+                      <select
+                        class="tool__version tool__version--switcher"
+                        data-tool-id={o.toolId}
+                        data-default-version={defaultVersion}
+                        aria-label={`Switch displayed version of ${o.toolName}`}
+                        title={versionTooltip}
+                      >
+                        {toolVersions.map((v) => (
+                          <option value={v.version} selected={v.version === o.version}>
+                            v{v.version}
+                            {v.version === defaultVersion ? ' · latest' : ''}
+                            {!isApproved(v) ? ' · preview' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    ) : versionTooltip ? (
+                      <span class="tool__version tool__version--has-tooltip" title={versionTooltip}>
+                        v{o.version}{isDefaultVisible(o) ? ' · latest' : ''}
+                      </span>
                     ) : (
-                      <span class="tool__version">v{o.version}</span>
+                      <span class="tool__version">
+                        v{o.version}{isDefaultVisible(o) ? ' · latest' : ''}
+                      </span>
                     )}
                     {o.releaseDate ? (
                       <span class="tool__release" title={`Released ${o.releaseDate}`}>
@@ -403,7 +435,7 @@ const featureCount = visibleFeatures.length;
                       class="cell--category-score"
                       data-preview-key={previewKey(o)}
                       data-tool-id={o.toolId}
-                      data-version-status={isApproved(o) ? 'approved' : 'waiting-for-review'}
+                      data-display-mode={displayMode(o)}
                       aria-label={`${s.yes} supported plus ${s.partial} partial out of ${s.total} ${categoryLabel[group.category]} features`}
                     >
                       <div class="score score--category">
@@ -440,7 +472,7 @@ const featureCount = visibleFeatures.length;
                         data-support={level}
                         data-preview-key={previewKey(orch)}
                         data-tool-id={orch.toolId}
-                        data-version-status={isApproved(orch) ? 'approved' : 'waiting-for-review'}
+                        data-display-mode={displayMode(orch)}
                       >
                         <span class="cell__glyph" aria-label={supportLabel[level]} role="img">{supportGlyph[level]}</span>
                         {s?.note && <p class="cell__note">{s.note}</p>}
@@ -478,7 +510,7 @@ const featureCount = visibleFeatures.length;
           class="sources__card"
           data-preview-key={previewKey(o)}
           data-tool-id={o.toolId}
-          data-version-status={isApproved(o) ? 'approved' : 'waiting-for-review'}
+          data-display-mode={displayMode(o)}
         >
           <h4 class="sources__tool">
             <a href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
@@ -696,6 +728,50 @@ const featureCount = visibleFeatures.length;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
     text-decoration-color: var(--fg-faint);
+  }
+  /* When a tool has multiple known versions on file, the version label is
+     rendered as a `<select>` so readers can pivot in place without an extra
+     row in the header. The dropdown adopts the same display typography as
+     the static version label and inherits the column width, with a discreet
+     caret hinting at its interactivity. */
+  .tool__version--switcher {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 2px 18px 2px 4px;
+    margin-left: -4px;
+    max-width: 100%;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm, 4px);
+    background-color: transparent;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 8px) 55%, calc(100% - 4px) 55%;
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
+    color: var(--fg-muted);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .tool__version--switcher:hover,
+  .tool__version--switcher:focus-visible {
+    border-color: var(--border);
+    color: var(--fg);
+    background-color: oklch(0.22 0.012 28);
+    outline: none;
+  }
+  .tool__version--switcher option {
+    /* Native option styling: opt back into a readable, non-uppercase rendering
+       so the version list is easy to scan in the open popup. */
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: var(--fg);
+    background: var(--bg-elev);
   }
   .tool__pill {
     font-size: 0.65rem;
@@ -1160,23 +1236,23 @@ const featureCount = visibleFeatures.length;
     .feature { padding: var(--s-3); }
   }
 
-  /* ============ Preview / waiting-for-review columns ============ */
-  /* Pending columns are rendered into the table for parity with approved ones,
-     but kept out of sight until a viewer opts in via the preview query param.
-     We collapse the <col> AND set display:none on the cells so the column
-     occupies no space in either dimension. */
-  col[data-version-status="waiting-for-review"]:not([data-preview-active]) {
+  /* ============ Preview / alternate columns ============ */
+  /* Every version of every tool is rendered into the table. The "default"
+     column per tool is the latest approved one — visible without any opt-in.
+     "alternate" columns (older approved versions and waiting-for-review ones)
+     are collapsed until activated through the version query param. When an
+     alternate is activated for a tool, the default for the same tool is
+     overridden so a single column per tool stays visible. */
+  col[data-display-mode="alternate"]:not([data-preview-active]) {
     visibility: collapse;
   }
-  [data-version-status="waiting-for-review"]:not([data-preview-active]) {
+  [data-display-mode="alternate"]:not([data-preview-active]) {
     display: none;
   }
-  /* Approved columns that have been superseded by an active preview for the
-     same tool: also hidden, restored if the preview is cleared. */
-  [data-version-status="approved"][data-preview-overridden] {
+  [data-display-mode="default"][data-preview-overridden] {
     display: none;
   }
-  col[data-version-status="approved"][data-preview-overridden] {
+  col[data-display-mode="default"][data-preview-overridden] {
     visibility: collapse;
   }
 
@@ -1214,47 +1290,111 @@ const featureCount = visibleFeatures.length;
 </style>
 
 <script>
-  // Read the preview query param (?preview=cursor@3.4.17,docker-agent@1.59.0)
-  // and toggle data-preview-active / data-preview-overridden attributes across
-  // every element that carries a data-preview-key. Keeping the toggle as a
-  // data attribute (rather than a class) means the CSS rules above stay
-  // co-located with the rest of the visibility logic.
+  // The `?version=<toolId>@<version>[,…]` query param picks a non-default
+  // version of one or more tools (older approved versions, or
+  // waiting-for-review ones). Each entry is reflected in the DOM via
+  // `data-preview-active` (on the alternate column being shown) and
+  // `data-preview-overridden` (on the default column being hidden); both
+  // pages-load wiring and the per-tool switcher dropdown go through the
+  // same `applyVersionParam` helper, so deep links and in-page toggles
+  // behave identically.
   (() => {
-    const raw = new URLSearchParams(window.location.search).get('preview') ?? '';
-    const requested = new Set(
-      raw
-        .split(',')
-        .map((entry) => entry.trim())
-        .filter(Boolean),
-    );
-    if (requested.size === 0) return;
+    const QUERY_PARAM = 'version';
 
-    const overriddenToolIds = new Set<string>();
-    for (const key of requested) {
-      const [toolId] = key.split('@');
-      if (toolId) overriddenToolIds.add(toolId);
+    type NodeState = {
+      key: string;
+      toolId: string;
+      mode: 'default' | 'alternate';
+    };
+
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-preview-key]'),
+    );
+    const nodeStates: Array<{ el: HTMLElement; state: NodeState }> = [];
+    for (const el of nodes) {
+      const key = el.dataset.previewKey;
+      const toolId = el.dataset.toolId;
+      const mode = el.dataset.displayMode;
+      if (!key || !toolId || (mode !== 'default' && mode !== 'alternate')) continue;
+      nodeStates.push({ el, state: { key, toolId, mode } });
     }
 
-    const nodes = document.querySelectorAll<HTMLElement>('[data-preview-key]');
-    nodes.forEach((node) => {
-      const key = node.dataset.previewKey;
-      const status = node.dataset.versionStatus;
-      const toolId = node.dataset.toolId;
-      if (!key || !toolId) return;
-      if (status === 'waiting-for-review' && requested.has(key)) {
-        node.setAttribute('data-preview-active', '');
-      } else if (status === 'approved' && overriddenToolIds.has(toolId)) {
-        // Only override the approved column when a corresponding pending
-        // version for the same tool actually exists in the DOM — otherwise a
-        // typo in the query param would silently erase the approved column.
-        const hasPendingMatch = Array.from(nodes).some(
-          (n) =>
-            n.dataset.toolId === toolId &&
-            n.dataset.versionStatus === 'waiting-for-review' &&
-            requested.has(n.dataset.previewKey ?? ''),
-        );
-        if (hasPendingMatch) node.setAttribute('data-preview-overridden', '');
+    function parseParam(raw: string): Set<string> {
+      return new Set(
+        raw
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      );
+    }
+
+    function applyVersionSelection(requested: Set<string>) {
+      const overriddenToolIds = new Set<string>();
+      for (const key of requested) {
+        const [toolId] = key.split('@');
+        if (toolId) overriddenToolIds.add(toolId);
       }
+      // Only override the default column for a tool when a matching alternate
+      // for that same tool actually exists in the DOM — a typo in the query
+      // param shouldn't silently erase the default column.
+      const liveOverrides = new Set<string>();
+      for (const { state } of nodeStates) {
+        if (
+          state.mode === 'alternate' &&
+          requested.has(state.key) &&
+          overriddenToolIds.has(state.toolId)
+        ) {
+          liveOverrides.add(state.toolId);
+        }
+      }
+      for (const { el, state } of nodeStates) {
+        if (state.mode === 'alternate' && requested.has(state.key)) {
+          el.setAttribute('data-preview-active', '');
+        } else {
+          el.removeAttribute('data-preview-active');
+        }
+        if (state.mode === 'default' && liveOverrides.has(state.toolId)) {
+          el.setAttribute('data-preview-overridden', '');
+        } else {
+          el.removeAttribute('data-preview-overridden');
+        }
+      }
+    }
+
+    // Initial application from the URL (deep-link / shared preview link).
+    applyVersionSelection(
+      parseParam(new URLSearchParams(window.location.search).get(QUERY_PARAM) ?? ''),
+    );
+
+    // Wire the per-tool switcher dropdown. Toggles run entirely client-side:
+    // the DOM is updated in place and the URL is rewritten via
+    // history.replaceState so the change is shareable without forcing a reload.
+    const selects = document.querySelectorAll<HTMLSelectElement>(
+      '.tool__version--switcher',
+    );
+    selects.forEach((select) => {
+      select.addEventListener('change', () => {
+        const toolId = select.dataset.toolId;
+        const defaultVersion = select.dataset.defaultVersion;
+        if (!toolId || !defaultVersion) return;
+        const newVersion = select.value;
+        const url = new URL(window.location.href);
+        const entries = (url.searchParams.get(QUERY_PARAM) ?? '')
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter(Boolean)
+          .filter((entry) => !entry.startsWith(`${toolId}@`));
+        if (newVersion !== defaultVersion) {
+          entries.push(`${toolId}@${newVersion}`);
+        }
+        if (entries.length > 0) {
+          url.searchParams.set(QUERY_PARAM, entries.join(','));
+        } else {
+          url.searchParams.delete(QUERY_PARAM);
+        }
+        window.history.replaceState({}, '', url.toString());
+        applyVersionSelection(parseParam(entries.join(',')));
+      });
     });
   })();
 </script>
