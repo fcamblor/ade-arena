@@ -158,7 +158,12 @@ const categoryScores = ORCHESTRATORS.map((o) =>
 );
 const globalScores = ORCHESTRATORS.map((o) => scoreFeatures(visibleFeatures, o.features));
 
-const toolCount = Object.keys(ORCHESTRATORS_BY_TOOL).length;
+// Counts the tools visible by default (at least one approved version). Tools
+// whose only versions are waiting-for-review are unlocked client-side via
+// `?preview=` and shouldn't inflate the SSR-rendered headline count.
+const toolCount = Object.values(ORCHESTRATORS_BY_TOOL).filter((versions) =>
+  versions.some(isApproved),
+).length;
 const featureCount = visibleFeatures.length;
 ---
 
@@ -167,7 +172,7 @@ const featureCount = visibleFeatures.length;
     <div>
       <p class="comparator__eyebrow">Main event</p>
       <h2 id="comparator-title" class="comparator__title">
-        {toolCount}&nbsp;contenders&nbsp;·&nbsp;{featureCount}&nbsp;rounds
+        <span data-tool-count>{toolCount}</span>&nbsp;contenders&nbsp;·&nbsp;{featureCount}&nbsp;rounds
       </h2>
       <p class="comparator__lede">
         Every feature, every tool, every verdict. Headers stay pinned — scroll vertically through the card, horizontally through the lineup.
@@ -1461,6 +1466,19 @@ const featureCount = visibleFeatures.length;
           if (fallback?.classList.contains('tool__version--fallback')) {
             fallback.hidden = !useFallback;
           }
+        });
+      // Headline contender count: distinct tools currently visible (a tool is
+      // visible when its default col is on OR a preview-active col unlocks it).
+      const visibleTools = new Set<string>();
+      for (const { el, state } of nodeStates) {
+        if (state.mode === 'default' || el.hasAttribute('data-preview-active')) {
+          visibleTools.add(state.toolId);
+        }
+      }
+      document
+        .querySelectorAll<HTMLElement>('[data-tool-count]')
+        .forEach((node) => {
+          node.textContent = String(visibleTools.size);
         });
     }
 
