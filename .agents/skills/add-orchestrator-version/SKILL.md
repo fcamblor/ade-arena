@@ -7,6 +7,15 @@ description: Bootstrap a brand-new orchestrator or add a new version to an exist
 
 Goal: register a new orchestrator+version in the dataset and seed enough structure for `review-orchestrator-version` to take over and fill the feature matrix interactively. The skill is **strictly bootstrap-only** — it does **not** research feature support itself; that responsibility belongs to `review-orchestrator-version`.
 
+## Portability note
+
+This skill avoids vendor-specific bindings. Two host capabilities are used through portable concepts, not concrete tool names:
+
+- **`AskUserQuestion`** — the host's structured-question primitive (single or multi-select, optional free-form fallback). Used whenever a closed set of options fits. If the host exposes it under a vendor-specific path (`mcp__<vendor>__AskUserQuestion`, a built-in `AskUserQuestion` tool, a slash command, etc.), use it. If not, fall back to a numbered plain-text prompt with the same semantics.
+- **Subagent** — any general-purpose agent the host can spawn (sub-task, background agent, research helper…). Used for the research passes so the main agent's context stays lean.
+
+No assumption is made about the surrounding ADE, IDE, or coding agent.
+
 ---
 
 ## Step 1 — Collect identity
@@ -29,7 +38,7 @@ When `src/data/orchestrators/<toolId>/` does not exist:
 
 ### 2a. Auto-discover tracking sources, then confirm with the user
 
-**First**, dispatch a research agent (`general-purpose` or `WebSearch` + `WebFetch` directly) to **propose** a list of plausible tracking sources for this orchestrator. Search for at least:
+**First**, dispatch a research subagent (any general-purpose research agent the host can spawn — it should have web search and fetch capabilities) to **propose** a list of plausible tracking sources for this orchestrator. Search for at least:
 
 - Official homepage
 - Documentation site
@@ -45,11 +54,11 @@ When `src/data/orchestrators/<toolId>/` does not exist:
 
 The agent must return **candidates with URLs verified to resolve** (HTTP 200), and a short note per candidate explaining why it is relevant. When the agent is uncertain a URL belongs to the right vendor (name collisions, parked domains…), it must flag it as `unverified` rather than asserting.
 
-**Second**, present the discovered candidates via `AskUserQuestion` (the `mcp__conductor__AskUserQuestion` tool):
+**Second**, present the discovered candidates via `AskUserQuestion`:
 
-- Use **one multi-select question** (`multiSelect: true`) titled e.g. *"Which sources should be tracked for `<toolName>`?"*.
+- Use **one multi-select question** titled e.g. *"Which sources should be tracked for `<toolName>`?"*.
 - Each candidate becomes one option, formatted as `"<kind> — <label> — <url>"` so the user sees the kind/URL at a glance.
-- Do **not** add an "Other" option manually — the tool already exposes a free-form entry so the user can paste any number of custom URLs the agent missed.
+- Do **not** add an "Other" option manually if the tool already exposes a free-form entry — the user can paste any number of custom URLs the agent missed. If the host's `AskUserQuestion` does not expose a free-form fallback, add an explicit "Other (add URLs)" option that, when selected, triggers a follow-up free-form prompt.
 - Verified candidates are listed first; `unverified` ones are suffixed with ` (unverified)` so the user knows to double-check before selecting.
 
 After the user answers:
@@ -62,18 +71,20 @@ Persist the retained set into `trackingSources` as `{ kind, label, url, notes? }
 
 ### 2c. Infer meta fields from the confirmed sources (then ask only on gaps)
 
-Do **not** prompt the user up-front for vendor / platforms / pricing / model restriction. Instead, dispatch a research agent over the confirmed `trackingSources` to **infer** each field, with strict evidence requirements:
+Do **not** prompt the user up-front for vendor / platforms / pricing / model restriction. Instead, dispatch a research subagent over the confirmed `trackingSources` to **infer** each field, with strict evidence requirements:
 
 - **Vendor** — company / organization behind the tool. Evidence: an "About" / footer / docs mention; record the source URL even though the schema does not store it (use it to justify the value to the user).
 - **Supported platforms** (subset of `macos | windows | linux | web`) — for each, capture a `sourceUrl` (typically the install / download / docs page) + a `sourceExtract` quote that names the platform. The Zod schema **requires** a `platformSources` entry for every listed platform.
 - **Pricing model** (`free | freemium | paid | oss`) — with `pricingSource.sourceUrl` + `sourceExtract` quoting the pricing page or license.
 - **Model restriction** — only populate when the tool drives a **closed set** of models/agents (e.g. "Claude Code + Codex only"). Tools with broad BYOK/multi-provider support must leave this empty — model breadth belongs to the `multi-model` feature row.
 
-For each field, the agent must return either:
+For each field, the subagent must return either:
 - a value backed by a `sourceUrl` + `sourceExtract`, **or**
 - `unknown` if no evidence was found.
 
-After research, **only** ask the user about fields the agent returned as `unknown` (or fields where the user explicitly wants to override the inference). Use `AskUserQuestion` whenever a closed enum is involved (pricing model, platforms) and free-form text otherwise. Show the user the inferred values + their sources before persisting, so they can spot mistakes.
+The subagent must return its findings as a single compact JSON object so the main agent does not have to re-absorb the verbose research transcript.
+
+After research, **only** ask the user about fields the subagent returned as `unknown` (or fields where the user explicitly wants to override the inference). Use `AskUserQuestion` whenever the answer is a closed enum (pricing model: single-select; platforms: multi-select). Use a free-form prompt for the rest. Show the user the inferred values + their sources before persisting, so they can spot mistakes.
 
 ### 2b. Create the orchestrator directory
 
@@ -127,19 +138,15 @@ export default OrchestratorVersionSchema.parse(data);
 
 This skill does **not** research feature support. Instead, it delegates to the dedicated review skill, which walks every uncovered feature with the user, dispatching a fresh research agent per feature and persisting only what the user confirms.
 
-Briefly summarise to the user what was just bootstrapped (toolId, version, whether the orchestrator was newly created, count of `unknown` feature rows seeded), then invoke:
-
-```
-Skill(skill: "review-orchestrator-version", args: "<toolId>@<version> --only-unreviewed")
-```
+Briefly summarise to the user what was just bootstrapped (toolId, version, whether the orchestrator was newly created, count of `unknown` feature rows seeded), then **invoke the `review-orchestrator-version` skill** with arguments `<toolId>@<version> --only-unreviewed` (using whatever skill-invocation mechanism the host agent provides — a slash command, a Skill tool call, an inline include of its SKILL.md, etc.; the argument string is what matters).
 
 The review skill takes over and:
 
 - Skips its own selection step (the `<toolId>@<version>` argument is pre-filled).
 - Walks only features whose `support` is `unknown` or missing — for a fresh bootstrap that's the entire matrix; for a known orchestrator with a new version, only the rows still flagged unknown.
-- Validates (`pnpm exec tsc --noEmit`) and commits at the end via `/commit`.
+- Validates (`pnpm exec tsc --noEmit`) and creates the final commit.
 
-Stop the `add` skill **immediately** after the handoff message — do **not** run `tsc`, do **not** create a commit, do **not** print a coverage summary. All of that is the review skill's responsibility.
+Stop the `add` skill **immediately** after handing off — do **not** run `tsc`, do **not** create a commit, do **not** print a coverage summary. All of that is the review skill's responsibility.
 
 ---
 
