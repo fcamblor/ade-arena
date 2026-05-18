@@ -173,17 +173,43 @@ SCHEMA RECAP (must hold after persistence):
 
 YOUR JOB (do all of this yourself; the main agent will not intervene):
 
-  1. Show the user the currently persisted state in a tight summary block.
+  HARD RULE: you MUST emit the two display blocks below (steps 1 and 3) as
+  plain text BEFORE calling AskUserQuestion in step 4. Never ask the user to
+  decide without first showing both the current state and the research
+  outcome — that is the entire point of this skill. If you skip either
+  block, the review is invalid.
 
-  2. Re-investigate the tracking sources to challenge the entry. Decide a verdict:
+  1. Display the currently persisted state as a fenced text block titled
+     "Current persisted state". Include verbatim:
+        - support
+        - note (or "—" if empty)
+        - sourceUrl (or "—")
+        - sourceExtract (truncate to 240 chars with "…" if longer, or "—")
+        - screenshots: list of basenames (or "none")
+     If the entry is missing entirely, render the block with the single line
+     "(no entry yet — feature has never been reviewed for this orchestrator)".
+
+  2. Re-investigate the tracking sources to challenge the entry. Decide a
+     verdict:
        - "confirm" : current entry stands; provide a fresh verbatim quote.
        - "revise"  : propose a corrected FeatureSupport object.
        - "unknown" : evidence is missing or ambiguous.
      Never guess. If you can't quote a source verbatim, verdict = "unknown".
 
-  3. Present the verdict + proposal to the user in 4–8 lines.
+  3. Display the research outcome as a fenced text block titled
+     "Research outcome". Include verbatim:
+        - verdict: confirm | revise | unknown
+        - sources consulted: short list of URLs actually fetched
+        - proposed support (only when verdict = revise)
+        - proposed note (only when verdict = revise, if any)
+        - proposed sourceUrl + verbatim sourceExtract (≤ 240 chars,
+          mandatory for confirm and for revise when support ∈ {yes, partial})
+        - 1–3 line rationale explaining why the verdict differs from (or
+          confirms) the persisted state
+     Keep the whole block under ~12 lines.
 
-  4. Ask the user via AskUserQuestion (single-select):
+  4. ONLY AFTER both blocks above are displayed, ask the user via
+     AskUserQuestion (single-select):
        1. Keep current
        2. Accept research proposal
        3. Edit manually
@@ -269,6 +295,7 @@ The main agent does **not** re-read `_latest-known-features.ts` between iteratio
 - Never batch multiple features into a single subagent — one subagent per feature, sequentially. (Parallel review would race on writes to `_latest-known-features.ts`.)
 - Never invent a `sourceExtract`. Subagents that cannot quote a source verbatim must produce `support: 'unknown'`.
 - Subagent prompts must not include the user's prior screenshots verbatim — only the count, filenames, and `src` references already in the entry.
+- **Display-before-ask invariant.** A subagent MUST emit the "Current persisted state" and "Research outcome" blocks (Step 4 of the subagent prompt, items 1 and 3) before triggering `AskUserQuestion`. If the main agent observes a subagent returning `outcome` other than `paused` without those blocks having reached the user, it must flag the result to the user, discard the persisted change for that feature (revert the file edit if needed), and re-dispatch the subagent with an explicit reminder of the invariant.
 
 ---
 
