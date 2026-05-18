@@ -387,6 +387,42 @@ const data: OrchestratorVersion = {
       sourceUrl: 'https://code.claude.com/docs/en/worktrees',
       sourceExtract: 'The file uses `.gitignore` syntax. Only files that match a pattern and are also gitignored are copied, so tracked files are never duplicated.',
     },
+    {
+      featureId: 'chat-rewind',
+      support: 'yes',
+      note: '`/rewind` (or Esc Esc) rewinds the conversation and/or file edits to an earlier checkpoint, including the workspace state.',
+      screenshots: [],
+      sourceUrl: 'https://code.claude.com/docs/en/checkpointing',
+      sourceExtract: 'Use `/rewind` (or press Escape twice) to restore your conversation, code, or both to an earlier checkpoint. Choose to rewind just the conversation, just the file changes, or both together.',
+    },
+    {
+      featureId: 'predefined-workflows-sessions',
+      support: 'no',
+      note: 'No built-in research/plan/implement/review phased workflow; Plan Mode is a single toggle, not a multi-phase pipeline.',
+      screenshots: [],
+    },
+    {
+      featureId: 'custom-discussion-workflows',
+      support: 'partial',
+      note: 'Skills + sub-agents + slash commands can be chained to approximate a workflow, but there is no first-class deterministic workflow definition (ordered phases with gates).',
+      screenshots: [],
+      sourceUrl: 'https://code.claude.com/docs/en/sub-agents',
+      sourceExtract: 'Sub-agents are specialized AI assistants that Claude Code can delegate to for specific tasks.',
+    },
+    {
+      featureId: 'shared-discussion-workflows',
+      support: 'partial',
+      note: 'Plugins, skills and sub-agents can be packaged and distributed via marketplaces or git, but they are building blocks rather than full discussion workflows.',
+      screenshots: [],
+      sourceUrl: 'https://code.claude.com/docs/en/plugins',
+      sourceExtract: 'Plugins let you extend Claude Code with custom functionality that can be shared across projects and teams.',
+    },
+    {
+      featureId: 'fork-workspace',
+      support: 'unknown',
+      note: '`claude --resume` and `--teleport` move sessions between surfaces, but no documented action clones an entire session + worktree state into a brand-new worktree.',
+      screenshots: [],
+    },
   ],
 };
 

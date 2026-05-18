@@ -362,6 +362,38 @@ const data: OrchestratorVersion = {
       note: 'No symlink-based file-sharing mechanism documented between origin repo and worktree.',
       screenshots: [],
     },
+    {
+      featureId: 'chat-rewind',
+      support: 'partial',
+      note: 'Checkpointing captures workspace state per turn so the app can diff turns and restore earlier points (impacts workspace state, not only conversation history).',
+      screenshots: [],
+      sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/.docs/encyclopedia.md',
+      sourceExtract: 'Checkpointing captures workspace state over time so the app can diff turns and restore earlier points.',
+    },
+    {
+      featureId: 'predefined-workflows-sessions',
+      support: 'no',
+      note: 'No built-in phased workflow (research/plan/implement/review) documented for chat threads.',
+      screenshots: [],
+    },
+    {
+      featureId: 'custom-discussion-workflows',
+      support: 'no',
+      note: 'Project scripts and provider skills exist, but no multi-step discussion-workflow definition documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'shared-discussion-workflows',
+      support: 'no',
+      note: 'No discussion-workflow concept to share.',
+      screenshots: [],
+    },
+    {
+      featureId: 'fork-workspace',
+      support: 'unknown',
+      note: 'No documented "fork workspace" action duplicating worktree + thread history into a new workspace.',
+      screenshots: [],
+    },
   ],
 };
 

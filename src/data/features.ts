@@ -276,6 +276,46 @@ const features: Feature[] = [
     category: 'workflow',
     shortDescription: 'Expose files from the source repo inside the agent worktree via symlinks (ln -s).',
   },
+  {
+    id: 'chat-rewind',
+    label: 'Rewind chat to a past message',
+    category: 'ux',
+    shortDescription: 'Jump back to a previous message in the chat to fork or rewrite the conversation history.',
+    longDescription:
+      'Navigate back to any past message in a discussion and resume from there — truncating or branching the conversation history. An advanced variant also rolls back the workspace filesystem state to match the message, so the agent restarts from the exact code context it had at that point.',
+  },
+  {
+    id: 'predefined-workflows-sessions',
+    label: 'Predefined workflow sessions',
+    category: 'workflow',
+    shortDescription: 'Start a chat session that follows one of several built-in workflows (research → plan → implement → review, idea-to-PR, bug-repro-and-fix, debugging-session…).',
+    longDescription:
+      'Launch a discussion that walks through a fixed sequence of phases, picked from a catalog of built-in workflows — e.g. research → plan → implement → review, idea-to-PR, bug-repro-and-fix, debugging-session — each with phase-specific prompts, models or tool permissions, instead of a free-form single-turn loop.',
+  },
+  {
+    id: 'custom-discussion-workflows',
+    label: 'Custom discussion workflows',
+    category: 'workflow',
+    shortDescription: 'Author custom multi-step workflows to add determinism to discussion sessions.',
+    longDescription:
+      'Define your own discussion workflows — ordered phases, per-step prompts, gating conditions, model/tool overrides — to make agent sessions more deterministic and repeatable across runs.',
+  },
+  {
+    id: 'shared-discussion-workflows',
+    label: 'Share discussion workflows with teammates',
+    category: 'collaboration',
+    shortDescription: 'Share custom discussion workflows with team mates (export/import, git-tracked, registry…).',
+    longDescription:
+      'Distribute authored discussion workflows to team mates — via a shared repository, an in-app registry, or import/export files — so a whole team can run the same deterministic agent playbooks.',
+  },
+  {
+    id: 'fork-workspace',
+    label: 'Fork workspace to a new worktree',
+    category: 'workflow',
+    shortDescription: 'Clone the current workspace (worktree state + session history) into a new worktree to branch off explorations.',
+    longDescription:
+      'Fork the entire state of a workspace — git worktree contents, session/chat history, and any local-only files — into a brand-new worktree, so you can branch off an alternative exploration without disturbing the original session.',
+  },
 ];
 
 export const FEATURES: readonly Feature[] = z.array(FeatureSchema).parse(features);

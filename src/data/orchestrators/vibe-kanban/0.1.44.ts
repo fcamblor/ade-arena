@@ -358,6 +358,38 @@ const data: OrchestratorVersion = {
       sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
       sourceExtract: 'Vibe Kanban creates a git worktree — a separate working directory with its own branch.',
     },
+    {
+      featureId: 'chat-rewind',
+      support: 'unknown',
+      note: 'No rewind-to-past-message feature documented in the chat interface.',
+      screenshots: [],
+    },
+    {
+      featureId: 'predefined-workflows-sessions',
+      support: 'no',
+      note: 'Chat sessions are free-form; no built-in research/plan/implement/review phased workflow documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'custom-discussion-workflows',
+      support: 'no',
+      note: 'Slash commands surface single prompts but no multi-step discussion-workflow authoring is documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'shared-discussion-workflows',
+      support: 'no',
+      note: 'No discussion-workflow concept to share.',
+      screenshots: [],
+    },
+    {
+      featureId: 'fork-workspace',
+      support: 'no',
+      note: 'No documented "fork workspace" action; new workspaces are created from the source repo, not by cloning an existing workspace.',
+      screenshots: [],
+      sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
+      sourceExtract: 'Vibe Kanban creates a git worktree — a separate working directory with its own branch.',
+    },
   ],
 };
 

@@ -370,6 +370,36 @@ const data: OrchestratorVersion = {
       sourceUrl: 'https://www.conductor.build/docs/quickstart/rails',
       sourceExtract: 'ln -sf "$CONDUCTOR_ROOT_PATH/.env" .env',
     },
+    {
+      featureId: 'chat-rewind',
+      support: 'unknown',
+      note: 'No rewind-to-past-message or conversation-truncation feature documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'predefined-workflows-sessions',
+      support: 'no',
+      note: 'Chats are free-form within a workspace; no built-in research/plan/implement/review phased workflow documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'custom-discussion-workflows',
+      support: 'no',
+      note: 'No user-authored multi-step discussion workflow mechanism documented.',
+      screenshots: [],
+    },
+    {
+      featureId: 'shared-discussion-workflows',
+      support: 'no',
+      note: 'No discussion-workflow authoring, so no sharing surface.',
+      screenshots: [],
+    },
+    {
+      featureId: 'fork-workspace',
+      support: 'unknown',
+      note: 'No documented "fork workspace" action that clones the worktree state + session history into a new workspace.',
+      screenshots: [],
+    },
   ],
 };
 
