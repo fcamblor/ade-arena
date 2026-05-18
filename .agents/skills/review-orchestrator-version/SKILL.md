@@ -173,20 +173,30 @@ SCHEMA RECAP (must hold after persistence):
 
 YOUR JOB (do all of this yourself; the main agent will not intervene):
 
-  HARD RULE: you MUST emit the two display blocks below (steps 1 and 3) as
-  plain text BEFORE calling AskUserQuestion in step 4. Never ask the user to
-  decide without first showing both the current state and the research
-  outcome — that is the entire point of this skill. If you skip either
-  block, the review is invalid.
+  CRITICAL HOST CONSTRAINT — READ CAREFULLY:
+  Your `text` messages are NOT relayed to the end user; they stay in your
+  internal log. The ONLY user-visible surface from a subagent is the
+  `question` field of AskUserQuestion. Therefore the two mandatory display
+  blocks below MUST be embedded inside that `question` field, otherwise the
+  user sees only the multiple-choice options with no context — which is the
+  exact bug this skill is fixing.
 
-  1. Display the currently persisted state as a fenced text block titled
-     "Current persisted state". Include verbatim:
-        - support
-        - note (or "—" if empty)
-        - sourceUrl (or "—")
-        - sourceExtract (truncate to 240 chars with "…" if longer, or "—")
-        - screenshots: list of basenames (or "none")
-     If the entry is missing entirely, render the block with the single line
+  Additional AskUserQuestion limits (host-enforced):
+    - At most 4 options per question (the host rejects 5+).
+    - The `question` field accepts multi-line text — use it.
+
+  STEPS:
+
+  1. Compute the "Current persisted state" block (will be embedded in the
+     question text in step 4). Format:
+        Current persisted state
+        -----------------------
+        support      : <value>
+        note         : <value or —>
+        sourceUrl    : <value or —>
+        sourceExtract: <verbatim, truncate to 240 chars with "…" if longer, or —>
+        screenshots  : <comma-separated basenames or "none">
+     If the entry is missing entirely, replace the body with the single line
      "(no entry yet — feature has never been reviewed for this orchestrator)".
 
   2. Re-investigate the tracking sources to challenge the entry. Decide a
@@ -196,26 +206,32 @@ YOUR JOB (do all of this yourself; the main agent will not intervene):
        - "unknown" : evidence is missing or ambiguous.
      Never guess. If you can't quote a source verbatim, verdict = "unknown".
 
-  3. Display the research outcome as a fenced text block titled
-     "Research outcome". Include verbatim:
-        - verdict: confirm | revise | unknown
-        - sources consulted: short list of URLs actually fetched
-        - proposed support (only when verdict = revise)
-        - proposed note (only when verdict = revise, if any)
-        - proposed sourceUrl + verbatim sourceExtract (≤ 240 chars,
-          mandatory for confirm and for revise when support ∈ {yes, partial})
-        - 1–3 line rationale explaining why the verdict differs from (or
-          confirms) the persisted state
+  3. Compute the "Research outcome" block (also embedded in step 4). Format:
+        Research outcome
+        ----------------
+        verdict       : <confirm | revise | unknown>
+        sources       : <short list of URLs actually fetched>
+        proposed      : <support [+ note] — only when verdict = revise>
+        sourceUrl     : <proposed/refreshed URL>
+        sourceExtract : <verbatim, ≤ 240 chars, mandatory for confirm and for
+                        revise when support ∈ {yes, partial}>
+        rationale     : <1–3 lines>
      Keep the whole block under ~12 lines.
 
-  4. ONLY AFTER both blocks above are displayed, ask the user via
-     AskUserQuestion (single-select):
+  4. Call AskUserQuestion with a SINGLE question whose `question` field is
+     the concatenation:
+
+       "[<i>/<total>] <featureId> — how to resolve?\n\n```\n<block1>\n```\n\n```\n<block2>\n```\n\nChoose an action:"
+
+     Use these 4 options (single-select, AT MOST 4):
        1. Keep current
        2. Accept research proposal
        3. Edit manually
-       4. Mark unknown
-       5. Skip for now
-       6. Request prior-decisions recap (then re-ask)
+       4. Other (skip / mark unknown / recap)
+
+     If the user picks option 4, follow up with a second AskUserQuestion
+     (also ≤4 options) to pick between: Skip for now / Mark unknown /
+     Request prior-decisions recap (then re-ask) / Pause.
 
   5. If "Edit manually" or if the user wants to attach screenshots/sources,
      collect (one sub-question at a time, AskUserQuestion for closed enums):
@@ -295,7 +311,8 @@ The main agent does **not** re-read `_latest-known-features.ts` between iteratio
 - Never batch multiple features into a single subagent — one subagent per feature, sequentially. (Parallel review would race on writes to `_latest-known-features.ts`.)
 - Never invent a `sourceExtract`. Subagents that cannot quote a source verbatim must produce `support: 'unknown'`.
 - Subagent prompts must not include the user's prior screenshots verbatim — only the count, filenames, and `src` references already in the entry.
-- **Display-before-ask invariant.** A subagent MUST emit the "Current persisted state" and "Research outcome" blocks (Step 4 of the subagent prompt, items 1 and 3) before triggering `AskUserQuestion`. If the main agent observes a subagent returning `outcome` other than `paused` without those blocks having reached the user, it must flag the result to the user, discard the persisted change for that feature (revert the file edit if needed), and re-dispatch the subagent with an explicit reminder of the invariant.
+- **Display-inside-question invariant.** Subagent `text` messages are NOT relayed to the user — only the `question` field of `AskUserQuestion` reaches them. The "Current persisted state" and "Research outcome" blocks MUST therefore be embedded inside the `question` text passed to `AskUserQuestion`, not merely emitted as assistant prose. The subagent prompt enforces this explicitly; the main agent does not need to re-validate, but if the user reports missing context the first thing to check is whether a subagent reverted to the old "print blocks then ask a short question" pattern.
+- **AskUserQuestion option cap.** The host's `AskUserQuestion` rejects more than 4 options per question. The subagent prompt is already capped at 4; if you ever extend it, split into a follow-up question rather than growing the list.
 
 ---
 
