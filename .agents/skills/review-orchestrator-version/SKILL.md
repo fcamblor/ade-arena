@@ -121,7 +121,9 @@ The main agent's job in this loop is **strictly orchestration**:
 - It receives **one compact JSON object** back from each subagent (no images, no source extracts, no transcript).
 - It updates its rolling recap memo and moves to the next feature.
 
-**Everything else — current-state display, fresh research, user dialog, sub-questions, screenshot ingestion, file copying, and edits to `_latest-known-features.ts` — happens inside the subagent.** This is critical: screenshots loaded into the main agent's context would quickly exhaust its window. They must stay confined to subagent contexts (which are discarded once the subagent returns).
+**Everything — current-state display, fresh research, user dialog, sub-questions, screenshot ingestion, file copying, and edits to `_latest-known-features.ts` — happens inside the subagent.** This is critical: across 40+ features, image bytes loaded into the main agent's context would quickly exhaust its window. They must stay confined to subagent contexts (which are discarded once the subagent returns).
+
+**Hard rule for screenshot ingestion: paths only, no inline paste.** Subagents cannot receive an image the user pastes inline — only the host's main turn can. The subagent therefore asks the user for **file paths** (saved files on disk), never for a pasted image. The screenshot prompt must spell this out so the user does not waste a turn trying to paste. If the user replies with something like "give me back control so I can paste", the subagent must NOT end its turn — it must re-ask, explaining how to save the clipboard / screenshot to a file (`Cmd+Shift+4` then drag, or `pngpaste ~/Desktop/x.png`, etc.) and provide the resulting path.
 
 ### 3a. Main agent: dispatch the per-feature subagent
 
@@ -248,36 +250,50 @@ YOUR JOB (do all of this yourself; the main agent will not intervene):
 
      Compute the final `support` value (from the locked-in verdict — kept,
      accepted, or just edited). If `support ∈ {yes, partial}`, ALWAYS ask
-     the user — regardless of which branch led here:
+     the user — regardless of which branch led here. The prompt MUST be in
+     the user's session language (French if the session has been in French)
+     and MUST be explicit about paths-only:
 
-       free-form question: "Any screenshots to attach for <featureId>?
-                            Paste absolute paths (one per line) or leave
-                            blank to skip."
+       free-form question (FR example):
+         "Des captures à attacher pour <featureId> ?
+          Fournissez un ou plusieurs **chemins de fichiers absolus** (un par ligne).
+          ⚠️ Le paste d'image direct ne marche pas ici — si la capture est dans
+          votre presse-papiers, enregistrez-la d'abord (Cmd+Shift+4 puis glisser
+          sur le bureau, ou `pngpaste ~/Desktop/x.png`) et collez le chemin.
+          Laissez vide pour passer."
 
-     A blank answer means "skip". For any non-blank answer, proceed to
-     step 6 to ingest the files.
+     A blank answer means "skip". If the user replies with something that is not
+     a path (e.g. "redonne moi la main", "je veux paste"), DO NOT end your turn:
+     re-ask the same question, restating the paths-only constraint and the
+     save-then-path workaround. Only accept either (a) a blank answer or (b)
+     one or more file paths.
 
-     When `support ∈ {no, unknown}`, skip this prompt (screenshots are
-     not meaningful for unsupported features).
+     When `support ∈ {no, unknown}`, skip this prompt entirely.
 
   6. For each screenshot path the user provides:
-       a. Verify the file exists (Read it to confirm — this DOES load image bytes
-          into YOUR context, which is fine: this context will be discarded when
-          you return).
+       a. Verify the file exists with Bash `test -f` (do NOT use Read on the
+          image — even though your context is discarded on return, loading
+          large images wastes tokens during this turn).
        b. Ask three sub-questions:
-            - problématique (optional slug ^[a-z0-9-]+$, empty = none)
-            - alt text (required, short)
-            - caption (optional)
+            - `problématique` — optional slug `^[a-z0-9-]+$`, blank = none
+            - `alt` — REQUIRED, short, **always in English** regardless of the
+              session language. The dataset is published with English alt text
+              for accessibility / SEO consistency. If the user has been
+              conversing in French and provides a French alt, translate it to
+              English yourself before persisting (and mention the translation
+              in the next AskUserQuestion so the user can override).
+            - `caption` — optional, **also in English** for the same reason
        c. Compute filename: <featureId>[_<problematique>]_<YYYYMMDD>_<n>.<ext>
             - segments separated by UNDERSCORE; dashes only inside slug segments
             - <YYYYMMDD> = today's date
-            - <n> starts at 1, increments against files with the EXACT same prefix
-              already in public/screenshots/<toolId>/ — so live-logs_20260518_1 and
-              live-logs_error-toast_20260518_1 are independent scopes
+            - <n> starts at 1, increments against files with the EXACT same
+              prefix already in public/screenshots/<toolId>/ — so
+              live-logs_20260518_1 and live-logs_error-toast_20260518_1 are
+              independent scopes
        d. mkdir -p public/screenshots/<toolId>/, then create the symlink if missing.
-       e. Copy the file into public/screenshots/<toolId>/<computed-filename>.
-          Never overwrite an existing file. Never rename/delete existing files
-          (orphaned shots are cheap; broken src refs are not).
+       e. Copy the file (cp -n, never overwrite) into
+          public/screenshots/<toolId>/<computed-filename>. Never rename/delete
+          existing files (orphaned shots are cheap; broken src refs are not).
        f. Add { src: "/screenshots/<toolId>/<computed-filename>", alt, caption? }
           to the entry's screenshots array.
 
@@ -298,32 +314,90 @@ NO image data; the main agent must see only this):
   "outcome": "changed" | "kept" | "skipped" | "marked-unknown" | "paused",
   "summary": "<≤120 chars: one-line human-readable result>",
   "recapLine": "<≤140 chars: terse line for the rolling memo>",
-  "screenshotsAdded": ["<filename1>", "<filename2>", …]  // basenames only, may be []
+  "finalSupport": "yes" | "partial" | "no" | "unknown",  // resolved support after the user's decision
+  "screenshotPromptNeeded": true | false                  // true iff finalSupport ∈ {yes, partial} and outcome ≠ "paused"
 }
 
 Examples:
 { "outcome": "changed",
-  "summary": "live-logs → support=yes (source refreshed, +1 screenshot)",
+  "summary": "live-logs → support=yes (source refreshed)",
   "recapLine": "- live-logs   yes   \"Live logs now stream bash output line-by-line.\" (cursor.com/changelog/05-07-26)",
-  "screenshotsAdded": ["live-logs_20260518_1.png"] }
+  "finalSupport": "yes",
+  "screenshotPromptNeeded": true }
 
 { "outcome": "kept",
   "summary": "live-logs — no change",
   "recapLine": "- live-logs   yes   (unchanged)",
-  "screenshotsAdded": [] }
+  "finalSupport": "yes",
+  "screenshotPromptNeeded": true }
 ```
 
-### 3b. Main agent: absorb the result
+### 3b. Main agent: absorb the result + collect screenshots
 
 When the subagent returns, the main agent:
 
 1. Prints the `summary` line (one line, prefixed with an indicator: `✔` for `changed`, `=` for `kept`, `?` for `marked-unknown`, `↷` for `skipped`, `⏸` for `paused`).
 2. Appends `recapLine` to the rolling recap memo (skipping `paused` outcomes).
-3. Tracks `screenshotsAdded` in a session-wide list (used in Step 4 to stage screenshots for commit).
-4. If `outcome === "paused"`, breaks out of the loop and proceeds to Step 4 with what's already persisted.
-5. Otherwise, moves to the next feature.
+3. **Screenshot collection** (only when `screenshotPromptNeeded === true`) — see Step 3b-bis below.
+4. Tracks any screenshots added in a session-wide list (used in Step 4 to stage them for commit).
+5. If `outcome === "paused"`, breaks out of the loop and proceeds to Step 4 with what's already persisted.
+6. Otherwise, moves to the next feature.
 
-The main agent does **not** re-read `_latest-known-features.ts` between iterations. It already knew which feature was being reviewed; the subagent has authoritatively persisted the change. Re-reading would only refresh the entry that was just touched, which the main agent doesn't need to reason about further.
+The main agent does **not** re-read `_latest-known-features.ts` between iterations except in step 3b-bis, where it must rewrite the screenshots array for the current featureId.
+
+### 3b-bis. Main agent: screenshot ingestion (when `screenshotPromptNeeded`)
+
+This step runs in the **main agent**, never in a subagent. The reason is structural: the host can only deliver a pasted image (or attach a temp file path) to the agent that is currently holding the turn — i.e. the main agent. A subagent that asks the user "paste a screenshot" cannot receive it.
+
+Procedure:
+
+1. Ask the user via `AskUserQuestion` (single question, free-form fallback expected). Phrase it explicitly so the user knows BOTH paste and file paths are accepted:
+
+   > "Screenshots à attacher pour `<featureId>` (support=<finalSupport>) ?
+   >  Vous pouvez **coller une image directement** dans votre prochaine réponse,
+   >  ou bien fournir un/des chemin(s) de fichier absolus (un par ligne).
+   >  Laissez vide pour passer."
+   >
+   > Options:
+   >   1. Pas de screenshot — passer
+   >   2. Je colle / je fournis un chemin (utilisez "Other" pour répondre librement)
+
+   (Phrase in the language the user has been using in this session. The example
+   above is French because that's the most common case for this project; switch
+   to English if the session is in English.)
+
+2. If the user picks "Pas de screenshot" or replies with a blank free-form, move on to the next feature.
+
+3. Otherwise, parse the user's reply:
+   - If it contains one or more file paths (one per line, or comma-separated), use those.
+   - If the host delivered a pasted image as a temp file path in the user's message, use that path.
+   - If the user typed something else, ask again until you have at least one path or a clear "skip".
+
+4. For each resolved path, gather metadata via `AskUserQuestion`, one question at a time:
+   - `problématique` — optional slug `^[a-z0-9-]+$`, blank = none
+   - `alt` — **required**, short, **in the user's language** (do NOT translate to English; if the user has been speaking French, the alt MUST be French)
+   - `caption` — optional, also in the user's language
+
+5. Compute the destination filename:
+
+   `<featureId>[_<problematique>]_<YYYYMMDD>_<n>.<ext>`
+
+   - segments separated by UNDERSCORE; dashes only inside slug segments
+   - `<YYYYMMDD>` = today's date
+   - `<n>` starts at 1, increments against files with the EXACT same prefix already in `public/screenshots/<toolId>/` — `live-logs_20260518_1` and `live-logs_error-toast_20260518_1` are independent scopes
+   - `<ext>` from the source file extension (preserve case-insensitively, lowercase recommended)
+
+6. **Do NOT `Read` the screenshot file in the main agent's context.** Use Bash only:
+   - `test -f "<src-path>"` to verify existence
+   - `mkdir -p public/screenshots/<toolId>/`
+   - Create the symlink `src/data/orchestrators/<toolId>/screenshots → ../../../../public/screenshots/<toolId>` if missing
+   - `cp -n "<src-path>" "public/screenshots/<toolId>/<computed-filename>"` (the `-n` guards against overwrite)
+
+7. `Edit` `src/data/orchestrators/<toolId>/_latest-known-features.ts` to append `{ src: "/screenshots/<toolId>/<computed-filename>", alt, caption? }` to the entry's `screenshots` array. Preserve any pre-existing screenshots; never delete or rename.
+
+8. Append the new filename to the session-wide screenshots list for Step 4 staging.
+
+**Why the main agent owns this step, in one line:** subagents cannot receive pasted images, and the only reliable way to support the user pasting a screenshot is to handle ingestion on the turn the host is actually delivering bytes to — which is the main agent's.
 
 ### 3c. Guard rails
 
@@ -332,7 +406,9 @@ The main agent does **not** re-read `_latest-known-features.ts` between iteratio
 - Subagent prompts must not include the user's prior screenshots verbatim — only the count, filenames, and `src` references already in the entry.
 - **Display-inside-question invariant.** Subagent `text` messages are NOT relayed to the user — only the `question` field of `AskUserQuestion` reaches them. The "Current persisted state" and "Research outcome" blocks MUST therefore be embedded inside the `question` text passed to `AskUserQuestion`, not merely emitted as assistant prose. The subagent prompt enforces this explicitly; the main agent does not need to re-validate, but if the user reports missing context the first thing to check is whether a subagent reverted to the old "print blocks then ask a short question" pattern.
 - **AskUserQuestion option cap.** The host's `AskUserQuestion` rejects more than 4 options per question. The subagent prompt is already capped at 4; if you ever extend it, split into a follow-up question rather than growing the list.
-- **Screenshot opportunity invariant.** Whenever the final verdict has `support ∈ {yes, partial}`, the subagent MUST unconditionally ask the user for screenshot paths before persisting — regardless of whether the verdict was Kept, Accepted, or Edited. A blank answer skips. Earlier revisions of this skill only offered screenshot collection inside the "Edit manually" branch, leaving accepted/kept verdicts without any path to evidence — that is the bug step 5-bis fixes.
+- **Screenshot opportunity invariant.** Whenever the final verdict has `support ∈ {yes, partial}`, the user MUST be asked for screenshot paths — regardless of whether the verdict was Kept, Accepted, or Edited. A blank answer skips. The prompt is fired by the **main agent** in Step 3b-bis (driven by `screenshotPromptNeeded` from the subagent's return value), never by the subagent itself, because subagents cannot receive pasted images.
+- **English-only invariant for alt/caption.** Screenshot `alt` (and optional `caption`) MUST be persisted in English regardless of the session language. The dataset is published with English alt text for accessibility / SEO consistency. The subagent translates any French (or other-language) input from the user into English before writing it to the file. The May 2026 conductor@0.52.3 run shipped a French alt — that is the bug this rule fixes.
+- **No inline-paste path for screenshots.** Subagents cannot receive pasted images. The screenshot prompt MUST be explicit about paths-only, including a save-then-path workaround. If the user insists on pasting, the subagent re-asks rather than ending its turn (which would lose the feature).
 
 ---
 

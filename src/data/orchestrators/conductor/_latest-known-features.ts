@@ -13,7 +13,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/conductor/git-worktrees_20260518_1.png',
-        alt: "Vue Conductor montrant l'isolation par git worktree",
+        alt: 'Conductor UI showing per-workspace git worktree isolation',
       },
     ],
     sourceUrl: 'https://www.conductor.build/docs/concepts/workspaces-and-branches',
