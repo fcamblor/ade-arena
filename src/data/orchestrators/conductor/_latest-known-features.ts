@@ -571,9 +571,17 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'chat-user-questions',
-    support: 'unknown',
-    note: 'No documented inline rendering of agent user-question tools (AskUserQuestion-style) in the Conductor chat surface.',
-    screenshots: [],
+    support: 'yes',
+    note: "Conductor renders Claude's AskUserQuestion tool calls as an interactive, keyboard-navigable UI inline in chat; supports multi-select questions.",
+    screenshots: [
+      {
+        src: '/screenshots/conductor/chat-user-questions_20260519_1.png',
+        alt: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
+        caption: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
+      },
+    ],
+    sourceUrl: 'https://www.conductor.build/changelog',
+    sourceExtract: "We've cleaned up the UI for the `AskUserQuestion` tool to make it fully keyboard navigable.",
   },
   {
     featureId: 'fork-workspace',
