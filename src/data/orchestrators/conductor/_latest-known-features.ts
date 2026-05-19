@@ -122,10 +122,16 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'diff-whitespace-toggle',
-    support: 'no',
-    note: 'No ignore-whitespace toggle documented in the Diff Viewer.',
-    screenshots: [],
-    sourceUrl: 'https://www.conductor.build/docs/reference/diff-viewer',
+    support: 'yes',
+    note: 'Conductor 0.54 adds an ignore-whitespace toggle to the Diff Viewer so whitespace-only changes can be hidden or shown.',
+    screenshots: [
+      {
+        src: '/screenshots/conductor/diff-whitespace-toggle_20260520_1.png',
+        alt: 'Conductor Diff Viewer showing the pilcrow toolbar button with tooltip "Hide whitespace changes"',
+      },
+    ],
+    sourceUrl: 'https://www.conductor.build/changelog',
+    sourceExtract: 'Whitespace diffs can also be hidden',
   },
   {
     featureId: 'diff-multi-views',
