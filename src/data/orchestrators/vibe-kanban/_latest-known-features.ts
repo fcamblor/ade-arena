@@ -25,9 +25,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Then in your terminal run: npx vibe-kanban. This launches the Vibe Kanban client and opens the UI in your browser.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'yes',
-    note: 'Claude Code, Codex, Gemini, Aider…',
+    note: '10+ coding agents from multiple vendor families: Anthropic (Claude Code), OpenAI (Codex), Google (Gemini), GitHub (Copilot), Cursor, Sourcegraph (Amp), Alibaba (Qwen Code), and more.',
     screenshots: [],
     sourceUrl: 'https://github.com/BloopAI/vibe-kanban',
     sourceExtract:
@@ -42,7 +42,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Once the GitHub CLI is ready, you can create pull requests directly from a task. Click the Create PR button.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'yes',
     screenshots: [],
     sourceUrl: 'https://github.com/BloopAI/vibe-kanban',
@@ -58,12 +58,27 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Logs panel shows process execution logs. Process tabs: switch between different running processes. View stdout/stderr in real-time.',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/changes',
     sourceExtract:
       'The changes panel lets you review all code modifications in your workspace and provide feedback to agents.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'yes',
+    note: 'Ignore Whitespace toggle in the file tree hides whitespace-only changes.',
+    screenshots: [],
+    sourceUrl: 'https://vibekanban.com/docs/reviewing-code',
+    sourceExtract:
+      'The file tree shows all files that were added, modified, or deleted. […] toggle "Ignore Whitespace" to show/hide whitespace-only changes.',
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'unknown',
+    note: 'Changes panel is workspace-scoped (current pending changes); no documented selector for per-commit / per-turn / branch-vs-target scopes.',
+    screenshots: [],
   },
   {
     featureId: 'self-hosted',
@@ -129,14 +144,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://vibekanban.com/docs/supported-coding-agents',
     sourceExtract:
       'Vibe Kanban integrates with a variety of coding agents: Claude Code, OpenAI Codex, GitHub Copilot, Gemini CLI, Amp, Cursor Agent CLI, OpenCode, Droid CLI, Claude Code Router, Qwen Code.',
-  },
-  {
-    featureId: 'diff-panel-files-list',
-    support: 'yes',
-    screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/reviewing-code',
-    sourceExtract:
-      'The file tree shows all files that were added, modified, or deleted. […] toggle "Ignore Whitespace" to show/hide whitespace-only changes.',
   },
   {
     featureId: 'diff-comments',
@@ -211,9 +218,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
-    support: 'partial',
-    note: 'Two tiers in Cloud mode: organization-wide settings + project settings; no user-level or project-local overrides documented.',
+    featureId: 'shared-config',
+    support: 'yes',
+    note: 'Cloud mode exposes organization-wide settings and project settings, so the interesting bits of configuration can be shared with teammates.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/cloud/organizations',
     sourceExtract:
@@ -247,7 +254,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'switch-model-mid-session',
     support: 'partial',
-    note: 'Agent dropdown is set per session before sending a message; TUI /model command is unsupported.',
+    note: 'Agent dropdown is set per session before sending a message; TUI /model command is unsupported. Cross-vendor switches effectively spin up a new session.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/sessions',
     sourceExtract: 'Select a different agent from the Agent dropdown before sending your message.',
@@ -260,15 +267,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://vibekanban.com/docs/settings/agent-configurations',
     sourceExtract:
       'Controls how much computational effort the model spends "thinking" before responding. Higher reasoning produces more thorough analysis but takes longer and uses more tokens.',
-  },
-  {
-    featureId: 'multi-model-integration',
-    support: 'yes',
-    note: "Wraps each agent's CLI — every supported agent must be installed and authenticated locally before use.",
-    screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/supported-coding-agents',
-    sourceExtract:
-      'Vibe Kanban integrates with a variety of coding agents […]. Each agent requires installation and authentication before use.',
   },
   {
     featureId: 'web-preview',
@@ -295,8 +293,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'mission-control',
-    support: 'partial',
-    note: 'Workspace sidebar aggregates Needs Attention / Idle / Running across workspaces, but it is a navigation panel, not a dedicated dashboard.',
+    support: 'no',
+    note: 'Live workspace sidebar groups Needs Attention / Idle / Running across workspaces, but no dedicated historical/audit timeline of past activity is documented.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/interface',
     sourceExtract:
@@ -352,5 +350,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
     sourceExtract:
       'Vibe Kanban creates a git worktree — a separate working directory with its own branch.',
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'unknown',
+    note: 'No documented inline rendering of agent user-question tools (AskUserQuestion-style) in the Vibe Kanban chat surface.',
+    screenshots: [],
   },
 ];

@@ -24,6 +24,22 @@ export const META: OrchestratorMeta = {
     message: 'Only Claude Code and Codex agents are supported.',
     sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
   },
+  modelIntegrations: [
+    {
+      vendor: 'Anthropic',
+      kind: 'cli-subprocess',
+      notes: 'Wraps the Claude Code CLI as a subprocess; auth delegated to the underlying CLI (subscription or API key).',
+      sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
+      sourceExtract: 'Use Claude Code or Codex when you want a coding agent in a Conductor workspace.',
+    },
+    {
+      vendor: 'OpenAI',
+      kind: 'cli-subprocess',
+      notes: 'Wraps the Codex CLI as a subprocess; auth delegated to the underlying CLI.',
+      sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
+      sourceExtract: 'Use Claude Code or Codex when you want a coding agent in a Conductor workspace.',
+    },
+  ],
   trackingSources: [
     {
       kind: 'changelog',

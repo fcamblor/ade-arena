@@ -92,6 +92,29 @@ export type TrackingSource = z.infer<typeof TrackingSourceSchema>;
 export const VersionStatusSchema = z.enum(['approved', 'waiting-for-review']);
 export type VersionStatus = z.infer<typeof VersionStatusSchema>;
 
+// How a single vendor's models are wired into the orchestrator. Used to be a
+// feature row (`multi-model-integration`) but it's really a property of the
+// orchestrator-to-vendor binding, not a feature on its own.
+export const ModelIntegrationKindSchema = z.enum([
+  'provider-sdk',
+  'cli-subprocess',
+  'app-server-jsonrpc',
+  'acp',
+  'openai-compatible-api',
+  'mcp',
+  'other',
+]);
+export type ModelIntegrationKind = z.infer<typeof ModelIntegrationKindSchema>;
+
+export const ModelIntegrationSchema = z.object({
+  vendor: z.string(),
+  kind: ModelIntegrationKindSchema,
+  notes: z.string().optional(),
+  sourceUrl: z.string().url().optional(),
+  sourceExtract: z.string().optional(),
+});
+export type ModelIntegration = z.infer<typeof ModelIntegrationSchema>;
+
 export const OrchestratorVersionSchema = z.object({
   toolId: z.string().regex(/^[a-z0-9-]+$/),
   toolName: z.string(),
@@ -130,6 +153,11 @@ export const OrchestratorVersionSchema = z.object({
     })
     .optional(),
   notes: z.string().optional(),
+  /** How each supported vendor's models are wired into the orchestrator —
+   *  provider SDK, CLI subprocess, app-server JSON-RPC, ACP, OpenAI-compatible
+   *  HTTP, MCP… Surfaces under the table header as a meta detail; not a
+   *  feature row. */
+  modelIntegrations: z.array(ModelIntegrationSchema).optional(),
   trackingSources: z.array(TrackingSourceSchema).optional(),
   misc: z
     .object({

@@ -1,6 +1,6 @@
 ---
 import { FEATURES, ORCHESTRATORS, ORCHESTRATORS_BY_TOOL, isApproved, isDefaultVisible } from '../data';
-import type { SupportLevel, FeatureCategory, Feature, Platform, TrackingSourceKind } from '../data/schema';
+import type { SupportLevel, FeatureCategory, Feature, Platform, TrackingSourceKind, ModelIntegrationKind } from '../data/schema';
 import Evidence from './Evidence.astro';
 
 // Each orchestrator column carries a stable `<toolId>@<version>` key. The
@@ -31,6 +31,27 @@ const trackingKindLabel: Record<TrackingSourceKind, string> = {
   twitter: 'Twitter / X',
   youtube: 'YouTube',
   other: 'Other',
+};
+
+// Short, scannable labels for each model-integration kind. Full meaning is
+// surfaced via the title tooltip and the Evidence popover when present.
+const integrationKindLabel: Record<ModelIntegrationKind, string> = {
+  'provider-sdk': 'SDK',
+  'cli-subprocess': 'CLI',
+  'app-server-jsonrpc': 'JSON-RPC',
+  'acp': 'ACP',
+  'openai-compatible-api': 'OpenAI API',
+  'mcp': 'MCP',
+  'other': 'Other',
+};
+const integrationKindTooltip: Record<ModelIntegrationKind, string> = {
+  'provider-sdk': 'Vendor SDK — calls the provider library directly',
+  'cli-subprocess': 'CLI subprocess — wraps an existing coding-agent CLI (e.g. `claude -p`, `codex …`)',
+  'app-server-jsonrpc': 'App-server JSON-RPC — long-running headless agent driven over JSON-RPC',
+  'acp': 'Agent Client Protocol — standardized agent-to-host protocol',
+  'openai-compatible-api': 'OpenAI-compatible HTTP API — any endpoint speaking the OpenAI schema',
+  'mcp': 'Model Context Protocol server exposing the model',
+  'other': 'Other integration mechanism',
 };
 
 const platformLabel: Record<Platform, string> = {
@@ -418,6 +439,62 @@ const featureCount = visibleFeatures.length;
                           </p>
                         )}
                       </div>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          )}
+          {ORCHESTRATORS.some((o) => (o.modelIntegrations?.length ?? 0) > 0) && (
+            <tr class="row--wiring">
+              <th scope="row" class="cell--wiring-label">
+                <span class="cell--wiring-label__text">Model wiring</span>
+                <span class="cell--wiring-label__hint">how vendor models are plugged in</span>
+              </th>
+              {ORCHESTRATORS.map((o) => {
+                const integrations = o.modelIntegrations ?? [];
+                return (
+                  <td
+                    class="cell--wiring"
+                    data-preview-key={previewKey(o)}
+                    data-tool-id={o.toolId}
+                    data-display-mode={displayMode(o)}
+                  >
+                    {integrations.length > 0 ? (
+                      <ul class="wiring" role="list">
+                        {integrations.map((mi) => {
+                          const hasEvidence = !!(mi.sourceUrl && mi.sourceExtract);
+                          const pill = (
+                            <span class="wiring__row">
+                              <span class="wiring__vendor" title={mi.notes}>{mi.vendor}</span>
+                              <span
+                                class={`wiring__kind wiring__kind--${mi.kind}`}
+                                title={integrationKindTooltip[mi.kind]}
+                              >
+                                {integrationKindLabel[mi.kind]}
+                              </span>
+                            </span>
+                          );
+                          return (
+                            <li class="wiring__item">
+                              {hasEvidence ? (
+                                <Evidence
+                                  variant="inline"
+                                  refLabel={`${o.toolId.replace(/-/g, ' ')} · ${mi.vendor.toLowerCase()} wiring`}
+                                  sourceUrl={mi.sourceUrl}
+                                  sourceExtract={mi.sourceExtract}
+                                  ariaLabel={`Show source for ${mi.vendor} model wiring on ${o.toolName}`}
+                                >
+                                  {pill}
+                                </Evidence>
+                              ) : pill}
+                              {mi.notes && <p class="wiring__notes">{mi.notes}</p>}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <span class="wiring__empty" aria-hidden="true">—</span>
                     )}
                   </td>
                 );
@@ -976,6 +1053,136 @@ const featureCount = visibleFeatures.length;
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
+  }
+
+  /* ============ Model wiring row ============
+     A second meta band, sitting underneath "Worth noting". Where Worth noting
+     is a warm amber placard, Model wiring uses a cool steel-blue palette so
+     readers can tell the two bands apart even without reading the labels.
+     Each entry pairs a vendor name with a compact, color-coded chip naming
+     the integration kind (SDK / CLI / ACP / MCP …). Color is keyed per kind
+     so the same wiring style is easy to spot across columns. */
+  .row--wiring .cell--wiring-label {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg);
+    border-right: 1px solid var(--border);
+    vertical-align: top;
+    padding: var(--s-3) var(--s-4);
+  }
+  .cell--wiring-label__text {
+    display: block;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: oklch(0.84 0.07 220);
+  }
+  .cell--wiring-label__hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.66rem;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+    color: var(--fg-faint);
+    text-transform: none;
+    font-weight: 500;
+  }
+  .row--wiring .cell--wiring {
+    background: var(--bg);
+    vertical-align: top;
+    padding: var(--s-3);
+  }
+  /* Subtle steel-blue tint differentiates this band from the surrounding
+     rows without overpowering the table — the dominant colour stays the
+     base canvas, the tint is just enough to read as a meta band. */
+  .row--wiring .cell--wiring-label,
+  .row--wiring .cell--wiring {
+    background: color-mix(in oklch, oklch(0.32 0.04 230) 14%, var(--bg));
+    border-bottom: 1px solid var(--border);
+  }
+  .wiring {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+  }
+  .wiring__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .wiring__row {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-width: 0;
+  }
+  .wiring__vendor {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  /* Connector glyph between vendor and kind chip — keeps the "wiring"
+     metaphor literal without taking visual weight. */
+  .wiring__row::before {
+    content: '→';
+    color: var(--fg-faint);
+    font-size: 0.72rem;
+    line-height: 1;
+    order: 0;
+  }
+  .wiring__vendor { order: -1; }
+  .wiring__kind { order: 1; }
+  .wiring__kind {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: oklch(0.22 0.012 28);
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    line-height: 1;
+    cursor: help;
+    white-space: nowrap;
+  }
+  /* Per-kind palette — each integration mechanism gets a distinct hue so
+     readers can scan across columns and spot patterns at a glance. Hues are
+     spread across the wheel and kept at the same lightness/chroma envelope
+     so no single chip outshouts the others. */
+  .wiring__kind--cli-subprocess      { color: oklch(0.85 0.12 85);  border-color: oklch(0.42 0.07 85); }
+  .wiring__kind--provider-sdk        { color: oklch(0.85 0.12 250); border-color: oklch(0.42 0.07 250); }
+  .wiring__kind--app-server-jsonrpc  { color: oklch(0.85 0.11 195); border-color: oklch(0.42 0.06 195); }
+  .wiring__kind--acp                 { color: oklch(0.85 0.13 145); border-color: oklch(0.42 0.07 145); }
+  .wiring__kind--openai-compatible-api { color: oklch(0.85 0.12 165); border-color: oklch(0.42 0.06 165); }
+  .wiring__kind--mcp                 { color: oklch(0.85 0.13 305); border-color: oklch(0.42 0.07 305); }
+  .wiring__kind--other               { color: var(--fg-muted); border-color: var(--border); }
+  .wiring__notes {
+    margin: 2px 0 0;
+    padding-left: calc(0.72rem + 6px); /* align with text after the connector arrow */
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: var(--fg-muted);
+  }
+  .wiring__empty {
+    color: var(--fg-faint);
+    font-family: var(--font-display);
   }
 
   /* ============ Category rows ============ */

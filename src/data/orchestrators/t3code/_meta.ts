@@ -35,6 +35,30 @@ export const META: OrchestratorMeta = {
         'The hosted web app at `https://app.t3.codes` can save a remote backend in browser local storage from a URL like: https://app.t3.codes/pair?host=...',
     },
   },
+  modelIntegrations: [
+    {
+      vendor: 'OpenAI',
+      kind: 'app-server-jsonrpc',
+      notes: 'Codex via `codex app-server` (JSON-RPC over stdio) — primary integration.',
+      sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/AGENTS.md',
+      sourceExtract:
+        'T3 Code is currently Codex-first. The server starts `codex app-server` (JSON-RPC over stdio) per provider session, then streams structured events to the browser through WebSocket push messages.',
+    },
+    {
+      vendor: 'Anthropic',
+      kind: 'cli-subprocess',
+      notes: 'Claude Code via the `claude` binary as a subprocess.',
+    },
+    {
+      vendor: 'OpenCode',
+      kind: 'cli-subprocess',
+    },
+    {
+      vendor: 'Cursor',
+      kind: 'cli-subprocess',
+      notes: 'Cursor Agent CLI as a subprocess.',
+    },
+  ],
   trackingSources: [
     {
       kind: 'github-releases',

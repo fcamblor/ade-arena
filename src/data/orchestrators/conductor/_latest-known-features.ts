@@ -50,12 +50,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Get Conductor running on your Mac. […] Drag the Conductor app to your Applications folder.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'partial',
-    note: 'Only Claude Code and Codex model families are supported.',
+    note: 'Two vendors supported: Anthropic (Claude Code family) and OpenAI (Codex family). Lighter than orchestrators that wire many vendors (Google, xAI, Moonshot…), hence "partial" rather than "yes".',
     screenshots: [
       {
-        src: '/screenshots/conductor/multi-model_20260518_1.png',
+        src: '/screenshots/conductor/multiple-model-families_20260518_1.png',
         alt: 'Conductor model picker grouped by Claude Code and Codex families',
         caption: 'Model picker listing Claude Code (Opus 4.7, Sonnet 4.6, Haiku 4.5) and Codex (GPT-5.5, GPT-5.4, GPT-5.3-Codex) families',
       },
@@ -82,16 +82,16 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Create a pull request with Command + Shift + P. Conductor can help draft the PR description.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'partial',
     note: 'Kanban-style Dashboard view available behind an experimental flag (Settings → Experimental → Dashboard). Statuses are hardcoded (Backlog / In progress / In review / Done / Canceled), no customization.',
     screenshots: [
       {
-        src: '/screenshots/conductor/kanban-board_20260518_1.png',
+        src: '/screenshots/conductor/visual-task-management_20260518_1.png',
         alt: 'Conductor Dashboard showing workspaces grouped into Backlog, In progress, In review, Done and Canceled columns',
       },
       {
-        src: '/screenshots/conductor/kanban-board_20260518_2.png',
+        src: '/screenshots/conductor/visual-task-management_20260518_2.png',
         alt: 'Experimental settings panel with the Dashboard toggle that enables the kanban-style view',
       },
     ],
@@ -108,32 +108,48 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'The run script launches your app, server, test watcher, or another long-running command from a workspace.',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
-    note: 'Diff Viewer supports several modes: branch vs. target, uncommitted changes only, per-commit diff, and per-turn diff (changes produced by a single agent turn / discussion). Inline comments and PR actions available.',
+    note: 'Built-in Diff Viewer renders agent-produced changes file by file, with inline comment and PR actions.',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-review_branch-vs-target_20260518_1.png',
-        alt: 'Diff Viewer in "All changes" mode comparing the workspace branch against its target branch',
+        src: '/screenshots/conductor/diff-viewer_20260518_1.png',
+        alt: 'Diff Viewer rendering the agent-produced changes file by file (workspace branch vs. target)',
       },
+    ],
+    sourceUrl: 'https://www.conductor.build/docs/reference/diff-viewer',
+    sourceExtract: 'The Diff Viewer shows the code changes in a workspace.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'no',
+    note: 'No ignore-whitespace toggle documented in the Diff Viewer.',
+    screenshots: [],
+    sourceUrl: 'https://www.conductor.build/docs/reference/diff-viewer',
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'yes',
+    note: 'Diff Viewer offers several selectable scopes: branch vs. target, uncommitted changes, per-commit, and per-turn (changes produced by a single agent discussion).',
+    screenshots: [
       {
-        src: '/screenshots/conductor/diff-review_uncommitted-changes_20260518_1.png',
-        alt: 'Diff Viewer in "Uncommitted" mode showing only uncommitted local changes',
-      },
-      {
-        src: '/screenshots/conductor/diff-review_per-commit-diff_20260518_1.png',
-        alt: 'Diff Viewer showing a single commit’s changes via the per-commit selector',
-      },
-      {
-        src: '/screenshots/conductor/diff-review_view-selector_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_view-selector_20260518_1.png',
         alt: 'Diff Viewer selector dropdown offering All changes, Uncommitted changes, and per-commit views',
       },
       {
-        src: '/screenshots/conductor/diff-review_turn-changes_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_uncommitted-changes_20260518_1.png',
+        alt: 'Diff Viewer in "Uncommitted" mode showing only uncommitted local changes',
+      },
+      {
+        src: '/screenshots/conductor/diff-multi-views_per-commit-diff_20260518_1.png',
+        alt: 'Diff Viewer showing a single commit’s changes via the per-commit selector',
+      },
+      {
+        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_1.png',
         alt: 'Chat turn footer listing the files changed by a single agent turn, each acting as a shortcut to its diff',
       },
       {
-        src: '/screenshots/conductor/diff-review_turn-changes_20260518_2.png',
+        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_2.png',
         alt: 'Diff Viewer in "Latest turn" mode showing only the changes produced by the most recent agent discussion',
       },
     ],
@@ -242,14 +258,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     ],
     sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
     sourceExtract: 'Use Claude Code or Codex when you want a coding agent in a Conductor workspace.',
-  },
-  {
-    featureId: 'diff-panel-files-list',
-    support: 'partial',
-    note: 'File list to navigate between changed files; no whitespace-ignore toggle documented.',
-    screenshots: [],
-    sourceUrl: 'https://www.conductor.build/docs/reference/diff-viewer',
-    sourceExtract: 'Use the file list to move between changed files.',
   },
   {
     featureId: 'diff-comments',
@@ -378,16 +386,16 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
+    featureId: 'shared-config',
     support: 'yes',
-    note: 'Two shared layers: org-managed ~/.conductor/settings.json (overrides local DB) and repo-level conductor.json checked into the codebase.',
+    note: 'Repo-level conductor.json committed into the codebase shares scripts and settings with the team; org-managed ~/.conductor/settings.json provides an additional admin override tier.',
     screenshots: [
       {
-        src: '/screenshots/conductor/shared-config-levels_share-link_20260518_1.png',
+        src: '/screenshots/conductor/shared-config_share-link_20260518_1.png',
         alt: 'Workspace Scripts panel inviting the user to create a conductor.json file to share scripts with the team',
       },
       {
-        src: '/screenshots/conductor/shared-config-levels_create-conductor-json_20260518_1.png',
+        src: '/screenshots/conductor/shared-config_create-conductor-json_20260518_1.png',
         alt: 'Share scripts dialog explaining how a committed conductor.json propagates shared scripts to teammates',
       },
     ],
@@ -468,14 +476,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Fast Mode prioritizes speed. […] Higher settings give the agent more room to reason before answering, but may take longer or use more credits.',
   },
   {
-    featureId: 'multi-model-integration',
-    support: 'partial',
-    note: 'CLI-subprocess wrap of the Claude Code and Codex CLIs; auth (subscription or API key) delegated to each underlying CLI. No direct provider SDK, OpenAI-compatible HTTP, ACP transport, or MCP-as-model channel documented.',
-    screenshots: [],
-    sourceUrl: 'https://www.conductor.build/docs/concepts/agent-modes',
-    sourceExtract: 'Use Claude Code or Codex when you want a coding agent in a Conductor workspace.',
-  },
-  {
     featureId: 'web-preview',
     support: 'partial',
     note: 'When a port is detected during a run, Conductor exposes an "Open in Browser" action that launches the preview in the user’s default browser. The preview is not embedded in-app and is not controllable by the orchestrator (no integrated visual debug surface).',
@@ -506,7 +506,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'mission-control',
     support: 'no',
-    note: 'No historized/aggregated dashboard of changes across workspaces. Only the sidebar grouping (and the experimental Dashboard) plus a "next session needing attention" command-palette jump — navigation rather than a true mission-control surface.',
+    note: 'No dedicated activity history surface aggregating past runs / archived workspaces across the orchestrator. Only the live sidebar grouping (and the experimental Dashboard) plus a "next session needing attention" jump.',
     screenshots: [],
   },
   {
@@ -568,6 +568,20 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     support: 'no',
     note: 'No discussion-workflow authoring, so no sharing surface.',
     screenshots: [],
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'yes',
+    note: "Conductor renders Claude's AskUserQuestion tool calls as an interactive, keyboard-navigable UI inline in chat; supports multi-select questions.",
+    screenshots: [
+      {
+        src: '/screenshots/conductor/chat-user-questions_20260519_1.png',
+        alt: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
+        caption: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
+      },
+    ],
+    sourceUrl: 'https://www.conductor.build/changelog',
+    sourceExtract: "We've cleaned up the UI for the `AskUserQuestion` tool to make it fully keyboard navigable.",
   },
   {
     featureId: 'fork-workspace',

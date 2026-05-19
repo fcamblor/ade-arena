@@ -36,6 +36,17 @@ export const META: OrchestratorMeta = {
     message: 'The company behind Vibe Kanban announced its shutdown.',
     sourceUrl: 'https://vibekanban.com/blog/shutdown',
   },
+  modelIntegrations: [
+    {
+      vendor: 'Multi-vendor',
+      kind: 'cli-subprocess',
+      notes:
+        'Wraps 10+ coding-agent CLIs as subprocesses — Claude Code, Codex, Gemini CLI, GitHub Copilot, Amp, Cursor, OpenCode, Droid, Claude Code Router, Qwen Code. Each must be installed and authenticated locally before use.',
+      sourceUrl: 'https://vibekanban.com/docs/supported-coding-agents',
+      sourceExtract:
+        'Vibe Kanban integrates with a variety of coding agents […]. Each agent requires installation and authentication before use.',
+    },
+  ],
   trackingSources: [
     {
       kind: 'github-releases',

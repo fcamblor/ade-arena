@@ -29,10 +29,12 @@ const features: Feature[] = [
     shortDescription: 'Agents run on the developer machine.',
   },
   {
-    id: 'multi-model',
-    label: 'Multi-model (Claude, GPT, …)',
+    id: 'multiple-model-families',
+    label: 'Multiple model families (multi-vendor)',
     category: 'integrations',
-    shortDescription: 'Supports multiple LLM providers/models.',
+    shortDescription: 'Supports model families from multiple vendors (not just multiple models of the same vendor).',
+    longDescription:
+      'A "yes" requires the orchestrator to drive models from several distinct vendors (Anthropic + OpenAI + Google + …). Supporting only multiple Anthropic models (Opus / Sonnet / Haiku) — or only multiple OpenAI models — counts as "no" because it locks the user into a single vendor. Two vendors is treated as "partial" since the surface remains thin compared to broadly multi-vendor orchestrators.',
   },
   {
     id: 'pr-creation',
@@ -41,10 +43,10 @@ const features: Feature[] = [
     shortDescription: 'The agent opens a GitHub/GitLab PR when a task completes.',
   },
   {
-    id: 'kanban-board',
-    label: 'Kanban task board',
+    id: 'visual-task-management',
+    label: 'Visual task management (e.g. kanban board)',
     category: 'ux',
-    shortDescription: 'Kanban-style interface to track in-progress / done tasks.',
+    shortDescription: 'Visual management of in-progress tasks — e.g. via a kanban board or another board-style surface.',
   },
   {
     id: 'live-logs',
@@ -53,10 +55,24 @@ const features: Feature[] = [
     shortDescription: 'Streaming logs/output for each agent in real time.',
   },
   {
-    id: 'diff-review',
-    label: 'Built-in diff review',
+    id: 'diff-viewer',
+    label: 'In-app diff viewer',
     category: 'ux',
-    shortDescription: 'In-app UI to review an agent diff before merging.',
+    shortDescription: 'Built-in UI to display agent-produced code changes directly in-app (file-by-file).',
+  },
+  {
+    id: 'diff-whitespace-toggle',
+    label: 'Diff: ignore-whitespace toggle',
+    category: 'ux',
+    shortDescription: 'Toggle to hide or show whitespace-only changes in the diff viewer.',
+  },
+  {
+    id: 'diff-multi-views',
+    label: 'Diff: multiple scopes / views',
+    category: 'ux',
+    shortDescription: 'Switch the diff scope between several views (per-commit, latest LLM turn, uncommitted changes, workspace vs. target branch, …).',
+    longDescription:
+      'Beyond a single static diff, the orchestrator offers multiple selectable diff scopes — e.g. changes from a single commit, changes from the last LLM turn, currently uncommitted changes, or the cumulative diff against the target branch. "Partial" when only one alternative scope is available, "yes" when several are.',
   },
   {
     id: 'self-hosted',
@@ -113,12 +129,6 @@ const features: Feature[] = [
     shortDescription: 'Range of coding assistants/CLIs supported (Claude Code, Codex, Cursor, Aider…).',
   },
   {
-    id: 'diff-panel-files-list',
-    label: 'Diff panel with file list & whitespace toggle',
-    category: 'ux',
-    shortDescription: 'File-by-file diff panel with the option to ignore whitespace changes.',
-  },
-  {
     id: 'diff-comments',
     label: 'Comments on diff panel',
     category: 'ux',
@@ -126,9 +136,11 @@ const features: Feature[] = [
   },
   {
     id: 'github-comment-sync',
-    label: 'GitHub comment sync',
+    label: 'One-way GitHub comment sync (PR → in-app)',
     category: 'integrations',
-    shortDescription: 'Synchronize in-app diff comments with GitHub PR comments.',
+    shortDescription: 'Surface GitHub PR review comments inside the in-app changes / diff panel (one-way ingestion).',
+    longDescription:
+      'GitHub PR review comments are pulled into the orchestrator’s in-app changes panel so the user (and the agent) can read and react to them without leaving the app. This is intentionally a one-way flow — the reverse direction (pushing in-app comments back to GitHub) is out of scope of this row.',
   },
   {
     id: 'terminal-in-worktree',
@@ -162,7 +174,7 @@ const features: Feature[] = [
     category: 'ux',
     shortDescription: 'Customize the UI with buttons running either shell commands or LLM prompts.',
     longDescription:
-      'Define custom actions surfaced in the UI — each action being a shell command (git push, git push --force-with-lease, rebase on target branch…) or a parameterized LLM prompt (resolve conflicts during rebase, open a PR on GitHub, run a review prompt…).',
+      'Define custom actions surfaced in the UI — each action being a shell command (git push, git push --force-with-lease, rebase on target branch…) or a parameterized LLM prompt (resolve conflicts during rebase, open a PR on GitHub, run a review prompt…). A single editable run script alone does NOT qualify as "partial": at minimum the user must be able to declare multiple custom actions (multiple shell commands, or a mix of shell + LLM-prompt actions).',
   },
   {
     id: 'session-handoff',
@@ -179,10 +191,12 @@ const features: Feature[] = [
     shortDescription: 'Share files remotely with teammates for external annotation (e.g. plannotator.ai).',
   },
   {
-    id: 'shared-config-levels',
-    label: 'Shared multi-level configuration',
+    id: 'shared-config',
+    label: 'Shared configuration with teammates',
     category: 'collaboration',
-    shortDescription: 'Share tool configuration with teammates across multiple levels (project, project-local, user…).',
+    shortDescription: 'Any mechanism to share interesting parts of the tool configuration with teammates (committed config file, registry, marketplace…).',
+    longDescription:
+      'As soon as the orchestrator exposes a way to share the interesting bits of its configuration with team mates — a committed config file in the repo, an OCI/marketplace registry, an organization-wide settings tier… — this row counts as "yes". A full multi-level hierarchy (user / project / project-local / org…) is a plus but not a requirement.',
   },
   {
     id: 'pr-status-sync',
@@ -207,6 +221,8 @@ const features: Feature[] = [
     label: 'Switch model mid-session',
     category: 'workflow',
     shortDescription: 'Change the underlying LLM at any point during a discussion.',
+    longDescription:
+      'Pick a different model in the middle of a running discussion. Cross-vendor switches that require spinning up a new session (ideally seeded with a summary of the previous one to preserve continuity) still count as supported — vendor SDKs are usually too different for an in-place swap.',
   },
   {
     id: 'model-effort-support',
@@ -215,20 +231,12 @@ const features: Feature[] = [
     shortDescription: 'Tune reasoning/thinking effort for models that expose it (e.g. Anthropic extended thinking).',
   },
   {
-    id: 'multi-model-integration',
-    label: 'Multi-model integration mechanism',
-    category: 'integrations',
-    shortDescription: 'How the orchestrator plugs into each model: direct SDK, ACP, OpenAI-compatible API, CLI wrap…',
-    longDescription:
-      'When the tool supports several models, the way each integration is wired matters — direct provider SDK, Agent Client Protocol (ACP), OpenAI-compatible HTTP API, CLI subprocess wrapping, MCP — because it impacts pricing (BYOK vs. bundled), capability parity (tool use, thinking, caching) and latency.',
-  },
-  {
     id: 'web-preview',
     label: 'Embedded web preview',
     category: 'ux',
     shortDescription: 'Built-in browser preview of a local web server, ideally bound to a run configuration / allocated port.',
     longDescription:
-      'In-app web preview pane that renders the output of a local HTTP server. Ideally couples with a run configuration that launches the server on a per-worktree allocated port, so the preview updates as the agent edits the code.',
+      'In-app web preview pane that renders the output of a local HTTP server. "Partial" covers a pane that merely displays the preview. A "full / yes" support means the orchestrator can also drive the preview (clicks, navigation, form input) AND "see" its rendered content (DOM/screenshot) so the agent can take action on it — e.g. validate UI changes, debug a layout, retry a flow on its own.',
   },
   {
     id: 'plugin-system',
@@ -246,11 +254,11 @@ const features: Feature[] = [
   },
   {
     id: 'mission-control',
-    label: 'Mission-control dashboard',
+    label: 'Activity history dashboard',
     category: 'ux',
-    shortDescription: 'Central dashboard aggregating in-progress, awaiting-input and completed tasks across worktrees.',
+    shortDescription: 'Historical view of everything that happened across the orchestrator — past runs, completed tasks, archived sessions — complementing the live visual task management surface.',
     longDescription:
-      'A unified control-tower view listing every running, idle, awaiting-input and recently completed task across all worktrees / projects, so the user can keep an eye on the fleet without opening each workspace.',
+      'A dedicated dashboard surfacing the historical activity of the orchestrator across all worktrees / projects: past discussions, completed or archived tasks, prior agent runs, audit-style timeline. Complementary to the live visual-task-management board, which focuses on what is currently in flight.',
   },
   {
     id: 'copy-from-origin-workspace',
@@ -263,6 +271,14 @@ const features: Feature[] = [
     label: 'Symlink files from origin workspace',
     category: 'workflow',
     shortDescription: 'Expose files from the source repo inside the agent worktree via symlinks (ln -s).',
+  },
+  {
+    id: 'chat-user-questions',
+    label: 'Inline user-question tools in chat',
+    category: 'ux',
+    shortDescription: 'Render coding-agent user-question tools (e.g. AskUserQuestion) inline in the chat surface, instead of as plain prose.',
+    longDescription:
+      'Modern coding agents expose tools to ask the user a clarifying question (e.g. `AskUserQuestion`). "Yes" means the orchestrator detects these tool calls and renders them inline in the chat as a dedicated interactive surface — radio buttons, multi-choice, free-text prompt — instead of leaving them as raw markdown that the user has to answer manually.',
   },
   {
     id: 'chat-rewind',

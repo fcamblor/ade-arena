@@ -33,9 +33,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Run without installing: `npx t3`. Desktop app: install the latest version of the desktop app from GitHub Releases.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'yes',
-    note: 'Claude Code, Codex, OpenCode, Cursor — bring your own subscription.',
+    note: 'Anthropic (Claude Code), OpenAI (Codex), plus OpenCode and Cursor agents — bring your own subscription, drives multiple vendor families.',
     screenshots: [],
     sourceUrl: 'https://t3.codes/',
     sourceExtract:
@@ -50,9 +50,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'One button to commit, push, and make a PR. […] one button opens the PR on GitHub with a generated title, body and changelog. Auto-generated PR titles & bodies. Draft PRs, stack PRs, amend PRs.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'no',
-    note: 'No kanban interface; threads are surfaced through a sidebar/workspace list, not a board.',
+    note: 'No board-style visual surface; threads are surfaced through a sidebar/workspace list.',
     screenshots: [],
   },
   {
@@ -65,11 +65,26 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Provider-native events are pulled back into the server by ProviderRuntimeIngestion, which converts them into orchestration events. […] Server pushes those updates to the browser through ServerPushBus on channels defined in orchestration.ts.',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
     screenshots: [],
     sourceUrl: 'https://t3.codes/',
     sourceExtract: 'Inline diff review before you push.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'yes',
+    note: 'Pilcrow toggle in the DiffPanel shows/hides whitespace-only changes.',
+    screenshots: [],
+    sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/apps/web/src/components/DiffPanel.tsx',
+    sourceExtract:
+      '<Toggle aria-label={diffIgnoreWhitespace ? "Show whitespace changes" : "Hide whitespace changes"} pressed={diffIgnoreWhitespace} […]> <PilcrowIcon />',
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'unknown',
+    note: 'Inline diff is the documented surface; no public confirmation of multiple selectable scopes (per-commit / per-turn / branch-vs-target).',
+    screenshots: [],
   },
   {
     featureId: 'self-hosted',
@@ -140,15 +155,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'T3 Code currently supports Codex, Claude, and OpenCode. Install and authenticate at least one provider before use: Codex CLI (codex login), Claude Code (claude auth login), OpenCode (opencode auth login).',
   },
   {
-    featureId: 'diff-panel-files-list',
-    support: 'yes',
-    note: 'ChangedFilesTree component + pilcrow toggle to hide/show whitespace-only changes.',
-    screenshots: [],
-    sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/apps/web/src/components/DiffPanel.tsx',
-    sourceExtract:
-      '<Toggle aria-label={diffIgnoreWhitespace ? "Show whitespace changes" : "Hide whitespace changes"} pressed={diffIgnoreWhitespace} […]> <PilcrowIcon />',
-  },
-  {
     featureId: 'diff-comments',
     support: 'no',
     note: 'No comment/annotation surface on the diff panel found in the codebase.',
@@ -216,9 +222,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
-    support: 'partial',
-    note: 'Provider skills resolve from App / System / Project / Personal scopes; the orchestrator config itself is single-user (per-machine ~/.t3).',
+    featureId: 'shared-config',
+    support: 'yes',
+    note: 'Provider skills resolve from App / System / Project / Personal scopes — the project tier shares the interesting bits of configuration with teammates via the repo.',
     screenshots: [],
     sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/apps/web/src/providerSkillPresentation.ts',
     sourceExtract:
@@ -264,15 +270,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     support: 'unknown',
     note: 'Per-provider model picker exists, but reasoning-effort exposure was not confirmed for v0.0.24.',
     screenshots: [],
-  },
-  {
-    featureId: 'multi-model-integration',
-    support: 'partial',
-    note: "Wraps each assistant's CLI as a subprocess — codex via app-server (JSON-RPC over stdio), Claude Code via the `claude` binary, OpenCode/Cursor via their own CLIs.",
-    screenshots: [],
-    sourceUrl: 'https://github.com/pingdotgg/t3code/blob/main/AGENTS.md',
-    sourceExtract:
-      'T3 Code is currently Codex-first. The server starts `codex app-server` (JSON-RPC over stdio) per provider session, then streams structured events to the browser through WebSocket push messages.',
   },
   {
     featureId: 'web-preview',
@@ -347,6 +344,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     featureId: 'fork-workspace',
     support: 'unknown',
     note: 'No documented "fork workspace" action duplicating worktree + thread history into a new workspace.',
+    screenshots: [],
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'unknown',
+    note: 'No documented inline rendering of agent user-question tools (AskUserQuestion-style) in the T3 Code chat surface.',
     screenshots: [],
   },
 ];

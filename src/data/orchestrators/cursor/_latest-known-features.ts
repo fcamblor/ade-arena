@@ -32,9 +32,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Run many agents in parallel across repos and environments: locally, in worktrees, in the cloud, and on remote SSH.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'yes',
-    note: 'Claude (Opus / Sonnet / Haiku), GPT-5 family, Gemini 2.5 / 3, Composer 1/2, Grok, Kimi.',
+    note: 'Six vendor families: Anthropic (Claude Opus/Sonnet/Haiku), OpenAI (GPT-5.x), Google (Gemini 2.5/3), Cursor (Composer 1/2), xAI (Grok), Moonshot (Kimi).',
     screenshots: [],
     sourceUrl: 'https://cursor.com/docs/models',
     sourceExtract:
@@ -49,9 +49,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'A new PR review experience is now available in Cursor 3. Take PRs from creation to merge all in one place.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'no',
-    note: 'No kanban-style task board in the Agents Window — agents are listed in a sidebar / grid view.',
+    note: 'No board-style visual task surface in the Agents Window — agents are listed in a sidebar / grid view.',
     screenshots: [],
   },
   {
@@ -63,11 +63,25 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Cursor enables agents to run shell commands directly in your terminal, with safe sandbox execution on macOS, Linux, and Windows.',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
     screenshots: [],
     sourceUrl: 'https://cursor.com/blog/cursor-3',
     sourceExtract: 'The new diffs view allows you to edit and review changes faster with a simpler UI.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'unknown',
+    note: 'No ignore-whitespace toggle explicitly documented in the diffs view or PR review surface.',
+    screenshots: [],
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'partial',
+    note: 'PR review surface adds a "Changes" tab on top of the in-app diffs view (current pending changes vs. PR-scope changes). No documented per-commit / per-turn selector beyond that.',
+    screenshots: [],
+    sourceUrl: 'https://cursor.com/changelog/05-07-26',
+    sourceExtract: 'The Changes tab makes it easier to navigate larger PRs with a file tree and changes picker.',
   },
   {
     featureId: 'self-hosted',
@@ -131,14 +145,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'diff-panel-files-list',
-    support: 'yes',
-    screenshots: [],
-    sourceUrl: 'https://cursor.com/changelog/05-07-26',
-    sourceExtract:
-      'The Changes tab makes it easier to navigate larger PRs with a file tree and changes picker.',
-  },
-  {
     featureId: 'diff-comments',
     support: 'partial',
     note: 'Inline comments exist on the PR Review surface (synced with GitHub). The local diffs view itself does not document standalone in-app diff comments.',
@@ -149,7 +155,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'github-comment-sync',
     support: 'yes',
-    note: 'PR Review experience reads and writes GitHub review threads from inside Cursor.',
+    note: 'PR Review experience reads GitHub review threads inside Cursor (one-way ingestion fully covered; bidirectional sync also documented but not required by this row).',
     screenshots: [],
     sourceUrl: 'https://cursor.com/changelog/05-07-26',
     sourceExtract:
@@ -210,9 +216,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
+    featureId: 'shared-config',
     support: 'yes',
-    note: 'Three levels: Team (dashboard, Team/Enterprise), Project (.cursor/rules, git-tracked), User (global).',
+    note: 'Project-level .cursor/rules is git-tracked and shared with the team. A full three-tier hierarchy (Team via dashboard / Project / User) is available on top.',
     screenshots: [],
     sourceUrl: 'https://cursor.com/docs/rules',
     sourceExtract:
@@ -260,18 +266,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Reasoning variants available (gpt-5-high, gpt-5.2-high, gpt-5.3-codex-high). Max Mode extends the context window to the maximum a model supports.',
   },
   {
-    featureId: 'multi-model-integration',
-    support: 'yes',
-    note: 'Direct provider integrations (Anthropic, OpenAI, Google, xAI, Moonshot) brokered through Cursor; pricing bundled or BYOK-equivalent via usage-based billing.',
-    screenshots: [],
-    sourceUrl: 'https://cursor.com/docs/models',
-    sourceExtract:
-      'Available models from OpenAI, Anthropic, Google, xAI, Moonshot, and Cursor (Composer).',
-  },
-  {
     featureId: 'web-preview',
     support: 'yes',
-    note: 'Integrated browser with Design Mode lets agents (and users) interact with a local web app, take screenshots, click coordinates and edit styles visually.',
+    note: 'Integrated browser with Design Mode lets the orchestrator drive a local web app (clicks, navigation) and "see" the rendered page (screenshots, accessibility audits) — full criterion met.',
     screenshots: [],
     sourceUrl: 'https://cursor.com/docs/agent/tools/browser',
     sourceExtract:
@@ -298,8 +295,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'mission-control',
-    support: 'yes',
-    note: 'Agents Window sidebar aggregates local + cloud + remote SSH agents across repos, with Agent Tabs in grid / stacked layouts.',
+    support: 'partial',
+    note: 'Agents Window sidebar aggregates local + cloud + remote SSH agents across repos. Live-oriented; no dedicated historical/audit timeline of past archived activity documented.',
     screenshots: [],
     sourceUrl: 'https://cursor.com/docs/agent/agents-window',
     sourceExtract:
@@ -321,5 +318,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://cursor.com/docs/configuration/worktrees',
     sourceExtract:
       'We do not recommend symlinking dependencies into the worktree. This can cause issues in the main worktree.',
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'unknown',
+    note: 'No documented inline rendering of agent user-question tools (AskUserQuestion-style) in the Cursor chat surface.',
+    screenshots: [],
   },
 ];

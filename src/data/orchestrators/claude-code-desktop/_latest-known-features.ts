@@ -37,9 +37,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Claude Code is an agentic coding tool that reads your codebase, edits files, runs commands, and integrates with your development tools. Available in your terminal, IDE, desktop app, and browser.',
   },
   {
-    featureId: 'multi-model',
-    support: 'partial',
-    note: 'Anthropic Claude models only (Opus/Sonnet/Haiku); reachable via Anthropic API, Bedrock, Vertex AI, or Foundry.',
+    featureId: 'multiple-model-families',
+    support: 'no',
+    note: 'Single vendor: Anthropic Claude models only (Opus/Sonnet/Haiku). Reachable through several gateways (Anthropic API, Bedrock, Vertex AI, Foundry) but all serve the same vendor — no support for OpenAI, Google, xAI or other model families.',
     screenshots: [],
     sourceUrl: 'https://code.claude.com/docs/en/model-config',
     sourceExtract:
@@ -55,9 +55,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Claude Code works directly with git. It stages changes, writes commit messages, creates branches, and opens pull requests.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'no',
-    note: 'Agent view groups sessions by state (Needs input / Working / Completed) as a terminal list, not as a kanban board.',
+    note: 'Agent view groups sessions by state (Needs input / Working / Completed) as a terminal list, not as a board-style visual surface.',
     screenshots: [],
   },
   {
@@ -69,13 +69,25 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: "`claude logs <id>` — Print the session's recent output.",
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
     note: 'Desktop app diff viewer shows changes file by file before creating a pull request.',
     screenshots: [],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
     sourceExtract:
       'After Claude makes changes to your code, the diff view lets you review modifications file by file before creating a pull request.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'unknown',
+    note: 'No ignore-whitespace toggle documented in the desktop diff viewer.',
+    screenshots: [],
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'unknown',
+    note: 'Diff viewer renders the current pending changes; no documented selector to switch between per-commit / per-turn / branch-vs-target scopes.',
+    screenshots: [],
   },
   {
     featureId: 'self-hosted',
@@ -145,15 +157,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://code.claude.com/docs/en/overview',
     sourceExtract:
       'Claude Code is an agentic coding tool that reads your codebase, edits files, runs commands, and integrates with your development tools.',
-  },
-  {
-    featureId: 'diff-panel-files-list',
-    support: 'partial',
-    note: 'Desktop diff viewer shows file list on the left and per-file changes on the right; no ignore-whitespace toggle documented.',
-    screenshots: [],
-    sourceUrl: 'https://code.claude.com/docs/en/desktop',
-    sourceExtract:
-      'Click this indicator to open the diff viewer, which displays a file list on the left and the changes for each file on the right.',
   },
   {
     featureId: 'diff-comments',
@@ -228,9 +231,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
+    featureId: 'shared-config',
     support: 'yes',
-    note: 'Three on-disk tiers: User (`~/.claude/settings.json`), Project (`.claude/settings.json`), Local (`.claude/settings.local.json`); plus managed and command-line overrides.',
+    note: 'Project-level `.claude/settings.json` checked into source control shares config with the team. Three additional on-disk tiers (User `~/.claude/settings.json`, Local `.claude/settings.local.json`, plus managed and command-line overrides) round out the hierarchy.',
     screenshots: [],
     sourceUrl: 'https://code.claude.com/docs/en/settings',
     sourceExtract:
@@ -282,18 +285,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Effort levels control adaptive reasoning, which lets the model decide whether and how much to think on each step based on task complexity. Opus 4.7: `low`, `medium`, `high`, `xhigh`, `max`.',
   },
   {
-    featureId: 'multi-model-integration',
-    support: 'no',
-    note: 'Single-vendor: only Anthropic Claude models, reached directly or via Bedrock/Vertex/Foundry gateways.',
-    screenshots: [],
-    sourceUrl: 'https://code.claude.com/docs/en/model-config',
-    sourceExtract:
-      'Available models: opus, sonnet, haiku, opusplan, sonnet[1m], opus[1m]. On the Anthropic API and Claude Platform on AWS, `opus` resolves to Opus 4.7 and `sonnet` resolves to Sonnet 4.6.',
-  },
-  {
     featureId: 'web-preview',
     support: 'yes',
-    note: 'Desktop preview pane embeds a browser bound to `launch.json` dev servers; Claude can also test backends and read logs.',
+    note: 'Desktop preview pane embeds a browser bound to `launch.json` dev servers; Claude can drive it (start dev server, hit API endpoints) and read server logs, fulfilling the "full" criterion (orchestrator can both display and act on the preview).',
     screenshots: [],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
     sourceExtract:
@@ -319,8 +313,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'mission-control',
-    support: 'yes',
-    note: 'Agent view (`claude agents`) aggregates all background sessions across all projects, grouped by Needs input / Working / Completed / Ready for review.',
+    support: 'partial',
+    note: 'Agent view (`claude agents`) aggregates background sessions across projects with their current state. Live-oriented; no dedicated historical/audit timeline of past activity.',
     screenshots: [],
     sourceUrl: 'https://code.claude.com/docs/en/agent-view',
     sourceExtract:
@@ -381,6 +375,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     featureId: 'fork-workspace',
     support: 'unknown',
     note: '`claude --resume` and `--teleport` move sessions between surfaces, but no documented action clones an entire session + worktree state into a brand-new worktree.',
+    screenshots: [],
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'unknown',
+    note: 'Agent SDK exposes user-question tools, but no documented inline rendering inside the desktop chat surface specifically.',
     screenshots: [],
   },
 ];

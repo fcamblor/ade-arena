@@ -32,6 +32,24 @@ export const META: OrchestratorMeta = {
   },
   notes:
     'Docker Agent (binary: cagent) is a CLI framework for building YAML-defined teams of AI agents. It is not a parallel-task / kanban orchestrator: a single `cagent run` executes one agent (optionally delegating to sub-agents) inside the current working directory.',
+  modelIntegrations: [
+    {
+      vendor: 'Multi-vendor',
+      kind: 'provider-sdk',
+      notes:
+        'AI provider agnostic — direct SDKs for OpenAI, Anthropic, Gemini, AWS Bedrock, Mistral, xAI, Docker Model Runner, and more. External tools wired via the Docker MCP Gateway.',
+      sourceUrl: 'https://github.com/docker/cagent',
+      sourceExtract:
+        'AI provider agnostic — OpenAI, Anthropic, Gemini, AWS Bedrock, Mistral, xAI, Docker Model Runner, and more.',
+    },
+    {
+      vendor: '(tools)',
+      kind: 'mcp',
+      notes: 'Tools (not models) plug in via MCP servers — local, remote, or Docker-based.',
+      sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
+      sourceExtract: 'Connect agents to external tools via the Docker MCP Gateway.',
+    },
+  ],
   trackingSources: [
     {
       kind: 'github-releases',

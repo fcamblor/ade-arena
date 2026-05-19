@@ -37,6 +37,16 @@ export const META: OrchestratorMeta = {
     message: 'Anthropic Claude models only (Opus / Sonnet / Haiku).',
     sourceUrl: 'https://code.claude.com/docs/en/model-config',
   },
+  modelIntegrations: [
+    {
+      vendor: 'Anthropic',
+      kind: 'provider-sdk',
+      notes: 'Direct Anthropic API; also reachable via AWS Bedrock, Google Vertex AI and Azure Foundry gateways.',
+      sourceUrl: 'https://code.claude.com/docs/en/model-config',
+      sourceExtract:
+        'Anthropic API: A full model name — Bedrock: an inference profile ARN — Foundry: a deployment name — Vertex: a version name.',
+    },
+  ],
   trackingSources: [
     {
       kind: 'github-releases',

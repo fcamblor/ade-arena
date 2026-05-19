@@ -40,9 +40,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: 'Make sure Local is selected to have Codex work on your machine.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'no',
-    note: 'OpenAI models only (GPT-5.5 default, GPT-5.4 with reasoning levels). No third-party providers; ChatGPT login required.',
+    note: 'Single vendor: OpenAI models only (GPT-5.5 default, GPT-5.4 with reasoning levels). No third-party model families; ChatGPT login required.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/changelog',
     sourceExtract:
@@ -57,9 +57,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: 'Inspect diffs, address PR feedback, stage files, commit, and push.',
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'no',
-    note: 'Threads are organized by project in a sidebar/list, not as a kanban board.',
+    note: 'Threads are organized by project in a sidebar/list, not as a board-style visual surface.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/app',
     sourceExtract: 'Agents run in separate threads organized by projects so you can switch between tasks without losing context.',
@@ -73,12 +73,24 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: 'Run commands in each thread and launch repeatable project actions.',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'yes',
     note: 'In-thread diff view lets the user review the agent changes and comment before committing.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/app',
     sourceExtract: 'Review the agent’s changes in the thread and comment on the diff.',
+  },
+  {
+    featureId: 'diff-whitespace-toggle',
+    support: 'unknown',
+    note: 'No ignore-whitespace toggle explicitly documented in the in-thread diff view.',
+    screenshots: [],
+  },
+  {
+    featureId: 'diff-multi-views',
+    support: 'unknown',
+    note: 'Diff covers PR reviewing and viewing multiple files; no documented selector to switch between per-commit / per-turn / branch-vs-target scopes.',
+    screenshots: [],
   },
   {
     featureId: 'self-hosted',
@@ -136,15 +148,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'diff-panel-files-list',
-    support: 'yes',
-    note: 'Diff inspection covers multiple files per thread; whitespace-toggle is not explicitly documented.',
-    screenshots: [],
-    sourceUrl: 'https://developers.openai.com/codex/changelog',
-    sourceExtract:
-      'Deeper support for developer workflows, like reviewing PRs, viewing multiple files and terminals.',
-  },
-  {
     featureId: 'diff-comments',
     support: 'yes',
     note: 'Users can comment on the diff inside the thread; comments are surfaced back to the agent.',
@@ -155,7 +158,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'github-comment-sync',
     support: 'partial',
-    note: 'Codex addresses GitHub PR review comments from the app, but two-way sync of in-app diff comments to GitHub is not explicitly documented.',
+    note: 'Codex surfaces and addresses GitHub PR review comments from inside the app (one-way ingestion). No explicit documentation of a polished in-thread comment surface fed by GitHub, so kept partial.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/app',
     sourceExtract: 'Inspect diffs, address PR feedback, stage files, commit, and push.',
@@ -213,9 +216,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'shared-config-levels',
-    support: 'partial',
-    note: 'Plugins support workspace sharing, share access controls and marketplace distribution; tiered settings.json-style hierarchy is documented for the CLI, less so for the app surface.',
+    featureId: 'shared-config',
+    support: 'yes',
+    note: 'Plugins support workspace sharing, share access controls and marketplace distribution, so the interesting bits of configuration can be shared with teammates. CLI also exposes a tiered settings.json hierarchy.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/changelog',
     sourceExtract:
@@ -247,7 +250,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'switch-model-mid-session',
     support: 'unknown',
-    note: 'Multiple models (GPT-5.5 default, GPT-5.4 with reasoning levels) are available; mid-session model switching in the app UI is not documented.',
+    note: 'Multiple OpenAI models (GPT-5.5, GPT-5.4 with reasoning levels) are available; mid-session model switching in the app UI is not documented. Vendor lock means a same-vendor swap should be feasible without a new session.',
     screenshots: [],
   },
   {
@@ -259,15 +262,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: 'Fixed Bedrock model support for `apply_patch` and GPT-5.4 reasoning levels.',
   },
   {
-    featureId: 'multi-model-integration',
-    support: 'no',
-    note: 'Single-vendor: OpenAI models only (via ChatGPT login or, in the CLI, Bedrock for OpenAI models).',
-    screenshots: [],
-  },
-  {
     featureId: 'web-preview',
     support: 'yes',
-    note: 'In-app browser added in April 2026 lets Codex use local dev servers and annotate rendered pages; Chrome extension extends this to signed-in browsing.',
+    note: 'In-app browser added in April 2026 lets Codex operate local dev servers, navigate and annotate rendered pages — i.e. the orchestrator can both display and act on the preview (full criterion met).',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/changelog',
     sourceExtract:
@@ -289,8 +286,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'mission-control',
-    support: 'yes',
-    note: 'Codex App is positioned as a "command center" managing many parallel agents and threads across projects from a single window.',
+    support: 'partial',
+    note: 'Codex App is positioned as a "command center" managing many parallel agents and threads across projects from a single window. Live-oriented; no dedicated historical/audit timeline of past archived activity documented.',
     screenshots: [],
     sourceUrl: 'https://developers.openai.com/codex/app',
     sourceExtract:
@@ -343,6 +340,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceUrl: 'https://developers.openai.com/codex/changelog',
     sourceExtract:
       'Plugin management now supports workspace sharing, share access controls, source filtering, local share path tracking, marketplace removal/upgrades.',
+  },
+  {
+    featureId: 'chat-user-questions',
+    support: 'unknown',
+    note: 'Codex agents can pause for clarification, but no documented inline interactive rendering of user-question tools in the app chat surface.',
+    screenshots: [],
   },
   {
     featureId: 'fork-workspace',

@@ -37,9 +37,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Docker Agent is included in Docker Desktop 4.63 and later and can be used with the `docker agent` command.',
   },
   {
-    featureId: 'multi-model',
+    featureId: 'multiple-model-families',
     support: 'yes',
-    note: 'BYOK; the agent talks directly to the chosen provider SDK.',
+    note: 'BYOK across multiple vendors: OpenAI, Anthropic, Gemini, AWS Bedrock, Mistral, xAI, Docker Model Runner, and more — direct provider SDKs.',
     screenshots: [],
     sourceUrl: 'https://github.com/docker/cagent',
     sourceExtract:
@@ -52,9 +52,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'kanban-board',
+    featureId: 'visual-task-management',
     support: 'no',
-    note: 'CLI / TUI tool; no kanban surface.',
+    note: 'CLI / TUI tool; no board-style visual surface.',
     screenshots: [],
   },
   {
@@ -66,11 +66,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract: '--tui  Run the agent with a Terminal User Interface (TUI) (default true).',
   },
   {
-    featureId: 'diff-review',
+    featureId: 'diff-viewer',
     support: 'no',
     note: 'No built-in diff UI; file edits land directly on disk subject to tool-call approval prompts.',
     screenshots: [],
   },
+  { featureId: 'diff-whitespace-toggle', support: 'no', screenshots: [] },
+  { featureId: 'diff-multi-views', support: 'no', screenshots: [] },
   {
     featureId: 'self-hosted',
     support: 'yes',
@@ -104,7 +106,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'cagent is itself an agent runtime, not a wrapper around third-party coding CLIs (Claude Code, Codex, etc.).',
     screenshots: [],
   },
-  { featureId: 'diff-panel-files-list', support: 'no', screenshots: [] },
   { featureId: 'diff-comments', support: 'no', screenshots: [] },
   { featureId: 'github-comment-sync', support: 'no', screenshots: [] },
   {
@@ -132,9 +133,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   { featureId: 'remote-file-sharing', support: 'no', screenshots: [] },
   {
-    featureId: 'shared-config-levels',
-    support: 'partial',
-    note: 'Agent teams are declared in versionable YAML files and can be pushed/pulled as OCI artifacts on Docker Hub or any registry, but there is no built-in user/project/local override hierarchy.',
+    featureId: 'shared-config',
+    support: 'yes',
+    note: 'Agent teams are declared in versionable YAML files and can be pushed/pulled as OCI artifacts on Docker Hub or any registry — the interesting bits of configuration are fully shareable with teammates.',
     screenshots: [],
     sourceUrl: 'https://github.com/docker/cagent',
     sourceExtract:
@@ -161,15 +162,6 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Agent configurations are YAML files with defined structure for agents, models, and instructions.',
   },
   { featureId: 'model-effort-support', support: 'unknown', screenshots: [] },
-  {
-    featureId: 'multi-model-integration',
-    support: 'yes',
-    note: 'Direct provider SDK integration plus Docker Model Runner; tools exposed via the MCP Gateway.',
-    screenshots: [],
-    sourceUrl: 'https://docs.docker.com/ai/docker-agent/',
-    sourceExtract:
-      'run these agent teams from your terminal using any LLM provider. Connect agents to external tools via the Docker MCP Gateway.',
-  },
   { featureId: 'web-preview', support: 'no', screenshots: [] },
   {
     featureId: 'plugin-system',
@@ -192,4 +184,5 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'mission-control', support: 'no', screenshots: [] },
   { featureId: 'copy-from-origin-workspace', support: 'no', screenshots: [] },
   { featureId: 'symlink-from-origin-workspace', support: 'no', screenshots: [] },
+  { featureId: 'chat-user-questions', support: 'no', screenshots: [], note: 'TUI-only CLI; no chat surface to render inline user-question tools.' },
 ];
