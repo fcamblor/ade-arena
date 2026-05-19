@@ -449,7 +449,7 @@ const featureCount = visibleFeatures.length;
             <tr class="row--wiring">
               <th scope="row" class="cell--wiring-label">
                 <span class="cell--wiring-label__text">Model wiring</span>
-                <span class="cell--wiring-label__hint">how vendor models are plugged in</span>
+                <p class="cell--wiring-label__hint feature__body">how vendor models are plugged in</p>
               </th>
               {ORCHESTRATORS.map((o) => {
                 const integrations = o.modelIntegrations ?? [];
@@ -464,30 +464,30 @@ const featureCount = visibleFeatures.length;
                       <ul class="wiring" role="list">
                         {integrations.map((mi) => {
                           const hasEvidence = !!(mi.sourceUrl && mi.sourceExtract);
-                          const pill = (
-                            <span class="wiring__row">
-                              <span class="wiring__vendor" title={mi.notes}>{mi.vendor}</span>
-                              <span
-                                class={`wiring__kind wiring__kind--${mi.kind}`}
-                                title={integrationKindTooltip[mi.kind]}
-                              >
-                                {integrationKindLabel[mi.kind]}
-                              </span>
+                          const kindChip = (
+                            <span
+                              class={`wiring__kind wiring__kind--${mi.kind}`}
+                              title={integrationKindTooltip[mi.kind]}
+                            >
+                              {integrationKindLabel[mi.kind]}
                             </span>
                           );
                           return (
                             <li class="wiring__item">
-                              {hasEvidence ? (
-                                <Evidence
-                                  variant="inline"
-                                  refLabel={`${o.toolId.replace(/-/g, ' ')} · ${mi.vendor.toLowerCase()} wiring`}
-                                  sourceUrl={mi.sourceUrl}
-                                  sourceExtract={mi.sourceExtract}
-                                  ariaLabel={`Show source for ${mi.vendor} model wiring on ${o.toolName}`}
-                                >
-                                  {pill}
-                                </Evidence>
-                              ) : pill}
+                              <span class="wiring__row">
+                                <span class="wiring__vendor" title={mi.notes}>{mi.vendor}</span>
+                                {hasEvidence ? (
+                                  <Evidence
+                                    variant="inline"
+                                    refLabel={`${o.toolId.replace(/-/g, ' ')} · ${mi.vendor.toLowerCase()} wiring`}
+                                    sourceUrl={mi.sourceUrl}
+                                    sourceExtract={mi.sourceExtract}
+                                    ariaLabel={`Show source for ${mi.vendor} model wiring on ${o.toolName}`}
+                                  >
+                                    {kindChip}
+                                  </Evidence>
+                                ) : kindChip}
+                              </span>
                               {mi.notes && <p class="wiring__notes">{mi.notes}</p>}
                             </li>
                           );
@@ -1039,9 +1039,9 @@ const featureCount = visibleFeatures.length;
   .cell--notices-label__text {
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    font-size: 0.72rem;
-    font-weight: 800;
+    letter-spacing: 0.24em;
+    font-size: 0.78rem;
+    font-weight: 900;
     color: oklch(0.82 0.1 45);
   }
   .row--notices .cell--notices {
@@ -1075,20 +1075,13 @@ const featureCount = visibleFeatures.length;
     display: block;
     font-family: var(--font-display);
     text-transform: uppercase;
-    letter-spacing: 0.22em;
-    font-size: 0.72rem;
-    font-weight: 800;
+    letter-spacing: 0.24em;
+    font-size: 0.78rem;
+    font-weight: 900;
     color: oklch(0.84 0.07 220);
   }
   .cell--wiring-label__hint {
-    display: block;
     margin-top: 4px;
-    font-size: 0.66rem;
-    line-height: 1.35;
-    letter-spacing: 0.04em;
-    color: var(--fg-faint);
-    text-transform: none;
-    font-weight: 500;
   }
   .row--wiring .cell--wiring {
     background: var(--bg);
@@ -1144,7 +1137,8 @@ const featureCount = visibleFeatures.length;
     order: 0;
   }
   .wiring__vendor { order: -1; }
-  .wiring__kind { order: 1; }
+  .wiring__kind,
+  .wiring__row > .evidence--inline { order: 1; }
   .wiring__kind {
     display: inline-flex;
     align-items: center;
@@ -1256,6 +1250,7 @@ const featureCount = visibleFeatures.length;
     color: var(--fg-muted);
     font-size: 0.825rem;
     line-height: 1.5;
+    font-weight: 400;
   }
 
   /* ============ Support cells ============ */
