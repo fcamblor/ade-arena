@@ -14,7 +14,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     featureId: 'git-worktrees',
     support: 'yes',
     note: 'Every session in the Code tab automatically runs in its own git worktree under `.claude/worktrees/`; location and branch prefix are configurable in Settings → Claude Code.',
-    screenshots: [],
+    screenshots: [
+      {
+        src: '/screenshots/claude-code-desktop/git-worktrees_20260520_1.png',
+        alt: 'Claude Code Desktop Code tab showing worktree selector at the bottom of the session interface, with \'worktree\' option highlighted.',
+        caption: 'Claude Code Desktop Code tab showing worktree selector at the bottom of the session interface, with \'worktree\' option highlighted.',
+      },
+    ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
     sourceExtract:
       'For Git repositories, each session gets its own isolated copy of your project using Git worktrees, so changes in one session don’t affect other sessions until you commit them. Worktrees are stored in `<project-root>/.claude/worktrees/` by default.',
