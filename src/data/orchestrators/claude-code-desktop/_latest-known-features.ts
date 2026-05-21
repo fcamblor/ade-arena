@@ -78,6 +78,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
         alt: 'Claude Code Desktop session after PR creation, with the branch bar showing the PR branch and a Finalize pr link highlighted.',
         caption: 'Session after PR creation: the branch bar shows the PR branch and a direct link to finalise the pull request on GitHub.',
       },
+      {
+        src: '/screenshots/claude-code-desktop/pr-creation_20260521_3.png',
+        alt: 'Claude Code Desktop session after PR creation showing the CI monitoring panel with No checks reported yet, Auto-fix CI & address comments and Auto-merge when ready toggles, Auto-archive settings link, and the PR branch bar at the bottom.',
+        caption: 'Post-creation state: the CI monitoring panel appears automatically once a PR is opened, with auto-fix, auto-merge, and auto-archive options.',
+      },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
     sourceExtract:
