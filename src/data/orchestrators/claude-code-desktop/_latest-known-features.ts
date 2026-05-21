@@ -70,18 +70,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/pr-creation_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop session with a PR creation dropdown menu showing three options: Create PR, Create draft PR, and Manually create PR.',
+        caption: 'PR creation dropdown at the bottom prompt bar, offering Create PR, Create draft PR, and Manually create PR options.',
       },
       {
         src: '/screenshots/claude-code-desktop/pr-creation_20260521_2.png',
-        alt: 'TODO',
-        caption: 'TODO',
-      },
-      {
-        src: '/screenshots/claude-code-desktop/pr-creation_20260521_3.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop session after PR creation, with the branch bar showing the PR branch and a Finalize pr link highlighted.',
+        caption: 'Session after PR creation: the branch bar shows the PR branch and a direct link to finalise the pull request on GitHub.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -119,8 +114,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/diff-viewer_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop panel selector dropdown with the Diff option checked, and the diff pane open on the right showing file changes across the session worktree.',
+        caption: 'Panel selector with Diff selected, displaying the file-by-file diff pane alongside the chat transcript.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -224,13 +219,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/diff-comments_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop diff pane with an inline comment annotation reading "It doesn\'t look like a good feature" added on a diff line.',
+        caption: 'Inline diff comment added by clicking a line in the diff pane; Claude will read the annotation and revise accordingly.',
       },
       {
         src: '/screenshots/claude-code-desktop/diff-comments_20260521_2.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop diff pane showing an inline comment annotation and the comment input field open below the annotated line.',
+        caption: 'Comment input field open below an annotated diff line, ready to submit feedback for Claude to act on.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -244,8 +239,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/github-comment-sync_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop diff pane showing a local AI annotation "Seems reasonable!" on a diff line, with the PR branch info bar at the bottom — GitHub PR review comments are not synced into this view.',
+        caption: 'The diff pane shows local Desktop annotations only; GitHub PR review comments are not ingested or displayed here.',
       },
     ],
   },
@@ -347,13 +342,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/pr-status-sync_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop CI monitoring panel showing No checks reported yet, with Auto-fix CI & address comments and Auto-merge when ready toggles, and an Auto-archive settings link highlighted.',
+        caption: 'CI monitoring panel in the session, with auto-fix, auto-merge toggles and a link to Auto-archive settings.',
       },
       {
         src: '/screenshots/claude-code-desktop/pr-status-sync_20260521_2.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop Settings dialog, Claude Code section, with the Auto-archive after PR merge or close toggle highlighted by an arrow.',
+        caption: 'Settings → Claude Code: "Auto-archive after PR merge or close" toggle, which automatically closes the session when the associated PR is merged or closed.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -376,8 +371,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/context-fill-indicator_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop context window indicator popup showing 68.6K / 200.0k (34%) usage, with plan usage breakdown: 5-hour limit at 100%, Weekly all models at 24%, Weekly Claude Design at 0%.',
+        caption: 'Context window indicator popup showing current token usage (34%) and plan usage quotas per time window.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/vs-code',
@@ -391,8 +386,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/switch-model-mid-session_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop model and effort dropdown showing Models section with Opus 4.7, Sonnet 4.6 (checked), Haiku 4.5, and Opus 4.6 Legacy; an arrow highlights the Sonnet 4.6 selection.',
+        caption: 'Model picker dropdown mid-session: Sonnet 4.6 is currently selected; switching takes effect immediately without restarting the session.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -406,8 +401,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/model-effort-support_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop model and effort dropdown showing the Effort section with Low, Medium (checked), High, and Max levels; an arrow highlights the Medium effort selection.',
+        caption: 'Effort picker in the model dropdown: Medium reasoning level selected; options range from Low to Max (extended thinking).',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -420,18 +415,18 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/web-preview_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop with the Files panel open in the middle and an embedded browser preview on the right showing the ade-showdown website; an arrow points to launch.json in the file tree.',
+        caption: 'Embedded browser preview pane bound to the dev server defined in launch.json, displayed alongside the file tree and chat.',
       },
       {
         src: '/screenshots/claude-code-desktop/web-preview_20260521_2.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop browser preview pane with an annotation toolbar at the bottom highlighted; the user can draw annotations directly on the live preview.',
+        caption: 'Annotation mode in the preview pane: users can draw rectangles or highlight areas to communicate UI feedback to Claude.',
       },
       {
         src: '/screenshots/claude-code-desktop/web-preview_20260521_3.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop browser preview with an active annotation rectangle drawn over part of the rendered page, and a DOM inspector tooltip showing element details.',
+        caption: 'Active annotation on the preview: a region is selected and element details are shown, allowing Claude to target specific DOM elements.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -454,8 +449,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/quick-chat_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop in Chat tab mode showing the standard Claude conversation interface with "Good afternoon, Frédéric" welcome message; arrows point to the Chat tab and the New chat button.',
+        caption: 'Chat tab: a standard Claude conversation interface detached from any worktree, available alongside the Code and Cowork tabs.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -496,8 +491,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/chat-rewind_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop session chat with a "Rewind to here" tooltip appearing on hover over a past message, and the diff panel open on the right showing the current worktree changes.',
+        caption: '"Rewind to here" hover action on a past message: clicking it restores the conversation and/or file edits to that checkpoint.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/checkpointing',
@@ -535,13 +530,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/fork-workspace_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop session with a "Fork from here" tooltip appearing on hover over a past message, and the branch info bar at the bottom highlighted.',
+        caption: '"Fork from here" action on a past message: triggers a fork of the session from that point, available via hover menu on any message.',
       },
       {
         src: '/screenshots/claude-code-desktop/fork-workspace_20260521_2.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop forked session titled "Update Claude Desktop 1.8089.1 feature information (fork)" with annotations: Same chat history on the left, Different worktree and Changes are resetted on the right diff pane, and Recall the message at the prompt.',
+        caption: 'Forked session: the chat history is preserved but the worktree is brand new (no pending changes), and the last message is pre-filled for replay.',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
@@ -555,8 +550,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/chat-user-questions_20260521_1.png',
-        alt: 'TODO',
-        caption: 'TODO',
+        alt: 'Claude Code Desktop chat showing an AskUserQuestion dialog rendered inline: "Which programming language do you prefer for backend development?" with multiple-choice options TypeScript/Node.js, Python, Go, Rust, Other, a free-text input field, and Skip/Submit buttons.',
+        caption: 'AskUserQuestion tool call rendered inline in the Desktop chat as a structured multiple-choice dialog with a free-text fallback option.',
       },
     ],
   },
