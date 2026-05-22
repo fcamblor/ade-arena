@@ -4,15 +4,17 @@ import type { SupportLevel, FeatureCategory, Feature, Platform, TrackingSourceKi
 import Evidence from './Evidence.astro';
 
 // Each orchestrator column carries a stable `<toolId>@<version>` key. The
-// preview query param (?preview=tool@ver[,tool@ver…]) unlocks one or more
-// waiting-for-review versions: their dropdown option becomes visible and,
-// on initial load, the matching alternate column is shown in place of the
-// default. The dropdown switcher is otherwise purely client-side — picking
-// a version toggles DOM attributes only, the URL is never rewritten. That
-// keeps `?preview=` semantically focused on PR-review sharing.
+// preview query param (?preview=tool@ver[,tool@ver…], ?preview=tool, or
+// ?preview=*) unlocks waiting-for-review versions: their dropdown option
+// becomes visible and, on initial load, the matching alternate column is shown
+// in place of the default. The dropdown switcher is otherwise purely
+// client-side — picking a version toggles DOM attributes only, the URL is never
+// rewritten. That keeps `?preview=` semantically focused on PR-review sharing.
 const previewKey = (o: typeof ORCHESTRATORS[number]) => `${o.toolId}@${o.version}`;
 const displayMode = (o: typeof ORCHESTRATORS[number]) =>
   isDefaultVisible(o) ? 'default' : 'alternate';
+const versionStatus = (o: typeof ORCHESTRATORS[number]) =>
+  isApproved(o) ? 'approved' : 'pending';
 const defaultVersionFor = (toolId: string) => {
   const versions = ORCHESTRATORS_BY_TOOL[toolId];
   return versions.find(isDefaultVisible)?.version ?? versions[0]?.version ?? '';
@@ -208,6 +210,7 @@ const featureCount = visibleFeatures.length;
               data-preview-key={previewKey(o)}
               data-tool-id={o.toolId}
               data-display-mode={displayMode(o)}
+              data-version-status={versionStatus(o)}
             />
           ))}
         </colgroup>
@@ -240,6 +243,7 @@ const featureCount = visibleFeatures.length;
                 data-preview-key={previewKey(o)}
                 data-tool-id={o.toolId}
                 data-display-mode={displayMode(o)}
+                data-version-status={versionStatus(o)}
               >
                 <div class="tool">
                   {/* 1/ Title */}
@@ -417,6 +421,7 @@ const featureCount = visibleFeatures.length;
                     data-preview-key={previewKey(o)}
                     data-tool-id={o.toolId}
                     data-display-mode={displayMode(o)}
+                    data-version-status={versionStatus(o)}
                   >
                     {hasContent && (
                       <div class="notices">
@@ -469,6 +474,7 @@ const featureCount = visibleFeatures.length;
                     data-preview-key={previewKey(o)}
                     data-tool-id={o.toolId}
                     data-display-mode={displayMode(o)}
+                    data-version-status={versionStatus(o)}
                   >
                     {integrations.length > 0 ? (
                       <ul class="wiring" role="list">
@@ -526,6 +532,7 @@ const featureCount = visibleFeatures.length;
                       data-preview-key={previewKey(o)}
                       data-tool-id={o.toolId}
                       data-display-mode={displayMode(o)}
+                      data-version-status={versionStatus(o)}
                       aria-label={`${s.yes} supported plus ${s.partial} partial out of ${s.total} ${categoryLabel[group.category]} features`}
                     >
                       <div class="score score--category">
@@ -563,6 +570,7 @@ const featureCount = visibleFeatures.length;
                         data-preview-key={previewKey(orch)}
                         data-tool-id={orch.toolId}
                         data-display-mode={displayMode(orch)}
+                        data-version-status={versionStatus(orch)}
                       >
                         <span class="cell__glyph" aria-label={supportLabel[level]} role="img">{supportGlyph[level]}</span>
                         {s?.note && <p class="cell__note">{s.note}</p>}
@@ -602,6 +610,7 @@ const featureCount = visibleFeatures.length;
           data-preview-key={previewKey(o)}
           data-tool-id={o.toolId}
           data-display-mode={displayMode(o)}
+          data-version-status={versionStatus(o)}
         >
           <h4 class="sources__tool">
             <a href={o.homepage} target="_blank" rel="noreferrer">{o.toolName}</a>
@@ -1528,13 +1537,14 @@ const featureCount = visibleFeatures.length;
 </style>
 
 <script>
-  // The `?preview=<toolId>@<version>[,…]` query param unlocks one or more
-  // waiting-for-review versions: their dropdown option becomes visible and,
-  // on initial load, the matching column is shown in place of the default.
-  // The dropdown switcher itself is purely client-side — picking a different
-  // version toggles DOM attributes only, never touches the URL. That means
-  // a previewer can swap back and forth between the unlocked pending version
-  // and the latest approved one without losing the preview unlock.
+  // The `?preview=<toolId>@<version>[,…]`, `?preview=<toolId>`, and
+  // `?preview=*` query params unlock waiting-for-review versions: their
+  // dropdown option becomes visible and, on initial load, the matching column
+  // is shown in place of the default. The dropdown switcher itself is purely
+  // client-side — picking a different version toggles DOM attributes only,
+  // never touches the URL. That means a previewer can swap back and forth
+  // between unlocked pending versions and the latest approved one without
+  // losing the preview unlock.
   (() => {
     const QUERY_PARAM = 'preview';
 
@@ -1543,6 +1553,7 @@ const featureCount = visibleFeatures.length;
       toolId: string;
       version: string;
       mode: 'default' | 'alternate';
+      status: 'approved' | 'pending';
     };
 
     const nodes = Array.from(
@@ -1553,35 +1564,74 @@ const featureCount = visibleFeatures.length;
       const key = el.dataset.previewKey;
       const toolId = el.dataset.toolId;
       const mode = el.dataset.displayMode;
-      if (!key || !toolId || (mode !== 'default' && mode !== 'alternate')) continue;
+      const status = el.dataset.versionStatus;
+      if (
+        !key ||
+        !toolId ||
+        (mode !== 'default' && mode !== 'alternate') ||
+        (status !== 'approved' && status !== 'pending')
+      ) continue;
       const version = key.slice(toolId.length + 1);
-      nodeStates.push({ el, state: { key, toolId, version, mode } });
+      nodeStates.push({ el, state: { key, toolId, version, mode, status } });
     }
 
-    function parseParam(raw: string): Set<string> {
-      return new Set(
-        raw
-          .split(',')
-          .map((entry) => entry.trim())
-          .filter(Boolean),
-      );
+    function collectPendingVersionsByTool(states: typeof nodeStates): Map<string, string[]> {
+      const pendingByTool = new Map<string, string[]>();
+      for (const { state } of states) {
+        if (state.status !== 'pending') continue;
+        const versions = pendingByTool.get(state.toolId) ?? [];
+        if (!versions.includes(state.version)) versions.push(state.version);
+        pendingByTool.set(state.toolId, versions);
+      }
+      return pendingByTool;
+    }
+
+    function parseParam(raw: string, pendingByTool: Map<string, string[]>): Set<string> {
+      const unlocked = new Set<string>();
+      const entries = raw
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+
+      for (const entry of entries) {
+        if (entry === '*') {
+          for (const [toolId, versions] of pendingByTool) {
+            for (const version of versions) unlocked.add(`${toolId}@${version}`);
+          }
+          continue;
+        }
+
+        if (!entry.includes('@')) {
+          const versions = pendingByTool.get(entry);
+          if (!versions) continue;
+          for (const version of versions) unlocked.add(`${entry}@${version}`);
+          continue;
+        }
+
+        unlocked.add(entry);
+      }
+
+      return unlocked;
     }
 
     // Parsed once at load and never mutated — represents which pending
     // versions the URL has unlocked. Switching versions in-page doesn't
     // change this set, so a previewer can always swap back to their unlocked
     // version from the dropdown.
+    const pendingByTool = collectPendingVersionsByTool(nodeStates);
     const unlockedKeys = parseParam(
       new URLSearchParams(window.location.search).get(QUERY_PARAM) ?? '',
+      pendingByTool,
     );
 
     // In-memory active selection per tool. Initially populated from the URL
     // (so an `?preview=` link opens straight to the pending column); updated
     // by the dropdown change handler. Missing entry = show the default.
     const activeByTool = new Map<string, string>();
-    for (const key of unlockedKeys) {
-      const [toolId, version] = key.split('@');
-      if (toolId && version) activeByTool.set(toolId, version);
+    for (const { state } of nodeStates) {
+      if (state.mode !== 'alternate') continue;
+      if (activeByTool.has(state.toolId)) continue;
+      if (unlockedKeys.has(state.key)) activeByTool.set(state.toolId, state.version);
     }
 
     function apply() {
