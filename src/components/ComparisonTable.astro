@@ -399,6 +399,14 @@ const featureCount = visibleFeatures.length;
                     )}
                   </div>
 
+                  {!isApproved(o) && (
+                    <p class="tool__preview-banner tool__preview-banner--header" role="note">
+                      <span class="tool__preview-banner-tag">Preview</span>
+                      <span class="tool__preview-banner-text">
+                        v{o.version} is waiting for review — not yet part of the public dataset.
+                      </span>
+                    </p>
+                  )}
                 </div>
               </th>
               );
@@ -407,14 +415,13 @@ const featureCount = visibleFeatures.length;
         </thead>
 
         <tbody>
-          {ORCHESTRATORS.some((o) => o.modelRestriction || o.misc || !isApproved(o)) && (
+          {ORCHESTRATORS.some((o) => o.modelRestriction || o.misc) && (
             <tr class="row--notices">
               <th scope="row" class="cell--notices-label">
                 <span class="cell--notices-label__text">Worth noting</span>
               </th>
               {ORCHESTRATORS.map((o) => {
-                const pending = !isApproved(o);
-                const hasContent = !!(o.modelRestriction || o.misc || pending);
+                const hasContent = !!(o.modelRestriction || o.misc);
                 return (
                   <td
                     class="cell--notices"
@@ -442,14 +449,6 @@ const featureCount = visibleFeatures.length;
                               {o.misc.sourceUrl
                                 ? <a href={o.misc.sourceUrl} target="_blank" rel="noreferrer">{o.misc.message}</a>
                                 : o.misc.message}
-                            </span>
-                          </p>
-                        )}
-                        {pending && (
-                          <p class="tool__preview-banner" role="note">
-                            <span class="tool__preview-banner-tag">Preview</span>
-                            <span class="tool__preview-banner-text">
-                              v{o.version} is waiting for review — not yet part of the public dataset.
                             </span>
                           </p>
                         )}
@@ -774,7 +773,14 @@ const featureCount = visibleFeatures.length;
      headers so the card isn't clipped by the next column's stacking context. */
   .cell--tool:has(.evidence[open]) { z-index: 6; }
   .cell--corner:has(.evidence[open]) { z-index: 7; }
-  .tool { display: flex; flex-direction: column; gap: var(--s-2); position: relative; }
+  .tool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    position: relative;
+    height: 100%;
+    min-height: 100%;
+  }
   .tool__name {
     display: block;
     min-height: 2.9rem;
@@ -1515,6 +1521,9 @@ const featureCount = visibleFeatures.length;
     font-size: 0.7rem;
     line-height: 1.4;
     color: oklch(0.9 0.08 320);
+  }
+  .tool__preview-banner--header {
+    margin-top: auto;
   }
   .tool__preview-banner-tag {
     flex-shrink: 0;
