@@ -71,7 +71,10 @@ const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } =
       <div class="site-footer__inner">
         <p class="site-footer__credit">
           A side project by
-          <a href="https://github.com/fcamblor" target="_blank" rel="noreferrer">Frédéric&nbsp;Camblor</a>.
+          <a href="https://github.com/fcamblor" target="_blank" rel="noreferrer">Frédéric&nbsp;Camblor</a>
+          (<span aria-hidden="true">❤️</span> support me with
+          <a href="https://github.com/sponsors/fcamblor" target="_blank" rel="noreferrer">GitHub Sponsors</a>).
+          <br />
           Source &amp; data on
           <a href="https://github.com/fcamblor/ade-showdown" target="_blank" rel="noreferrer">github.com/fcamblor/ade-showdown</a>.
         </p>
@@ -312,11 +315,14 @@ const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } =
       .site-footer p { margin: 0; }
       .site-footer a { color: var(--fg-soft); }
       .site-footer a:hover { color: var(--accent); }
+      .site-footer__credit { max-width: 80ch; }
+      .site-footer__contrib { text-align: right; }
 
       @media (max-width: 720px) {
         .site-header__rule { gap: var(--s-2); font-size: 0.65rem; letter-spacing: 0.16em; }
         .repo-link__text { display: none; }
         .repo-link { padding: var(--s-3); }
+        .site-footer__contrib { text-align: left; }
       }
     </style>
   </body>
