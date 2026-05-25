@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
   import { fetchMyRatings } from '../lib/ratings';
-  import { getAuthCallbackUrl, getSessionToken, getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
+  import { getSessionToken, getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
+  import SignInButton from './SignInButton.svelte';
 
   let user: User | null = null;
   let ratingCount = 0;
@@ -65,19 +66,6 @@
     URL.revokeObjectURL(url);
   }
 
-  async function signIn() {
-    status = '';
-    const supabase = getSupabase();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: { redirectTo: getAuthCallbackUrl('/account') },
-    });
-    if (error) {
-      console.error('signInWithOAuth failed', error);
-      status = 'Unable to start GitHub sign-in. Please try again.';
-    }
-  }
-
   async function deleteAccount() {
     if (!confirm('Delete your account and all ratings? This cannot be undone.')) return;
     busy = true;
@@ -99,9 +87,9 @@
   {#if !hasSupabaseConfig()}
     <p>Supabase is not configured.</p>
   {:else if !user}
-    <p>
-      <button type="button" on:click={signIn}>Sign in with GitHub</button>
-      to manage your account.
+    <p class="account__signin">
+      <SignInButton variant="inline" redirectPath="/account" />
+      <span>to manage your account.</span>
     </p>
   {:else}
     <p class="account__meta">Signed in as {user.user_metadata?.user_name ?? user.email ?? user.id}. You have {ratingCount} saved ratings.</p>
@@ -122,6 +110,7 @@
   }
   .account__meta { color: var(--fg-soft); }
   .account__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .account__signin { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   button {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);

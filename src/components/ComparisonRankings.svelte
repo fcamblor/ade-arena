@@ -4,7 +4,8 @@
   import type { RankingToolData } from '../lib/static-comparison';
   import { computeWeightedScores, fetchFeatureStats, fetchMyRatings, fetchUniqueVoterCount, type RatingMap } from '../lib/ratings';
   import { RATABLE_FEATURES } from '../lib/ratable-features';
-  import { getAuthCallbackUrl, getSupabase, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+  import { getSupabase, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+  import SignInButton from './SignInButton.svelte';
 
   export let tools: RankingToolData[] = [];
   export let initialTab: 'objective' | 'personal' | 'community' = 'objective';
@@ -19,7 +20,6 @@
   let uniqueVoterCount = 0;
   let signedIn = false;
   let ready = false;
-  let error = '';
   let activeUserId = '';
   let showAll = false;
 
@@ -182,20 +182,6 @@
       unsubscribe?.();
     };
   });
-
-  async function signIn() {
-    error = '';
-    try {
-      const supabase = getSupabase();
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: { redirectTo: getAuthCallbackUrl(window.location.pathname) },
-      });
-      if (signInError) error = signInError.message;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Unable to start GitHub sign-in.';
-    }
-  }
 </script>
 
 <section class="lb" aria-labelledby="lb-title">
@@ -217,14 +203,12 @@
     {#if tab === 'personal' && ready && !signedIn}
       <div class="lb__hint">
         <p class="lb__hint-text">Sign in to unlock your personal ranking — it's weighted by what you've voted matters most.</p>
-        <button type="button" class="lb__hint-btn" on:click={signIn}>Sign in with GitHub</button>
-        {#if error}<p class="lb__error">{error}</p>{/if}
+        <SignInButton variant="cta" />
       </div>
     {:else if tab === 'community' && ready && !signedIn}
       <div class="lb__hint">
         <p class="lb__hint-text">Sign in to see how the community ranks these tools — voting and reading aggregates both require a GitHub account.</p>
-        <button type="button" class="lb__hint-btn" on:click={signIn}>Sign in with GitHub</button>
-        {#if error}<p class="lb__error">{error}</p>{/if}
+        <SignInButton variant="cta" />
       </div>
     {:else if tab === 'personal' && ready && !hasStartedPersonalRatings}
       <div class="lb__hint">
@@ -463,7 +447,6 @@
     text-decoration: none;
   }
   .lb__hint-btn:hover { opacity: 0.88; color: var(--bg); }
-  .lb__error { width: 100%; margin: 0; color: var(--cell-no-ink); font-size: 0.85rem; }
   .lb__notice { color: var(--fg-soft); margin: 0 0 var(--s-3); }
   .lb__voters { margin: 0 0 var(--s-3); color: var(--fg-muted); font-size: 0.85rem; }
   .lb__inline-note {

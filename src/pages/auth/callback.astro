@@ -1,20 +1,7 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Minimal from '../../layouts/Minimal.astro';
 import AuthCallback from '../../components/AuthCallback.svelte';
 ---
-<Base title="Signing in — ADE Arena">
-  <section class="auth-callback">
-    <AuthCallback client:load />
-  </section>
-</Base>
-
-<style>
-  .auth-callback {
-    max-width: 680px;
-    margin: 0 auto;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--bg-elev);
-    padding: 24px;
-  }
-</style>
+<Minimal title="Signing in — ADE Arena">
+  <AuthCallback client:load />
+</Minimal>

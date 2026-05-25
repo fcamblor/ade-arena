@@ -5,7 +5,8 @@
   import type { FeatureScreenshot } from '../lib/feature-screenshots';
   import { fetchMyRatings, upsertRating, type RatingMap } from '../lib/ratings';
   import { deleteSkip, fetchMySkips, upsertSkip, type SkipMap } from '../lib/skips';
-  import { getAuthCallbackUrl, getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
+  import { getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
+  import SignInButton from './SignInButton.svelte';
   import StarRating from './StarRating.svelte';
   import WhyImportantPopover from './WhyImportantPopover.svelte';
   import FeatureScreenshotGallery from './FeatureScreenshotGallery.svelte';
@@ -128,20 +129,6 @@
     celebration = '';
   }
 
-  async function signIn() {
-    error = '';
-    try {
-      const supabase = getSupabase();
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: { redirectTo: getAuthCallbackUrl(window.location.pathname) },
-      });
-      if (signInError) error = signInError.message;
-    } catch (err) {
-      error = err instanceof Error ? err.message : 'Unable to start GitHub sign-in.';
-    }
-  }
-
   async function saveRating(rating: number) {
     if (saving) return;
     if (!user || !currentFeature || !consent) return;
@@ -227,7 +214,7 @@
       <h2>Rate {features.length} features in about 8-10 minutes</h2>
       <p>1 star means totally useless to me. 5 stars means must-have. Rankings use 0, 1, 3, 6, and 10 points.</p>
       <p>Sign in with GitHub. Only your ratings are stored, pseudonymised. You can review or delete your data at any time from your <a href="/account">account page</a>.</p>
-      <button type="button" on:click={signIn}>Start rating</button>
+      <SignInButton variant="cta" label="Start rating" />
     </div>
   {:else if complete}
     <div class="rate__panel rate__panel--done">
