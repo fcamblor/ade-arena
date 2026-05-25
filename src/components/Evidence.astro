@@ -113,73 +113,19 @@ function prettyUrl(u: string): string {
     </button>
 
     {hasShots && (
+      /* Lazy-mounted gallery: the <img> markup is built by the inline script
+       * on the first <details> toggle. The shots payload travels as JSON in
+       * `data-shots` so we keep 0 bytes of <img> in the initial DOM — that
+       * cuts the request fan-out on first paint (was ~260 lazy-img requests
+       * across the comparison table) and the content-visibility:hidden
+       * warnings caused by walking these subtrees at init. */
       <div
         class={`evidence__gallery${shots.length > 1 ? ' evidence__gallery--carousel' : ''}`}
         data-count={shots.length}
         data-index="0"
+        data-shots={JSON.stringify(shots)}
         tabindex={shots.length > 1 ? 0 : undefined}
-      >
-        <div class="evidence__viewport">
-          <ul class="evidence__track" role="list">
-            {shots.map((shot, i) => (
-              <li class="evidence__slide" data-slide={i} aria-hidden={i === 0 ? 'false' : 'true'}>
-                <a
-                  class="evidence__shot-link"
-                  href={shot.src}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Open ${shot.alt} in a new tab`}
-                >
-                  <img
-                    class="evidence__shot"
-                    src={shot.src}
-                    alt={shot.alt}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </a>
-                {shot.caption && <p class="evidence__caption">{shot.caption}</p>}
-              </li>
-            ))}
-          </ul>
-          {shots.length > 1 && (
-            <>
-              <button
-                type="button"
-                class="evidence__nav evidence__nav--prev"
-                data-dir="-1"
-                aria-label="Previous screenshot"
-              >‹</button>
-              <button
-                type="button"
-                class="evidence__nav evidence__nav--next"
-                data-dir="1"
-                aria-label="Next screenshot"
-              >›</button>
-              <div class="evidence__counter" aria-live="polite">
-                <span class="evidence__counter-current">1</span>
-                <span class="evidence__counter-sep" aria-hidden="true">/</span>
-                <span class="evidence__counter-total">{shots.length}</span>
-              </div>
-            </>
-          )}
-        </div>
-        {shots.length > 1 && (
-          <ol class="evidence__dots" role="list">
-            {shots.map((_, i) => (
-              <li>
-                <button
-                  type="button"
-                  class="evidence__dot"
-                  data-goto={i}
-                  aria-label={`Go to screenshot ${i + 1}`}
-                  aria-current={i === 0 ? 'true' : 'false'}
-                ></button>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+      ></div>
     )}
 
     {hasQuote && (
@@ -766,16 +712,19 @@ function prettyUrl(u: string): string {
 <script>
   // Evidence behaviour: centered modal popover with backdrop, close button,
   // ESC dismissal, and per-instance carousel.
+  //
+  // All listeners are document-level and delegated — that way:
+  //   1. We never walk `.evidence__card` subtrees at init. They're
+  //      `content-visibility: hidden` when closed, so any querySelector dive
+  //      into them produces the "Rendering was performed in a subtree hidden
+  //      by content-visibility" warning (was firing ~500× on first paint).
+  //   2. The gallery DOM (img + carousel chrome) is *lazy-mounted* on the
+  //      first <details> open — see `mountGallery`. The shots payload is
+  //      carried in `data-shots` JSON, so the SSR'd page ships zero `<img>`
+  //      tags for the comparison-table proofs. That kills the request
+  //      fan-out on first load (was ~260 requests for hidden screenshots).
   (() => {
-    type Carousel = {
-      gallery: HTMLElement;
-      track: HTMLElement;
-      slides: HTMLElement[];
-      dots: HTMLButtonElement[];
-      counterEl: HTMLElement | null;
-      count: number;
-      index: number;
-    };
+    type Shot = { src: string; alt: string; caption?: string };
 
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -788,6 +737,147 @@ function prettyUrl(u: string): string {
       document.body.style.overflow = anyOpen ? 'hidden' : '';
     };
 
+    // ---------- Lazy mount: build the gallery DOM on first open ----------
+    const mountGallery = (gallery: HTMLElement) => {
+      if (gallery.dataset.mounted === 'true') return;
+      gallery.dataset.mounted = 'true';
+
+      let shots: Shot[] = [];
+      try {
+        shots = JSON.parse(gallery.dataset.shots ?? '[]') as Shot[];
+      } catch {
+        shots = [];
+      }
+      if (shots.length === 0) return;
+
+      const isCarousel = shots.length > 1;
+
+      const viewport = document.createElement('div');
+      viewport.className = 'evidence__viewport';
+
+      const track = document.createElement('ul');
+      track.className = 'evidence__track';
+      track.setAttribute('role', 'list');
+
+      shots.forEach((shot, i) => {
+        const li = document.createElement('li');
+        li.className = 'evidence__slide';
+        li.dataset.slide = String(i);
+        li.setAttribute('aria-hidden', i === 0 ? 'false' : 'true');
+
+        const link = document.createElement('a');
+        link.className = 'evidence__shot-link';
+        link.href = shot.src;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.setAttribute('aria-label', `Open ${shot.alt} in a new tab`);
+
+        const img = document.createElement('img');
+        img.className = 'evidence__shot';
+        img.src = shot.src;
+        img.alt = shot.alt;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+
+        link.appendChild(img);
+        li.appendChild(link);
+
+        if (shot.caption) {
+          const cap = document.createElement('p');
+          cap.className = 'evidence__caption';
+          cap.textContent = shot.caption;
+          li.appendChild(cap);
+        }
+        track.appendChild(li);
+      });
+
+      viewport.appendChild(track);
+
+      if (isCarousel) {
+        const prev = document.createElement('button');
+        prev.type = 'button';
+        prev.className = 'evidence__nav evidence__nav--prev';
+        prev.dataset.dir = '-1';
+        prev.setAttribute('aria-label', 'Previous screenshot');
+        prev.textContent = '‹';
+
+        const next = document.createElement('button');
+        next.type = 'button';
+        next.className = 'evidence__nav evidence__nav--next';
+        next.dataset.dir = '1';
+        next.setAttribute('aria-label', 'Next screenshot');
+        next.textContent = '›';
+
+        const counter = document.createElement('div');
+        counter.className = 'evidence__counter';
+        counter.setAttribute('aria-live', 'polite');
+        const cur = document.createElement('span');
+        cur.className = 'evidence__counter-current';
+        cur.textContent = '1';
+        const sep = document.createElement('span');
+        sep.className = 'evidence__counter-sep';
+        sep.setAttribute('aria-hidden', 'true');
+        sep.textContent = '/';
+        const tot = document.createElement('span');
+        tot.className = 'evidence__counter-total';
+        tot.textContent = String(shots.length);
+        counter.append(cur, sep, tot);
+
+        viewport.append(prev, next, counter);
+      }
+
+      gallery.appendChild(viewport);
+
+      if (isCarousel) {
+        const dots = document.createElement('ol');
+        dots.className = 'evidence__dots';
+        dots.setAttribute('role', 'list');
+        shots.forEach((_, i) => {
+          const li = document.createElement('li');
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'evidence__dot';
+          btn.dataset.goto = String(i);
+          btn.setAttribute('aria-label', `Go to screenshot ${i + 1}`);
+          btn.setAttribute('aria-current', i === 0 ? 'true' : 'false');
+          li.appendChild(btn);
+          dots.appendChild(li);
+        });
+        gallery.appendChild(dots);
+      }
+
+      // Stop holding the JSON payload in the attribute once mounted — it's
+      // dead weight in the DOM after this point and keeps any future
+      // serializer (e.g. clipboard "copy outerHTML") light.
+      delete gallery.dataset.shots;
+    };
+
+    // ---------- Carousel state lives on the gallery's dataset ----------
+    const setCarouselIndex = (gallery: HTMLElement, index: number) => {
+      const total = Number(gallery.dataset.count ?? '0');
+      if (total <= 0) return;
+      const clamped = Math.max(0, Math.min(total - 1, index));
+      gallery.dataset.index = String(clamped);
+      const track = gallery.querySelector<HTMLElement>('.evidence__track');
+      if (track) track.style.transform = `translateX(-${clamped * 100}%)`;
+      gallery.querySelectorAll<HTMLElement>('.evidence__slide').forEach((s, i) =>
+        s.setAttribute('aria-hidden', i === clamped ? 'false' : 'true'),
+      );
+      gallery.querySelectorAll<HTMLElement>('.evidence__dot').forEach((d, i) =>
+        d.setAttribute('aria-current', i === clamped ? 'true' : 'false'),
+      );
+      const counter = gallery.querySelector<HTMLElement>('.evidence__counter-current');
+      if (counter) counter.textContent = String(clamped + 1);
+    };
+
+    const moveCarousel = (gallery: HTMLElement, dir: -1 | 1) => {
+      const total = Number(gallery.dataset.count ?? '0');
+      if (total <= 1) return;
+      const current = Number(gallery.dataset.index ?? '0');
+      setCarouselIndex(gallery, (current + dir + total) % total);
+    };
+
+    // ---------- Animated close ----------
     const animatedClose = (details: HTMLDetailsElement) => {
       if (!details.open || details.dataset.closing === 'true') return;
       const trigger = details.querySelector<HTMLElement>('.evidence__trigger');
@@ -806,116 +896,100 @@ function prettyUrl(u: string): string {
       }, CLOSE_MS);
     };
 
-    // ---------- Close affordances (×, backdrop) ----------
+    // ---------- Delegated click handler ----------
     document.addEventListener('click', (ev) => {
       const target = ev.target as HTMLElement | null;
       if (!target) return;
+
+      // 1) Close affordances (× button, backdrop)
       const closer = target.closest<HTMLElement>('[data-close]');
-      if (!closer) return;
-      const details = closer.closest<HTMLDetailsElement>('details.evidence');
-      if (!details) return;
-      ev.preventDefault();
-      animatedClose(details);
-    });
-
-    // ESC — close the topmost open proof.
-    document.addEventListener('keydown', (ev) => {
-      if (ev.key !== 'Escape') return;
-      const openOne = document.querySelector<HTMLDetailsElement>('details.evidence[open]');
-      if (!openOne) return;
-      ev.preventDefault();
-      animatedClose(openOne);
-    });
-
-    // Intercept summary clicks on an already-open proof so we can play the
-    // close animation before the native <details> snaps shut.
-    document.querySelectorAll<HTMLDetailsElement>('details.evidence').forEach((details) => {
-      const summary = details.querySelector<HTMLElement>('.evidence__trigger');
-      summary?.addEventListener('click', (ev) => {
-        if (details.open || details.dataset.closing === 'true') {
+      if (closer) {
+        const details = closer.closest<HTMLDetailsElement>('details.evidence');
+        if (details) {
           ev.preventDefault();
-          if (details.dataset.closing !== 'true') animatedClose(details);
+          animatedClose(details);
+          return;
         }
-      });
+      }
 
-      details.addEventListener('toggle', () => {
-        syncBodyLock();
-        if (details.open && details.dataset.closing !== 'true') {
-          const closeBtn = details.querySelector<HTMLButtonElement>('.evidence__close');
-          requestAnimationFrame(() => closeBtn?.focus({ preventScroll: true }));
-        }
-      });
-    });
-
-    // ---------- Carousels ----------
-    const carousels: Carousel[] = [];
-    document.querySelectorAll<HTMLElement>('.evidence__gallery--carousel').forEach((gallery) => {
-      const track = gallery.querySelector<HTMLElement>('.evidence__track');
-      const slides = Array.from(gallery.querySelectorAll<HTMLElement>('.evidence__slide'));
-      const dots = Array.from(gallery.querySelectorAll<HTMLButtonElement>('.evidence__dot'));
-      const counterEl = gallery.querySelector<HTMLElement>('.evidence__counter-current');
-      if (!track || slides.length === 0) return;
-      carousels.push({
-        gallery, track, slides, dots, counterEl,
-        count: slides.length,
-        index: 0,
-      });
-    });
-
-    const apply = (c: Carousel) => {
-      c.track.style.transform = `translateX(-${c.index * 100}%)`;
-      c.slides.forEach((s, i) => s.setAttribute('aria-hidden', i === c.index ? 'false' : 'true'));
-      c.dots.forEach((d, i) => d.setAttribute('aria-current', i === c.index ? 'true' : 'false'));
-      if (c.counterEl) c.counterEl.textContent = String(c.index + 1);
-      c.gallery.dataset.index = String(c.index);
-    };
-
-    carousels.forEach((c) => {
-      c.gallery.querySelectorAll<HTMLButtonElement>('.evidence__nav').forEach((btn) => {
-        btn.addEventListener('click', (ev) => {
+      // 2) Carousel nav arrow
+      const nav = target.closest<HTMLButtonElement>('.evidence__nav');
+      if (nav) {
+        const gallery = nav.closest<HTMLElement>('.evidence__gallery--carousel');
+        if (gallery) {
           ev.preventDefault();
           ev.stopPropagation();
-          const dir = Number(btn.dataset.dir ?? '1');
-          c.index = (c.index + dir + c.count) % c.count;
-          apply(c);
-        });
-      });
-      c.dots.forEach((dot) => {
-        dot.addEventListener('click', (ev) => {
+          const dir = Number(nav.dataset.dir ?? '1');
+          moveCarousel(gallery, dir < 0 ? -1 : 1);
+          return;
+        }
+      }
+
+      // 3) Carousel dot
+      const dot = target.closest<HTMLButtonElement>('.evidence__dot');
+      if (dot) {
+        const gallery = dot.closest<HTMLElement>('.evidence__gallery--carousel');
+        if (gallery) {
           ev.preventDefault();
           ev.stopPropagation();
           const goto = Number(dot.dataset.goto ?? '0');
-          if (Number.isFinite(goto)) {
-            c.index = Math.max(0, Math.min(c.count - 1, goto));
-            apply(c);
-          }
-        });
-      });
-      c.gallery.addEventListener('keydown', (ev) => {
-        if (ev.key === 'ArrowLeft') {
-          c.index = (c.index - 1 + c.count) % c.count;
-          apply(c);
-        } else if (ev.key === 'ArrowRight') {
-          c.index = (c.index + 1) % c.count;
-          apply(c);
+          if (Number.isFinite(goto)) setCarouselIndex(gallery, goto);
+          return;
         }
-      });
+      }
+
+      // 4) Summary click while already open → animated close instead of the
+      //    native snap-shut. The native toggle still fires after this handler
+      //    in the close case, but `[data-closing]` keeps the card mounted
+      //    long enough for the keyframes to play.
+      const trigger = target.closest<HTMLElement>('.evidence__trigger');
+      if (trigger) {
+        const details = trigger.closest<HTMLDetailsElement>('details.evidence');
+        if (details && (details.open || details.dataset.closing === 'true')) {
+          ev.preventDefault();
+          if (details.dataset.closing !== 'true') animatedClose(details);
+        }
+      }
     });
 
-    // Global arrow-key navigation when a proof with a carousel is open and the
-    // close button (or another non-gallery element) has focus.
+    // ---------- Delegated keyboard handler ----------
     document.addEventListener('keydown', (ev) => {
-      if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-      const openOne = document.querySelector<HTMLDetailsElement>('details.evidence[open]');
-      if (!openOne) return;
-      const target = ev.target as HTMLElement | null;
-      if (target?.closest('.evidence__gallery')) return; // already handled
-      const carousel = carousels.find((c) => openOne.contains(c.gallery));
-      if (!carousel) return;
-      ev.preventDefault();
-      const dir = ev.key === 'ArrowLeft' ? -1 : 1;
-      carousel.index = (carousel.index + dir + carousel.count) % carousel.count;
-      apply(carousel);
+      if (ev.key === 'Escape') {
+        const openOne = document.querySelector<HTMLDetailsElement>('details.evidence[open]');
+        if (!openOne) return;
+        ev.preventDefault();
+        animatedClose(openOne);
+        return;
+      }
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') {
+        const openOne = document.querySelector<HTMLDetailsElement>('details.evidence[open]');
+        if (!openOne) return;
+        const gallery = openOne.querySelector<HTMLElement>('.evidence__gallery--carousel');
+        if (!gallery) return;
+        ev.preventDefault();
+        moveCarousel(gallery, ev.key === 'ArrowLeft' ? -1 : 1);
+      }
     });
+
+    // ---------- Toggle: mount on first open, sync body lock, focus close ----
+    // `toggle` events don't bubble in every browser yet, so we listen during
+    // the capture phase to delegate from `document`. Capture-phase listeners
+    // see non-bubbling events on the path to target.
+    document.addEventListener(
+      'toggle',
+      (ev) => {
+        const details = ev.target as HTMLDetailsElement | null;
+        if (!(details instanceof HTMLDetailsElement)) return;
+        if (!details.classList.contains('evidence')) return;
+        syncBodyLock();
+        if (details.open && details.dataset.closing !== 'true') {
+          const gallery = details.querySelector<HTMLElement>('.evidence__gallery');
+          if (gallery) mountGallery(gallery);
+          const closeBtn = details.querySelector<HTMLButtonElement>('.evidence__close');
+          requestAnimationFrame(() => closeBtn?.focus({ preventScroll: true }));
+        }
+      },
+      true,
+    );
   })();
 </script>
