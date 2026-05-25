@@ -12,15 +12,15 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     support: 'yes',
     screenshots: [
       {
-        src: '/screenshots/conductor/git-worktrees_20260518_1.png',
+        src: '/screenshots/conductor/git-worktrees_20260518_1.webp',
         alt: 'Conductor UI showing per-workspace git worktree isolation',
       },
       {
-        src: '/screenshots/conductor/git-worktrees_20260518_2.png',
+        src: '/screenshots/conductor/git-worktrees_20260518_2.webp',
         alt: 'Sidebar listing multiple repositories with their isolated workspaces, each backed by its own worktree',
       },
       {
-        src: '/screenshots/conductor/git-worktrees_20260518_3.png',
+        src: '/screenshots/conductor/git-worktrees_20260518_3.webp',
         alt: 'Branch picker offering to duplicate an existing branch into a new isolated worktree workspace',
       },
     ],
@@ -41,7 +41,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     support: 'yes',
     screenshots: [
       {
-        src: '/screenshots/conductor/local-execution_20260518_1.png',
+        src: '/screenshots/conductor/local-execution_20260518_1.webp',
         alt: 'Conductor Mac app running locally with workspaces on the developer machine',
       },
     ],
@@ -55,7 +55,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Two vendors supported: Anthropic (Claude Code family) and OpenAI (Codex family). Lighter than orchestrators that wire many vendors (Google, xAI, Moonshot…), hence "partial" rather than "yes".',
     screenshots: [
       {
-        src: '/screenshots/conductor/multiple-model-families_20260518_1.png',
+        src: '/screenshots/conductor/multiple-model-families_20260518_1.webp',
         alt: 'Conductor model picker grouped by Claude Code and Codex families',
         caption: 'Model picker listing Claude Code (Opus 4.7, Sonnet 4.6, Haiku 4.5) and Codex (GPT-5.5, GPT-5.4, GPT-5.3-Codex) families',
       },
@@ -69,11 +69,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Dedicated button (and Cmd+Shift+P shortcut) creates the PR in one click, with an option to open it as a Draft. The prompt used to draft the PR description is customizable in project preferences (e.g. to enforce a specific language or formalism).',
     screenshots: [
       {
-        src: '/screenshots/conductor/pr-creation_20260518_1.png',
+        src: '/screenshots/conductor/pr-creation_20260518_1.webp',
         alt: 'Conductor Create PR button with Create draft PR and Create PR manually options',
       },
       {
-        src: '/screenshots/conductor/pr-creation_20260518_2.png',
+        src: '/screenshots/conductor/pr-creation_20260518_2.webp',
         alt: 'Conductor project preferences with a Create PR preferences section to customize the agent instructions',
       },
     ],
@@ -87,11 +87,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Kanban-style Dashboard view available behind an experimental flag (Settings → Experimental → Dashboard). Statuses are hardcoded (Backlog / In progress / In review / Done / Canceled), no customization.',
     screenshots: [
       {
-        src: '/screenshots/conductor/visual-task-management_20260518_1.png',
+        src: '/screenshots/conductor/visual-task-management_20260518_1.webp',
         alt: 'Conductor Dashboard showing workspaces grouped into Backlog, In progress, In review, Done and Canceled columns',
       },
       {
-        src: '/screenshots/conductor/visual-task-management_20260518_2.png',
+        src: '/screenshots/conductor/visual-task-management_20260518_2.webp',
         alt: 'Experimental settings panel with the Dashboard toggle that enables the kanban-style view',
       },
     ],
@@ -113,7 +113,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Built-in Diff Viewer renders agent-produced changes file by file, with inline comment and PR actions.',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-viewer_20260518_1.png',
+        src: '/screenshots/conductor/diff-viewer_20260518_1.webp',
         alt: 'Diff Viewer rendering the agent-produced changes file by file (workspace branch vs. target)',
       },
     ],
@@ -126,7 +126,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Conductor 0.54 adds an ignore-whitespace toggle to the Diff Viewer so whitespace-only changes can be hidden or shown.',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-whitespace-toggle_20260520_1.png',
+        src: '/screenshots/conductor/diff-whitespace-toggle_20260520_1.webp',
         alt: 'Conductor Diff Viewer showing the pilcrow toolbar button with tooltip "Hide whitespace changes"',
       },
     ],
@@ -139,19 +139,19 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Diff Viewer offers several selectable scopes: branch vs. target, uncommitted changes, per-commit, and per-turn (changes produced by a single agent discussion).',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-multi-views_view-selector_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_view-selector_20260518_1.webp',
         alt: 'Diff Viewer selector dropdown offering All changes, Uncommitted changes, and per-commit views',
       },
       {
-        src: '/screenshots/conductor/diff-multi-views_uncommitted-changes_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_uncommitted-changes_20260518_1.webp',
         alt: 'Diff Viewer in "Uncommitted" mode showing only uncommitted local changes',
       },
       {
-        src: '/screenshots/conductor/diff-multi-views_per-commit-diff_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_per-commit-diff_20260518_1.webp',
         alt: 'Diff Viewer showing a single commit’s changes via the per-commit selector',
       },
       {
-        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_2.png',
+        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_2.webp',
         alt: 'Diff Viewer in "Latest turn" mode showing only the changes produced by the most recent agent discussion',
       },
     ],
@@ -164,7 +164,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Each agent turn exposes a footer listing the files it changed; clicking a file jumps straight to its diff scoped to that turn — no manual commit needed to delimit the per-turn diff.',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_1.png',
+        src: '/screenshots/conductor/diff-multi-views_turn-changes_20260518_1.webp',
         alt: 'Chat turn footer listing the files changed by a single agent turn, each acting as a shortcut to its diff',
       },
     ],
@@ -183,7 +183,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Multiple themed completion sounds (SNCF jingle, Paris Métro chime, SF Muni, NYC MTA…) selectable from General settings with a Test button.',
     screenshots: [
       {
-        src: '/screenshots/conductor/sound-notifications_20260518_1.png',
+        src: '/screenshots/conductor/sound-notifications_20260518_1.webp',
         alt: 'General settings panel showing the Completion sound dropdown set to Chime with a Test button',
       },
     ],
@@ -197,7 +197,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Multiple chat tabs per workspace; switching agents mid-chat opens a new tab.',
     screenshots: [
       {
-        src: '/screenshots/conductor/multi-sessions-per-worktree_20260518_1.png',
+        src: '/screenshots/conductor/multi-sessions-per-worktree_20260518_1.webp',
         alt: 'Workspace with several parallel chat tabs running independent sessions in the same worktree',
       },
     ],
@@ -218,7 +218,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Three lifecycle scripts: setup (on creation), run (on demand), archive (before archival).',
     screenshots: [
       {
-        src: '/screenshots/conductor/workflow-shell-hooks_20260518_1.png',
+        src: '/screenshots/conductor/workflow-shell-hooks_20260518_1.webp',
         alt: 'Conductor project Scripts settings with Setup, Run, and Archive script fields',
       },
     ],
@@ -232,15 +232,15 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'A single run script per repo, launched from the Run button (concurrent or nonconcurrent mode).',
     screenshots: [
       {
-        src: '/screenshots/conductor/run-configurations_settings_20260518_1.png',
+        src: '/screenshots/conductor/run-configurations_settings_20260518_1.webp',
         alt: 'Project Scripts settings panel with Setup, Run and Archive script text areas and the Run mode (Concurrent / Non-concurrent) toggle',
       },
       {
-        src: '/screenshots/conductor/run-configurations_run-tab_20260518_1.png',
+        src: '/screenshots/conductor/run-configurations_run-tab_20260518_1.webp',
         alt: 'Workspace Run tab with the Run button that launches the configured run script',
       },
       {
-        src: '/screenshots/conductor/run-configurations_running_20260518_1.png',
+        src: '/screenshots/conductor/run-configurations_running_20260518_1.webp',
         alt: 'Workspace Run tab streaming output of the running script with Open and Stop controls',
       },
     ],
@@ -254,7 +254,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'CONDUCTOR_PORT exposes the first of 10 ports assigned to the workspace, plus other workspace env vars.',
     screenshots: [
       {
-        src: '/screenshots/conductor/worktree-port-env-vars_20260518_1.png',
+        src: '/screenshots/conductor/worktree-port-env-vars_20260518_1.webp',
         alt: 'Scripts settings panel showing $CONDUCTOR_ROOT_PATH and $CONDUCTOR_PORT env vars referenced in the setup and run scripts',
       },
     ],
@@ -267,11 +267,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Comments on changed lines are sent back to the agent as precise context.',
     screenshots: [
       {
-        src: '/screenshots/conductor/diff-comments_20260518_1.png',
+        src: '/screenshots/conductor/diff-comments_20260518_1.webp',
         alt: 'Inline diff comment pinned to a changed line with Resolve, Hide and Add to chat actions to send the feedback back to the agent',
       },
       {
-        src: '/screenshots/conductor/diff-comments_20260518_2.png',
+        src: '/screenshots/conductor/diff-comments_20260518_2.webp',
         alt: 'Diff Viewer with a multi-line comment composer attached to changed lines, ready to send feedback to the agent',
       },
     ],
@@ -285,7 +285,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'One-way: GitHub review comments are surfaced in Conductor and resolving them updates the Checks tab.',
     screenshots: [
       {
-        src: '/screenshots/conductor/github-comment-sync_20260518_1.png',
+        src: '/screenshots/conductor/github-comment-sync_20260518_1.webp',
         alt: 'GitHub PR review comment rendered inside the Conductor Diff Viewer with Resolve, Hide and Add to chat actions',
       },
     ],
@@ -299,11 +299,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Multiple terminal windows can be opened simultaneously on the same worktree (Terminal 1, Terminal 2, ...).',
     screenshots: [
       {
-        src: '/screenshots/conductor/terminal-in-worktree_20260518_1.png',
+        src: '/screenshots/conductor/terminal-in-worktree_20260518_1.webp',
         alt: 'Conductor Terminal tab open at the bottom of the workspace, rooted in the worktree path ~/conductor/workspaces/ade-arena/phoenix',
       },
       {
-        src: '/screenshots/conductor/terminal-in-worktree_20260518_2.png',
+        src: '/screenshots/conductor/terminal-in-worktree_20260518_2.webp',
         alt: 'Two parallel terminal tabs (Terminal 1 and Terminal 2) opened on the same Conductor worktree',
       },
     ],
@@ -317,7 +317,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Fixed built-in app list (Finder, VS Code, Zed, Windsurf, Sublime Text, Android Studio, Xcode, Ghostty, iTerm, Hyper, Terminal, GitHub Desktop, Sourcetree, DataGrip). No user-defined custom apps.',
     screenshots: [
       {
-        src: '/screenshots/conductor/open-in-ide_20260518_1.png',
+        src: '/screenshots/conductor/open-in-ide_20260518_1.webp',
         alt: 'Open In dropdown listing the fixed set of built-in target apps (VS Code, Zed, Windsurf, Sublime Text, Android Studio, Xcode, Ghostty, iTerm, Hyper, Terminal, GitHub Desktop, Sourcetree, DataGrip, Finder, Copy path)',
       },
     ],
@@ -331,7 +331,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Built-in file tree pane in the workspace; click a file to open it in the built-in editor, drag folders onto the Composer to attach.',
     screenshots: [
       {
-        src: '/screenshots/conductor/file-tree-browser_20260518_1.png',
+        src: '/screenshots/conductor/file-tree-browser_20260518_1.webp',
         alt: 'Workspace file tree pane showing the worktree directory hierarchy with a file opened in the built-in editor',
       },
     ],
@@ -345,7 +345,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Built-in file editor with full syntax highlighting and ⌘F.',
     screenshots: [
       {
-        src: '/screenshots/conductor/inline-file-editing_20260518_1.png',
+        src: '/screenshots/conductor/inline-file-editing_20260518_1.webp',
         alt: 'Conductor built-in file editor with syntax highlighting and an active ⌘F find bar',
       },
     ],
@@ -365,15 +365,15 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Every workspace ships with a .context directory for attachments, plans, and handoff notes. Plans authored in Plan mode can be picked up by later chats via "Hand off" and "Implement plan" actions.',
     screenshots: [
       {
-        src: '/screenshots/conductor/session-handoff_plan-mode_20260518_1.png',
+        src: '/screenshots/conductor/session-handoff_plan-mode_20260518_1.webp',
         alt: 'Composer with Plan mode enabled, ready to draft a plan that will be stored under the workspace .context directory',
       },
       {
-        src: '/screenshots/conductor/session-handoff_handoff-button_20260518_1.png',
+        src: '/screenshots/conductor/session-handoff_handoff-button_20260518_1.webp',
         alt: 'Plan view with a Hand off button that exports the plan for later sessions plus Copy and Approve actions',
       },
       {
-        src: '/screenshots/conductor/session-handoff_plans-attachments_20260518_1.png',
+        src: '/screenshots/conductor/session-handoff_plans-attachments_20260518_1.webp',
         alt: 'New chat surface offering to reuse previously stored plans and chat summaries from the .context/plans directory',
       },
     ],
@@ -393,11 +393,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Repo-level conductor.json committed into the codebase shares scripts and settings with the team; org-managed ~/.conductor/settings.json provides an additional admin override tier.',
     screenshots: [
       {
-        src: '/screenshots/conductor/shared-config_share-link_20260518_1.png',
+        src: '/screenshots/conductor/shared-config_share-link_20260518_1.webp',
         alt: 'Workspace Scripts panel inviting the user to create a conductor.json file to share scripts with the team',
       },
       {
-        src: '/screenshots/conductor/shared-config_create-conductor-json_20260518_1.png',
+        src: '/screenshots/conductor/shared-config_create-conductor-json_20260518_1.webp',
         alt: 'Share scripts dialog explaining how a committed conductor.json propagates shared scripts to teammates',
       },
     ],
@@ -411,19 +411,19 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Checks and merge state tracked in-app; manual merge from the workspace; "Archive on merge" + "Delete branch on archive" toggles auto-archive on in-app and external merges (Unarchive action since v0.50.0).',
     screenshots: [
       {
-        src: '/screenshots/conductor/pr-status-sync_ready-to-merge_20260518_1.png',
+        src: '/screenshots/conductor/pr-status-sync_ready-to-merge_20260518_1.webp',
         alt: 'Workspace header showing the linked PR with a Ready to merge status and an inline Merge button',
       },
       {
-        src: '/screenshots/conductor/pr-status-sync_ahead-push_20260518_1.png',
+        src: '/screenshots/conductor/pr-status-sync_ahead-push_20260518_1.webp',
         alt: 'Workspace git panel showing live PR sync state with Ahead by 1 commit and a Push action',
       },
       {
-        src: '/screenshots/conductor/pr-status-sync_git-settings_20260518_1.png',
+        src: '/screenshots/conductor/pr-status-sync_git-settings_20260518_1.webp',
         alt: 'Conductor Git settings panel exposing Archive on merge and Delete branch on archive toggles',
       },
       {
-        src: '/screenshots/conductor/pr-status-sync_pr-link_20260518_1.png',
+        src: '/screenshots/conductor/pr-status-sync_pr-link_20260518_1.webp',
         alt: 'Chat showing the PR link surfaced after creation, with the workspace header reflecting the synced Ready to merge state and Merge conflicts tab',
       },
     ],
@@ -442,7 +442,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     support: 'yes',
     screenshots: [
       {
-        src: '/screenshots/conductor/context-fill-indicator_20260519_1.png',
+        src: '/screenshots/conductor/context-fill-indicator_20260519_1.webp',
         alt: 'Composer popover breaking down current context usage (free space, messages, autocompact buffer, MCP tools, system tools, skills, system prompt, custom agents) out of the 1M token window',
       },
     ],
@@ -456,7 +456,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Switching the agent mid-chat opens a new chat tab seeded with a summary of the previous one, allowing seamless continuation with a different model.',
     screenshots: [
       {
-        src: '/screenshots/conductor/switch-model-mid-session_20260519_1.png',
+        src: '/screenshots/conductor/switch-model-mid-session_20260519_1.webp',
         alt: 'Conductor opening a new chat tab seeded with a summary after switching the agent mid-session',
       },
     ],
@@ -469,7 +469,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Fast Mode + reasoning-effort levels exposed when the model supports it.',
     screenshots: [
       {
-        src: '/screenshots/conductor/model-effort-support_20260519_1.png',
+        src: '/screenshots/conductor/model-effort-support_20260519_1.webp',
         alt: 'Composer settings exposing Fast Mode and reasoning-effort levels for the selected model',
       },
     ],
@@ -483,7 +483,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'When a port is detected during a run, Conductor exposes an "Open in Browser" action that launches the preview in the user’s default browser. The preview is not embedded in-app and is not controllable by the orchestrator (no integrated visual debug surface).',
     screenshots: [
       {
-        src: '/screenshots/conductor/web-preview_20260519_1.png',
+        src: '/screenshots/conductor/web-preview_20260519_1.webp',
         alt: 'Conductor run tab showing a detected port with an Open in Browser button to launch the preview',
         caption:
           'When a port is detected during the run, Conductor exposes an Open in Browser action; the preview opens in the user’s default browser and is not controllable by the orchestrator.',
@@ -517,7 +517,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Glob-based "Files to copy" feature; defaults to `.env*` and can be shared via `.worktreeinclude`.',
     screenshots: [
       {
-        src: '/screenshots/conductor/copy-from-origin-workspace_20260519_1.png',
+        src: '/screenshots/conductor/copy-from-origin-workspace_20260519_1.webp',
         alt: 'Files to copy settings panel with a glob list (defaults to .env*) and a hint about sharing via .worktreeinclude',
       },
     ],
@@ -531,7 +531,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'No first-class UI, but documented as a setup-script pattern using `ln -sf "$CONDUCTOR_ROOT_PATH/…"`.',
     screenshots: [
       {
-        src: '/screenshots/conductor/symlink-from-origin-workspace_20260519_1.png',
+        src: '/screenshots/conductor/symlink-from-origin-workspace_20260519_1.webp',
         alt: 'Setup script using ln -sf "$CONDUCTOR_ROOT_PATH/.env" to expose the origin workspace .env via a symlink',
       },
     ],
@@ -544,11 +544,11 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Reset-to-this-point action on any past user message: deletes subsequent chat AND rolls back the workspace git state via a per-response checkpoint (cannot be undone).',
     screenshots: [
       {
-        src: '/screenshots/conductor/chat-rewind_20260519_1.png',
+        src: '/screenshots/conductor/chat-rewind_20260519_1.webp',
         alt: 'Conductor chat with a Reset to this point icon revealed on a past user message',
       },
       {
-        src: '/screenshots/conductor/chat-rewind_20260519_2.png',
+        src: '/screenshots/conductor/chat-rewind_20260519_2.webp',
         alt: 'Reset to this point confirmation dialog warning that git state and chat history will be reset and that the action cannot be undone',
       },
     ],
@@ -577,7 +577,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: "Conductor renders Claude's AskUserQuestion tool calls as an interactive, keyboard-navigable UI inline in chat; supports multi-select questions.",
     screenshots: [
       {
-        src: '/screenshots/conductor/chat-user-questions_20260519_1.png',
+        src: '/screenshots/conductor/chat-user-questions_20260519_1.webp',
         alt: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
         caption: 'Inline AskUserQuestion radio choices rendered in the Conductor chat surface',
       },
@@ -591,7 +591,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Per-chat "Fork to new workspace" action clones the current workspace (worktree state + session history) into a new worktree, letting you branch off an alternative exploration.',
     screenshots: [
       {
-        src: '/screenshots/conductor/fork-workspace_20260519_1.png',
+        src: '/screenshots/conductor/fork-workspace_20260519_1.webp',
         alt: 'Chat action menu exposing a "Fork to new workspace" item that clones the current workspace into a new worktree',
       },
     ],
@@ -602,7 +602,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'Since v0.50.0, an explicit Unarchive action restores an auto-archived workspace (typically archived after PR merge) back to the active list with its worktree and session history intact.',
     screenshots: [
       {
-        src: '/screenshots/conductor/unarchive-worktree_20260525_1.png',
+        src: '/screenshots/conductor/unarchive-worktree_20260525_1.webp',
         alt: 'Conductor History tab listing archived workspaces grouped by date, with an Unarchive action exposed on a row',
         caption: 'History tab in the sidebar surfaces previously archived workspaces with an Unarchive action to bring them back to the active list.',
       },
