@@ -1,0 +1,11 @@
+---
+import Base from '../../layouts/Base.astro';
+import RateTunnel from '../../components/RateTunnel.svelte';
+import { getFeatureScreenshots } from '../../lib/feature-screenshots';
+import { RATABLE_FEATURES } from '../../lib/ratable-features';
+
+const screenshotsByFeature = getFeatureScreenshots();
+---
+<Base title="Rate features — ADE Showdown">
+  <RateTunnel features={RATABLE_FEATURES} screenshotsByFeature={screenshotsByFeature} client:load />
+</Base>

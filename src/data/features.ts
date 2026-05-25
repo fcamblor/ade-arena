@@ -7,6 +7,10 @@ const features: Feature[] = [
     label: 'Git worktree isolation',
     category: 'workflow',
     shortDescription: 'Each agent works in its own isolated git worktree.',
+    whyImportant: {
+      short: 'Worktrees decide how safely you can run several agents without branch and file conflicts.',
+      long: 'Git worktree isolation is the foundation for parallel agent work. Without it, two agents can edit the same checkout, overwrite each other, or make it hard to review which task produced which changes.',
+    },
   },
   {
     id: 'sandbox-isolation',
@@ -15,6 +19,10 @@ const features: Feature[] = [
     shortDescription: 'Orchestrator-level sandboxing of agent execution (Docker, micro-VM, chroot…) — distinct from git worktrees.',
     longDescription:
       'Whether the orchestrator itself confines agent tool-calls inside a sandbox (container, micro-VM, chroot, macOS sandbox-exec…), independently of git-worktree filesystem separation. Tools that simply delegate sandboxing to the underlying agent CLI count as "no" at the orchestrator layer. The note records the underlying technology when supported.',
+    whyImportant: {
+      short: 'Sandboxing limits the blast radius of agent commands that touch files, processes, or the network.',
+      long: 'Coding agents frequently run shell commands. A real orchestrator sandbox gives you a second line of defense when a prompt or tool call goes wrong, especially on machines that also hold credentials and private repositories.',
+    },
   },
   {
     id: 'cloud-execution',
@@ -36,30 +44,50 @@ const features: Feature[] = [
     shortDescription: 'Supports model families from multiple vendors (not just multiple models of the same vendor).',
     longDescription:
       'A "yes" requires the orchestrator to drive models from several distinct vendors (Anthropic + OpenAI + Google + …). Supporting only multiple Anthropic models (Opus / Sonnet / Haiku) — or only multiple OpenAI models — counts as "no" because it locks the user into a single vendor. Two vendors is treated as "partial" since the surface remains thin compared to broadly multi-vendor orchestrators.',
+    whyImportant: {
+      short: 'Multi-vendor support reduces lock-in and lets you pick the best model for each task.',
+      long: 'Agent quality changes quickly across vendors. A multi-vendor orchestrator lets you switch when one model is better at planning, another is better at edits, or a provider has an outage or pricing change.',
+    },
   },
   {
     id: 'pr-creation',
     label: 'Automatic PR creation',
     category: 'integrations',
     shortDescription: 'The agent opens a GitHub/GitLab PR when a task completes.',
+    whyImportant: {
+      short: 'Automatic PR creation turns agent output into a reviewable team workflow.',
+      long: 'For team use, a completed agent task is not done until it is packaged for review. PR creation reduces handoff friction and keeps the audit trail in the same place as normal engineering work.',
+    },
   },
   {
     id: 'visual-task-management',
     label: 'Visual task management (e.g. kanban board)',
     category: 'ux',
     shortDescription: 'Visual management of in-progress tasks — e.g. via a kanban board or another board-style surface.',
+    whyImportant: {
+      short: 'A board makes parallel agent work visible and easier to steer.',
+      long: 'When several agents are running, chat lists alone become hard to scan. A visual task surface helps you spot blocked work, completed runs, and tasks that need human input.',
+    },
   },
   {
     id: 'live-logs',
     label: 'Live logs',
     category: 'observability',
     shortDescription: 'Streaming logs/output for each agent in real time.',
+    whyImportant: {
+      short: 'Live logs let you catch failing installs, loops, and risky commands early.',
+      long: 'Agents can spend minutes running commands. Streaming output gives you enough visibility to intervene before a task burns time or drifts away from the intended implementation.',
+    },
   },
   {
     id: 'diff-viewer',
     label: 'In-app diff viewer',
     category: 'ux',
     shortDescription: 'Built-in UI to display agent-produced code changes directly in-app (file-by-file).',
+    whyImportant: {
+      short: 'A diff viewer is the fastest way to judge what an agent actually changed.',
+      long: 'Agent summaries are useful, but review happens in the diff. Keeping that diff in the orchestrator shortens the loop between supervising, commenting, and sending the agent back to fix issues.',
+    },
   },
   {
     id: 'diff-whitespace-toggle',
@@ -95,6 +123,10 @@ const features: Feature[] = [
     shortDescription: 'Attach several chat sessions to one worktree for context resets, mixed models, or parallel sub-topics.',
     longDescription:
       'A single worktree can host multiple independent agent sessions running in parallel, each with its own context, model, and topic — useful to reset context, mix models, or split unrelated subjects without leaving the worktree.',
+    whyImportant: {
+      short: 'Multiple sessions let you split investigation, implementation, and review without changing workspace.',
+      long: 'A single worktree can carry more than one conversation: one agent can explore, another can implement, and another can review. This matters when you want parallelism but still want all changes to converge in one branch.',
+    },
   },
   {
     id: 'no-worktree-mode',
@@ -143,6 +175,10 @@ const features: Feature[] = [
     label: 'Terminal in worktree',
     category: 'ux',
     shortDescription: 'Open one or several terminal windows rooted in the current worktree.',
+    whyImportant: {
+      short: 'An embedded terminal keeps manual verification close to the agent workspace.',
+      long: 'Even with strong automation, engineers still need to inspect files, run commands, and reproduce failures. A terminal rooted in the right worktree avoids context mistakes.',
+    },
   },
   {
     id: 'open-in-ide',
@@ -237,6 +273,10 @@ const features: Feature[] = [
     shortDescription: 'Built-in browser preview of a local web server, ideally bound to a run configuration / allocated port.',
     longDescription:
       'In-app web preview pane that renders the output of a local HTTP server. "Partial" covers an external-browser launch or a pane that merely displays the preview. A "yes" requires an embedded preview integrated with the ADE workflow. Annotation and element inspection are tracked as separate feature rows.',
+    whyImportant: {
+      short: 'Web preview closes the loop for UI work without leaving the orchestrator.',
+      long: 'For frontend changes, screenshots and browser interaction are part of the acceptance criteria. A built-in preview helps the agent and the human verify layout, flows, and visual regressions faster.',
+    },
   },
   {
     id: 'web-preview-annotation',

@@ -1,0 +1,14 @@
+# Template for the per-contributor SOPS config.
+#
+# `mise run bootstrap-local` generates the real `.sops.yaml` (git-ignored)
+# from this template, replacing the placeholder with the contributor's own
+# age public key. Each contributor needs their own — there is no shared
+# encrypted secret in this repository, so there is no shared recipient.
+#
+# If you ever want to share an encrypted file across contributors (e.g. a
+# common CI secret), list every contributor's public recipient under `age`
+# below — and commit `.sops.yaml` with all of them.
+
+creation_rules:
+  - path_regex: '(\./)?infra/secrets/.*\.enc\.yaml$'
+    age: age1replace-me-with-your-public-recipient

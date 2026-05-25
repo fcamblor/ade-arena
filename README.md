@@ -29,6 +29,21 @@ Each orchestrator is defined "as code" in `src/data/orchestrators/<tool-id>/<ver
 
 Edit `src/data/features.ts` and add the matching entry to each orchestrator (otherwise the default level is `unknown`).
 
+## Releasing
+
+This repo cuts releases as **git tags only** (no GitHub Release asset). To
+publish version `vX.Y.Z`:
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+A (private) external repostiory references release tags from here, then fetches the sources at that tag and
+builds the frontend per-env with the right `PUBLIC_SUPABASE_URL` etc. This
+keeps the build environment-aware (dev vs prod each get a build with the
+matching Supabase project URL) instead of shipping a single pre-built bundle.
+
 ## Roadmap
 
 See [ROADMAP.md](./ROADMAP.md).

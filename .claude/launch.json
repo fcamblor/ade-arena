@@ -6,7 +6,7 @@
       "runtimeExecutable": "zsh",
       "runtimeArgs": [
         "-lc",
-        "set -e; mise trust -y >/dev/null 2>&1 || true; if [ ! -x node_modules/.bin/astro ]; then pnpm install; fi; PORT=\"${PORT:-4321}\" pnpm exec astro dev --host 0.0.0.0 --port \"$PORT\""
+        "set -e; mise trust -y >/dev/null 2>&1 || true; mise install >/dev/null; if [ ! -x node_modules/.bin/astro ]; then pnpm install; fi; if ! supabase status >/dev/null 2>&1; then supabase start; fi; PORT=\"${PORT:-4321}\" ./infra/scripts/with-secrets.sh \"${SECRETS_ENV:-local}\" pnpm exec astro dev --host \"${ADE_DEV_HOST:-127.0.0.1}\" --port \"$PORT\""
       ],
       "port": 4321,
       "autoPort": true

@@ -25,6 +25,12 @@ export const FeatureSchema = z.object({
   status: z.enum(['approved', 'waiting-for-review']).optional(),
   shortDescription: z.string(),
   longDescription: z.string().optional(),
+  whyImportant: z
+    .object({
+      short: z.string(),
+      long: z.string(),
+    })
+    .optional(),
 });
 export type Feature = z.infer<typeof FeatureSchema>;
 

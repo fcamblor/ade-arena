@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "setup": "mkdir -p .claude\nln -sfn \"$CONDUCTOR_ROOT_PATH/.claude/settings.local.json\" .claude/settings.local.json\nmise trust\npnpm install",
-    "run": "PORT=\"$CONDUCTOR_PORT\" pnpm exec astro dev --host 0.0.0.0 --port \"$CONDUCTOR_PORT\""
+    "setup": "mkdir -p .claude\nln -sfn \"$CONDUCTOR_ROOT_PATH/.claude/settings.local.json\" .claude/settings.local.json\nmise trust\nmise install\npnpm install",
+    "run": "mise install >/dev/null; eval \"$(mise activate bash --shims)\"; if ! supabase status >/dev/null 2>&1; then supabase start; fi; PORT=\"$CONDUCTOR_PORT\" ./infra/scripts/with-secrets.sh \"${SECRETS_ENV:-local}\" pnpm exec astro dev --host \"${ADE_DEV_HOST:-127.0.0.1}\" --port \"$CONDUCTOR_PORT\""
   },
   "runScriptMode": "concurrent"
 }

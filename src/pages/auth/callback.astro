@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+import AuthCallback from '../../components/AuthCallback.svelte';
+---
+<Base title="Signing in — ADE Showdown">
+  <section class="auth-callback">
+    <AuthCallback client:load />
+  </section>
+</Base>
+
+<style>
+  .auth-callback {
+    max-width: 680px;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-elev);
+    padding: 24px;
+  }
+</style>

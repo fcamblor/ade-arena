@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Privacy policy — ADE Showdown">
+  <article class="policy">
+    <p class="policy__eyebrow">Privacy</p>
+    <h2>ADE Showdown privacy policy</h2>
+    <p>
+      ADE Showdown uses GitHub OAuth through Supabase Auth so one GitHub account can save one
+      rating per feature. The application table stores only your Supabase user UUID, feature IDs,
+      ratings from 1 to 5, and update timestamps.
+    </p>
+    <h3>Data we process</h3>
+    <p>
+      Supabase Auth may store your GitHub account identifier, email, and handle as part of the
+      authentication record. Those identity fields are not copied into the `ratings` business table
+      and are not exposed publicly by row-level security.
+    </p>
+    <h3>Processors</h3>
+    <p>
+      Hosting runs on Cloudflare Pages. Authentication and database storage run on Supabase in the
+      Frankfurt EU region for production projects. GitHub provides OAuth authentication.
+    </p>
+    <h3>Legal basis and retention</h3>
+    <p>
+      Ratings are saved after explicit consent through GitHub sign-in and the consent checkbox before
+      the first vote. Data is kept until you delete your account or request removal.
+    </p>
+    <h3>Your rights</h3>
+    <p>
+      Use the <a href="/account">account page</a> to export your data or delete your account and all
+      saved ratings. The export includes your account metadata (email, identities, sign-in timestamps),
+      your ratings, and your skipped features. Account deletion calls a Supabase Edge Function which
+      deletes the Supabase Auth user; the `ratings` and `feature_skips` rows are removed by the
+      database cascade.
+    </p>
+    <p>
+      When you delete your account, an anonymized audit row containing only a technical identifier
+      (your former Supabase UUID, no longer linked to any account) and a timestamp is retained for
+      up to 12 months for security and abuse-detection purposes. This log contains neither email,
+      IP address, nor any other data that could identify you.
+    </p>
+    <h3>Cookies and analytics</h3>
+    <p>
+      ADE Showdown does not use third-party analytics. Supabase session storage is used only for
+      authentication and is treated as strictly necessary technical storage.
+    </p>
+  </article>
+</Base>
+
+<style>
+  .policy { max-width: 820px; margin: 0 auto; }
+  .policy__eyebrow { margin: 0 0 8px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.18em; font: 700 0.75rem var(--font-display); }
+  h2 { margin: 0 0 18px; font: 900 clamp(2rem, 5vw, 3rem)/1 var(--font-display); text-transform: uppercase; }
+  h3 { margin-top: 26px; }
+  p { color: var(--fg-soft); }
+</style>

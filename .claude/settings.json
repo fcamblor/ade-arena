@@ -1,0 +1,32 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'infra/secrets/*.enc.yaml' --files-separator '\" \"' --exec '.claude/scripts/check-secrets-encrypted.sh \"{{ON_CHANGES_RUN_CHANGED_FILES}}\"'"
+          },
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'src/data/features.ts' --exec '.claude/scripts/check-features-catalog-sync.sh'"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'infra/secrets/*.enc.yaml' --files-separator '\" \"' --exec '.claude/scripts/check-secrets-encrypted.sh \"{{ON_CHANGES_RUN_CHANGED_FILES}}\"'"
+          },
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'src/data/features.ts' --exec '.claude/scripts/check-features-catalog-sync.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+project_id = "ade-showdown"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:4321"
+additional_redirect_urls = ["http://localhost:4321/auth/callback"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.external.github]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+
+[functions.delete-user]
+verify_jwt = true
+
+[functions.export-ratings]
+verify_jwt = true
