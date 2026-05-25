@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import type { Session } from '@supabase/supabase-js';
   import { fetchMyRatings } from '../lib/ratings';
-  import { getSupabase, hasSupabaseConfig } from '../lib/supabase';
+  import { getSupabase, hasStoredSession, hasSupabaseConfig } from '../lib/supabase';
 
   export let total = 0;
   let count = 0;
@@ -29,38 +29,45 @@
       visible = false;
       return;
     }
-    const supabase = getSupabase();
+    const supabase = await getSupabase();
     count = Object.keys(await fetchMyRatings(supabase)).length;
     visible = count > 0 && count < total;
   }
 
   onMount(() => {
     if (!hasSupabaseConfig()) return;
-    const supabase = getSupabase();
+    // Nudge is only useful for signed-in users; skip the SDK load entirely
+    // for anonymous visitors.
+    if (!hasStoredSession()) return;
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
     void (async () => {
+      const supabase = await getSupabase();
+      if (cancelled) return;
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
       await refresh(data.session);
+      if (cancelled) return;
+      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+        void refresh(session);
+      });
+      unsubscribe = () => subscription.subscription.unsubscribe();
     })();
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      void refresh(session);
-    });
 
     return () => {
       cancelled = true;
-      subscription.subscription.unsubscribe();
+      unsubscribe?.();
     };
   });
 
   function dismiss() {
-    const supabase = getSupabase();
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) localStorage.setItem(dismissalKey(data.session.user.id), '1');
-    });
     visible = false;
+    void (async () => {
+      const supabase = await getSupabase();
+      const { data } = await supabase.auth.getSession();
+      if (data.session) localStorage.setItem(dismissalKey(data.session.user.id), '1');
+    })();
   }
 </script>
 

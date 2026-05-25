@@ -4,7 +4,7 @@
   import type { RankingToolData } from '../lib/static-comparison';
   import { computeWeightedScores, fetchFeatureStats, fetchMyRatings, fetchUniqueVoterCount, type RatingMap } from '../lib/ratings';
   import { RATABLE_FEATURES } from '../lib/ratable-features';
-  import { getSupabase, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+  import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
   import SignInButton from './SignInButton.svelte';
 
   export let tools: RankingToolData[] = [];
@@ -162,8 +162,16 @@
         ready = true;
         return;
       }
+      // The Coverage tab is fully objective and doesn't need Supabase; the
+      // Personal and Community tabs are both auth-gated. Anonymous visitors
+      // see "Sign in to unlock" hints (rendered via SignInButton), so we
+      // can skip the 55 KiB SDK fetch until after sign-in.
+      if (!hasStoredSession()) {
+        ready = true;
+        return;
+      }
 
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       await applySession(supabase, data.session);
       await refreshCommunityStats(supabase);

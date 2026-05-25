@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
   import type { Session, SupabaseClient } from '@supabase/supabase-js';
   import { fetchFeatureStats, fetchMyRatings, type RatingMap } from '../lib/ratings';
-  import { getSupabase, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+  import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
 
   type RatingContext = {
     ratings: RatingMap;
@@ -15,8 +15,12 @@
   function loadRatingContext(): Promise<RatingContext> {
     if (!cache) {
       cache = (async () => {
-        if (!hasSupabaseConfig()) return { ratings: {}, stats: {}, signedIn: false, userId: '' };
-        const supabase = getSupabase();
+        // Ratings (mine) and community stats are both auth-gated (ADR 003),
+        // so anonymous visitors have nothing to show and don't need the SDK.
+        if (!hasSupabaseConfig() || !hasStoredSession()) {
+          return { ratings: {}, stats: {}, signedIn: false, userId: '' };
+        }
+        const supabase = await getSupabase();
         const { data } = await supabase.auth.getSession();
         const userId = data.session?.user.id ?? '';
         const signedIn = Boolean(userId);
@@ -120,8 +124,11 @@
     let unsubscribe: (() => void) | undefined;
 
     void (async () => {
-      if (hasSupabaseConfig()) {
-        const supabase = getSupabase();
+      // Only wire the auth listener when there's already a session — for
+      // anon visitors there's nothing to refresh, and skipping the
+      // listener avoids fetching the SDK chunk on the home/compare page.
+      if (hasSupabaseConfig() && hasStoredSession()) {
+        const supabase = await getSupabase();
         const { data } = await supabase.auth.getSession();
         activeUserId = data.session?.user.id ?? '';
         const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {

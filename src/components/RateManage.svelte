@@ -41,7 +41,7 @@
         loading = false;
         return;
       }
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       await applySession(supabase, data.session);
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -58,11 +58,12 @@
 
   async function setRating(featureId: string, rating: number) {
     if (!user) return;
-    await upsertRating(getSupabase(), user.id, featureId, rating);
+    const supabase = await getSupabase();
+    await upsertRating(supabase, user.id, featureId, rating);
     ratings = { ...ratings, [featureId]: rating };
     if (skips[featureId]) {
       try {
-        await deleteSkip(getSupabase(), featureId);
+        await deleteSkip(supabase, featureId);
       } catch (err) {
         console.warn('Failed to clear skip after rating', err);
       }
@@ -73,14 +74,14 @@
   }
 
   async function clearSkip(featureId: string) {
-    await deleteSkip(getSupabase(), featureId);
+    await deleteSkip(await getSupabase(), featureId);
     const next = { ...skips };
     delete next[featureId];
     skips = next;
   }
 
   async function clearRating(featureId: string) {
-    await deleteRating(getSupabase(), featureId);
+    await deleteRating(await getSupabase(), featureId);
     const next = { ...ratings };
     delete next[featureId];
     ratings = next;

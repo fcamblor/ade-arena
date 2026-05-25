@@ -1,5 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-import type { Session } from '@supabase/supabase-js';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 
 export type RatingRow = {
   user_id: string;
@@ -62,41 +61,72 @@ export type Database = {
   };
 };
 
-let browserClient: ReturnType<typeof createClient<Database>> | null = null;
+// Dynamic import lets Vite/Rollup code-split @supabase/supabase-js into its
+// own chunk, so anonymous visitors browsing static pages never pay the
+// ~44 KiB (gzipped) cost in the main bundle. The module promise is cached
+// so concurrent callers all await the same fetch.
+type SupabaseModule = typeof import('@supabase/supabase-js');
+let modulePromise: Promise<SupabaseModule> | null = null;
+let clientPromise: Promise<SupabaseClient<Database>> | null = null;
 
 export function hasSupabaseConfig(): boolean {
   return Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
 }
 
-export function getSupabase() {
+// Peek at localStorage for a persisted session without instantiating the
+// Supabase client. Islands use it to skip the 55 KiB SDK fetch on first
+// paint when the visitor is clearly anonymous; the SDK is still loaded
+// later on sign-in click (via SignInButton) or after the OAuth callback
+// page reloads with a token in storage.
+export function hasStoredSession(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  const url = import.meta.env.PUBLIC_SUPABASE_URL;
+  if (!url) return false;
+  try {
+    const host = new URL(url).host;
+    const ref = host.split('.')[0];
+    return localStorage.getItem(`sb-${ref}-auth-token`) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function loadSupabaseModule(): Promise<SupabaseModule> {
+  if (!modulePromise) modulePromise = import('@supabase/supabase-js');
+  return modulePromise;
+}
+
+export function getSupabase(): Promise<SupabaseClient<Database>> {
   if (!hasSupabaseConfig()) {
     throw new Error('Missing PUBLIC_SUPABASE_URL or PUBLIC_SUPABASE_ANON_KEY.');
   }
-  if (!browserClient) {
-    browserClient = createClient<Database>(
-      import.meta.env.PUBLIC_SUPABASE_URL!,
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          // Force PKCE so the OAuth callback comes back as `?code=...` (handled
-          // explicitly in AuthCallback.svelte). Without this the SDK can fall
-          // back to the implicit flow, returning `#access_token=...` in the
-          // fragment — which our callback page does not parse, surfacing as
-          // "No auth code was returned. Please try signing in again."
-          flowType: 'pkce',
-          // `detectSessionInUrl: false` because only `/auth/callback` ever
-          // sees a `?code=` query string, and that page handles the PKCE
-          // exchange explicitly in `AuthCallback.svelte`. Leaving auto-detect
-          // on raced the manual exchange (the SDK consumed the code first,
-          // then `exchangeCodeForSession` failed with "invalid request").
-          detectSessionInUrl: false,
+  if (!clientPromise) {
+    clientPromise = loadSupabaseModule().then(({ createClient }) =>
+      createClient<Database>(
+        import.meta.env.PUBLIC_SUPABASE_URL!,
+        import.meta.env.PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            // Force PKCE so the OAuth callback comes back as `?code=...` (handled
+            // explicitly in AuthCallback.svelte). Without this the SDK can fall
+            // back to the implicit flow, returning `#access_token=...` in the
+            // fragment — which our callback page does not parse, surfacing as
+            // "No auth code was returned. Please try signing in again."
+            flowType: 'pkce',
+            // `detectSessionInUrl: false` because only `/auth/callback` ever
+            // sees a `?code=` query string, and that page handles the PKCE
+            // exchange explicitly in `AuthCallback.svelte`. Leaving auto-detect
+            // on raced the manual exchange (the SDK consumed the code first,
+            // then `exchangeCodeForSession` failed with "invalid request").
+            detectSessionInUrl: false,
+          },
         },
-      },
+      ),
     );
   }
-  return browserClient;
+  return clientPromise;
 }
 
 export function getSessionToken(session: Session | null): string | null {

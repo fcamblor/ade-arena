@@ -29,7 +29,7 @@
 
     void (async () => {
       if (!hasSupabaseConfig()) return;
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       await applySession(supabase, data.session);
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -44,7 +44,7 @@
   });
 
   async function exportRatings() {
-    const supabase = getSupabase();
+    const supabase = await getSupabase();
     const { data } = await supabase.auth.getSession();
     const token = getSessionToken(data.session);
     if (!token) return;
@@ -70,7 +70,7 @@
     if (!confirm('Delete your account and all ratings? This cannot be undone.')) return;
     busy = true;
     status = '';
-    const supabase = getSupabase();
+    const supabase = await getSupabase();
     const { error } = await supabase.functions.invoke('delete-user', { method: 'POST' });
     if (error) {
       console.error('delete-user failed', error);

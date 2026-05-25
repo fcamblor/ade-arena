@@ -65,7 +65,7 @@
         loading = false;
         return;
       }
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       await applySession(supabase, data.session);
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -136,11 +136,12 @@
     error = '';
     const featureId = currentFeature.id;
     try {
-      await upsertRating(getSupabase(), user.id, featureId, rating);
+      const supabase = await getSupabase();
+      await upsertRating(supabase, user.id, featureId, rating);
       ratings = { ...ratings, [featureId]: rating };
       if (skips[featureId]) {
         try {
-          await deleteSkip(getSupabase(), featureId);
+          await deleteSkip(supabase, featureId);
         } catch (err) {
           // Non-fatal: rating succeeded; just log silently.
           console.warn('Failed to clear skip after rating', err);
@@ -180,7 +181,8 @@
     saving = true;
     error = '';
     try {
-      await upsertSkip(getSupabase(), user.id, featureId);
+      const supabase = await getSupabase();
+      await upsertSkip(supabase, user.id, featureId);
       skips = { ...skips, [featureId]: true };
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to save skip.';

@@ -27,7 +27,7 @@
     // originating page would otherwise look frozen.
     signingIn = true;
     try {
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const path = redirectPath ?? window.location.pathname;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { User } from '@supabase/supabase-js';
-  import { getSupabase, hasSupabaseConfig } from '../lib/supabase';
+  import { getSupabase, hasStoredSession, hasSupabaseConfig } from '../lib/supabase';
   import SignInButton from './SignInButton.svelte';
 
   let user: User | null = null;
@@ -10,10 +10,14 @@
   onMount(() => {
     ready = true;
     if (!hasSupabaseConfig()) return;
+    // Anonymous visitors don't need the SDK to render the sign-in button.
+    // The OAuth flow loads it on click (SignInButton), and the callback
+    // page reloads us with a session in storage on the way back.
+    if (!hasStoredSession()) return;
 
     let unsubscribe: (() => void) | undefined;
     void (async () => {
-      const supabase = getSupabase();
+      const supabase = await getSupabase();
       const { data } = await supabase.auth.getSession();
       user = data.session?.user ?? null;
       const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -28,7 +32,7 @@
   });
 
   async function signOut() {
-    const supabase = getSupabase();
+    const supabase = await getSupabase();
     await supabase.auth.signOut();
     user = null;
   }

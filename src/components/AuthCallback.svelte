@@ -13,7 +13,7 @@
       message = 'Supabase is not configured.';
       return;
     }
-    const supabase = getSupabase();
+    const supabase = await getSupabase();
 
     const url = new URL(window.location.href);
     const returnPath = getAuthReturnPath(url);
