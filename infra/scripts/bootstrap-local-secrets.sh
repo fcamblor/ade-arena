@@ -73,6 +73,8 @@ read -r -s -p "GitHub OAuth Client Secret: " github_client_secret
 echo
 github_client_secret="${github_client_secret:-replace-me}"
 
+mkdir -p "$(dirname "$secret_file")"
+
 tmp_plain="$(mktemp)"
 trap 'rm -f "$tmp_plain"' EXIT
 
@@ -85,7 +87,11 @@ PUBLIC_SUPABASE_ANON_KEY: $local_anon_key
 SUPABASE_SERVICE_ROLE_KEY: $local_service_role_key
 EOF
 
-sops --encrypt --input-type yaml --output-type yaml "$tmp_plain" > "$secret_file"
+sops --config "$sops_config" \
+  --encrypt \
+  --filename-override "$secret_file" \
+  --input-type yaml --output-type yaml \
+  "$tmp_plain" > "$secret_file"
 echo "wrote $secret_file (encrypted)"
 echo
 echo "Edit later with: sops $secret_file"
