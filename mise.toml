@@ -1,3 +1,25 @@
 [tools]
+age = "1.2.1"
+"github:supabase/cli" = "2.101.0"
 node = "22.21.1"
 pnpm = "10.17.0"
+sops = "3.9.4"
+yq = "4.47.1"
+
+[tasks.bootstrap-local]
+description = "Bootstrap the local dev environment: age key, .sops.yaml, infra/secrets/local.enc.yaml."
+run = "./infra/scripts/bootstrap-local-secrets.sh"
+
+[tasks.with-secrets]
+description = "Run a command with secrets from infra/secrets/local.enc.yaml exported as env vars."
+usage = '''
+Usage: mise run with-secrets -- <command> [args...]
+Example: mise run with-secrets -- pnpm dev
+'''
+run = "./infra/scripts/with-secrets.sh local"
+
+[tasks.seed-local]
+description = "Apply supabase/seed.local.sql against the running local Supabase DB."
+run = """
+./infra/scripts/seed-local.sh
+"""
