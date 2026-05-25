@@ -1,8 +1,16 @@
 ---
+import AuthButton from '../components/AuthButton.svelte';
+import ProgressNudge from '../components/ProgressNudge.svelte';
+import { RATABLE_FEATURES } from '../lib/ratable-features';
+
 interface Props {
   title?: string;
 }
 const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } = Astro.props;
+
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isCompareActive = pathname === '/' || pathname.startsWith('/compare');
+const isRateActive = pathname.startsWith('/rate');
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -26,47 +34,47 @@ const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } =
     <header class="site-header">
       <div class="site-header__inner">
         <div class="brand">
-          <div class="brand__type">
-            <p class="brand__kicker">
-              <span class="brand__mark">ADE&nbsp;Showdown</span>
-              <span class="brand__sep" aria-hidden="true">/</span>
-              <span>{new Date().getFullYear()} edition</span>
-            </p>
-            <h1 class="brand__title">
-              Agentic Dev Environments &amp; orchestrators,<br />scored side by side.
-            </h1>
-            <p class="brand__tagline">
-              An opinionated, feature-by-feature comparison of the tools that run coding agents
-              for you — Conductor, Vibe Kanban, Claude Code Desktop, t3.codes and friends.
-              Updated as the field moves.
-            </p>
-          </div>
+          <p class="brand__kicker">
+            <span class="brand__mark">ADE&nbsp;Showdown</span>
+            <span class="brand__sep" aria-hidden="true">/</span>
+            <span>{new Date().getFullYear()} edition</span>
+          </p>
+          <h1 class="brand__title">
+            Agentic Dev Environments &amp; orchestrators,<br />scored side by side.
+          </h1>
+          <p class="brand__tagline">
+            An opinionated, feature-by-feature comparison of the tools that run coding agents
+            for you — Conductor, Vibe Kanban, Claude Code Desktop, t3.codes and friends.
+            Updated as the field moves.
+          </p>
+          <nav class="primary-nav" aria-label="Primary">
+            <a
+              href="/"
+              class:list={['primary-nav__tab', { 'is-active': isCompareActive }]}
+              aria-current={isCompareActive ? 'page' : undefined}
+            >
+              <span class="primary-nav__label">Compare</span>
+              <span class="primary-nav__hint">side-by-side scores</span>
+            </a>
+            <a
+              href="/rate"
+              class:list={['primary-nav__tab', { 'is-active': isRateActive }]}
+              aria-current={isRateActive ? 'page' : undefined}
+            >
+              <span class="primary-nav__label">Rate features</span>
+              <span class="primary-nav__hint">weight what you value</span>
+            </a>
+          </nav>
         </div>
-        <nav class="site-header__meta" aria-label="Repository">
-          <a class="repo-link" href="https://github.com/fcamblor/ade-showdown" target="_blank" rel="noreferrer">
-            <svg class="repo-link__icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-              <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8a8 8 0 005.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-            </svg>
-            <span class="repo-link__text">
-              <span class="repo-link__handle">fcamblor / ade-showdown</span>
-              <span class="repo-link__author">by Frédéric Camblor</span>
-            </span>
-          </a>
-        </nav>
-      </div>
-      <div class="site-header__rule" aria-hidden="true">
-        <span>★</span>
-        <span>round 01</span>
-        <span>★</span>
-        <span>{new Date().getFullYear()} edition</span>
-        <span>★</span>
-        <span>weight class · coding agents</span>
-        <span>★</span>
+        <div class="site-header__utility">
+          <AuthButton client:load />
+        </div>
       </div>
     </header>
     <main id="main">
       <slot />
     </main>
+    <ProgressNudge total={RATABLE_FEATURES.length} client:idle />
     <footer class="site-footer">
       <div class="site-footer__inner">
         <p class="site-footer__credit">
@@ -242,52 +250,67 @@ const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } =
         max-width: 75ch;
       }
 
-      .repo-link {
+      /* Utility area — top-right cluster (repo + auth) */
+      .site-header__utility {
         display: inline-flex;
         align-items: center;
-        gap: var(--s-3);
-        padding: var(--s-3) var(--s-4);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-md);
-        background: var(--bg-elev);
-        color: var(--fg);
-        font-size: 0.875rem;
-        transition: border-color .15s ease, background .15s ease, transform .15s ease;
+        gap: var(--s-2);
+        flex-shrink: 0;
       }
-      .repo-link:hover,
-      .repo-link:focus-visible {
+      /* Primary navigation — tab strip under the hero tagline */
+      .primary-nav {
+        margin: var(--s-6) 0 0;
+        display: inline-flex;
+        gap: clamp(var(--s-4), 3vw, var(--s-6));
+        border-bottom: 1px solid var(--border-soft);
+        padding: 0 2px;
+        flex-wrap: wrap;
+      }
+      .primary-nav__tab {
+        position: relative;
+        display: inline-flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: var(--s-2) 2px var(--s-3);
+        color: var(--fg-muted);
+        transition: color .15s ease;
+      }
+      .primary-nav__tab::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: transparent;
+        transition: background .2s ease;
+      }
+      .primary-nav__tab:hover,
+      .primary-nav__tab:focus-visible {
+        color: var(--fg);
         text-decoration: none;
-        border-color: var(--accent);
-        background: oklch(0.22 0.018 28);
-        color: var(--fg);
-        transform: translateY(-1px);
       }
-      .repo-link__icon { flex-shrink: 0; color: var(--fg-soft); }
-      .repo-link__text { display: flex; flex-direction: column; line-height: 1.2; }
-      .repo-link__handle { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.95rem; }
-      .repo-link__author { color: var(--fg-muted); font-size: 0.78rem; }
-
-      .site-header__rule {
-        margin-top: var(--s-6);
-        display: flex;
-        align-items: center;
-        gap: var(--s-3);
+      .primary-nav__tab.is-active {
+        color: var(--fg);
+      }
+      .primary-nav__tab.is-active::after {
+        background: var(--accent);
+      }
+      .primary-nav__label {
         font-family: var(--font-display);
+        font-weight: 800;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
-        letter-spacing: 0.22em;
+        font-size: 1rem;
+        line-height: 1;
+      }
+      .primary-nav__hint {
         font-size: 0.75rem;
         color: var(--fg-muted);
-        border-top: 1px solid var(--border-soft);
-        border-bottom: 1px solid var(--border-soft);
-        padding: var(--s-2) 0;
-        overflow: hidden;
-        white-space: nowrap;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
       }
-      .site-header__rule span:nth-child(even) { color: var(--fg-soft); }
-      .site-header__rule span:first-child,
-      .site-header__rule span:nth-child(3),
-      .site-header__rule span:nth-child(5),
-      .site-header__rule span:nth-child(7) { color: var(--accent); }
+
 
       /* ===== Main ===== */
       main {
@@ -319,10 +342,11 @@ const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } =
       .site-footer__contrib { text-align: right; }
 
       @media (max-width: 720px) {
-        .site-header__rule { gap: var(--s-2); font-size: 0.65rem; letter-spacing: 0.16em; }
-        .repo-link__text { display: none; }
-        .repo-link { padding: var(--s-3); }
         .site-footer__contrib { text-align: left; }
+        .site-header__inner { gap: var(--s-4); }
+        .primary-nav { width: 100%; gap: var(--s-5); }
+        .primary-nav__tab { flex: 1 1 0; }
+        .primary-nav__hint { font-size: 0.7rem; }
       }
     </style>
   </body>
