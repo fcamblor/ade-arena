@@ -15,7 +15,7 @@
     const returnPath = getAuthReturnPath(url);
     const code = url.searchParams.get('code');
     if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
         message = error.message;
         return;

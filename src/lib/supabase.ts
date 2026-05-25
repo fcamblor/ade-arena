@@ -80,6 +80,12 @@ export function getSupabase() {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
+          // Force PKCE so the OAuth callback comes back as `?code=...` (handled
+          // explicitly in AuthCallback.svelte). Without this the SDK can fall
+          // back to the implicit flow, returning `#access_token=...` in the
+          // fragment — which our callback page does not parse, surfacing as
+          // "No auth code was returned. Please try signing in again."
+          flowType: 'pkce',
           // `detectSessionInUrl: false` because only `/auth/callback` ever
           // sees a `?code=` query string, and that page handles the PKCE
           // exchange explicitly in `AuthCallback.svelte`. Leaving auto-detect
