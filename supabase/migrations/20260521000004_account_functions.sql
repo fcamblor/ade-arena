@@ -1,0 +1,3 @@
+-- Edge functions call Supabase Auth Admin APIs for account deletion and use
+-- RLS-bound client reads for user export. The database migration is kept as a
+-- deployment marker for those account-management endpoints.
