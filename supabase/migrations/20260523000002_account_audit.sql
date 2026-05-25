@@ -1,4 +1,4 @@
--- Anonymized audit log for account deletions (ADR 006).
+-- Anonymized audit log for account deletions (ADR 004).
 --
 -- The row stores only the Supabase UUID + an action label + a timestamp.
 -- After the account is deleted from auth.users the UUID is no longer
