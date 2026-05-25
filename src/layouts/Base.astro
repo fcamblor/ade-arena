@@ -6,7 +6,7 @@ import { RATABLE_FEATURES } from '../lib/ratable-features';
 interface Props {
   title?: string;
 }
-const { title = 'ADE Showdown — ADE & coding-agent orchestrators compared' } = Astro.props;
+const { title = 'ADE Arena — ADE & coding-agent orchestrators compared' } = Astro.props;
 
 const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isCompareActive = pathname === '/' || pathname.startsWith('/compare');
@@ -35,7 +35,7 @@ const isRateActive = pathname.startsWith('/rate');
       <div class="site-header__inner">
         <div class="brand">
           <p class="brand__kicker">
-            <span class="brand__mark">ADE&nbsp;Showdown</span>
+            <span class="brand__mark">ADE&nbsp;Arena</span>
             <span class="brand__sep" aria-hidden="true">/</span>
             <span>{new Date().getFullYear()} edition</span>
           </p>
@@ -84,11 +84,11 @@ const isRateActive = pathname.startsWith('/rate');
           <a href="https://github.com/sponsors/fcamblor" target="_blank" rel="noreferrer">GitHub Sponsors</a>).
           <br />
           Source &amp; data on
-          <a href="https://github.com/fcamblor/ade-showdown" target="_blank" rel="noreferrer">github.com/fcamblor/ade-showdown</a>.
+          <a href="https://github.com/fcamblor/ade-arena" target="_blank" rel="noreferrer">github.com/fcamblor/ade-arena</a>.
         </p>
         <p class="site-footer__contrib">
           Spotted something wrong? Got a tool to add?
-          <a href="https://github.com/fcamblor/ade-showdown/pulls" target="_blank" rel="noreferrer">Open a PR</a>.
+          <a href="https://github.com/fcamblor/ade-arena/pulls" target="_blank" rel="noreferrer">Open a PR</a>.
         </p>
       </div>
     </footer>

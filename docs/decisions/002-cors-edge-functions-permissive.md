@@ -13,7 +13,7 @@ The `delete-user` and `export-ratings` Edge Functions (`supabase/functions/*/ind
 CORS is a **browser-only** protection:
 
 1. **`curl` / non-browser requests** ignore CORS. The server processes them and responds normally. CORS therefore never stops an attacker who already holds the JWT.
-2. **Cross-origin from another site**: a malicious site running at `evil.com` cannot read the `localStorage` of `ade-showdown.pages.dev` (strict same-origin policy). It therefore cannot obtain the JWT and cannot put it into an `Authorization` header. CSRF is not possible here.
+2. **Cross-origin from another site**: a malicious site running at `evil.com` cannot read the `localStorage` of `ade-arena.pages.dev` (strict same-origin policy). It therefore cannot obtain the JWT and cannot put it into an `Authorization` header. CSRF is not possible here.
 3. **XSS on our own site**: the attacker JavaScript already runs on our origin. It can call `fetch('/edge-fn', { headers: { Authorization: 'Bearer ' + localStorage.getItem('sb-...-auth-token') } })`. CORS does not gate this — it is a request to `*.supabase.co` issued from our origin, which is exactly the pattern CORS is supposed to allow.
 
 Conclusion: with **JWT in localStorage** ([ADR 001](001-supabase-localstorage-jwt.md)), strict CORS effectively brings **nothing**. The real control is XSS prevention (CSP).
@@ -23,7 +23,7 @@ Strict CORS would matter again **only** if we switched to cookies (HttpOnly or o
 ## Options considered
 
 1. **Keep the wildcard**: less complexity, no allowlist to maintain.
-2. **Whitelist origins**: `https://ade-showdown.pages.dev`, `https://dev.ade-showdown.pages.dev`, `http://localhost:4321`. Defense in depth.
+2. **Whitelist origins**: `https://ade-arena.pages.dev`, `https://dev.ade-arena.pages.dev`, `http://localhost:4321`. Defense in depth.
 
 ## Decision
 

@@ -291,7 +291,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/conductor/terminal-in-worktree_20260518_1.png',
-        alt: 'Conductor Terminal tab open at the bottom of the workspace, rooted in the worktree path ~/conductor/workspaces/ade-showdown/phoenix',
+        alt: 'Conductor Terminal tab open at the bottom of the workspace, rooted in the worktree path ~/conductor/workspaces/ade-arena/phoenix',
       },
       {
         src: '/screenshots/conductor/terminal-in-worktree_20260518_2.png',

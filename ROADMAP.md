@@ -1,4 +1,4 @@
-# Roadmap — ADE Showdown
+# Roadmap — ADE Arena
 
 Broken down into incrementally shippable milestones. Each feature is small enough to fit in a single PR.
 
@@ -78,7 +78,7 @@ Broken down into incrementally shippable milestones. Each feature is small enoug
 - [ ] **F5.2 — RSS / OG images** for social sharing.
 - [ ] **F5.3 — Selective comparator**: pick N orchestrators to compare, export the table to PNG/Markdown.
 - [ ] **F5.4 — Version history**: timeline of each tool's versions and diff between versions.
-- [ ] **F5.5 — "Listed on ADE Showdown" badges** for vendors.
+- [ ] **F5.5 — "Listed on ADE Arena" badges** for vendors.
 - [ ] **F5.6 — Print/PDF mode**.
 
 ---

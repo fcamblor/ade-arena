@@ -403,7 +403,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [
       {
         src: '/screenshots/claude-code-desktop/web-preview_20260521_1.png',
-        alt: 'Claude Code Desktop with the Files panel open in the middle and an embedded browser preview on the right showing the ade-showdown website; an arrow points to launch.json in the file tree.',
+        alt: 'Claude Code Desktop with the Files panel open in the middle and an embedded browser preview on the right showing the ade-arena website; an arrow points to launch.json in the file tree.',
         caption: 'Embedded browser preview pane bound to the dev server defined in launch.json, displayed alongside the file tree and chat.',
       },
     ],

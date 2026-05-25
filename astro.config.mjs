@@ -111,5 +111,5 @@ function securityHeaders() {
 
 export default defineConfig({
   integrations: [svelte(), versionManifest(), securityHeaders()],
-  site: 'https://ade-showdown.pages.dev',
+  site: 'https://ade-arena.pages.dev',
 });

@@ -15,7 +15,7 @@ if [[ ! -f "$seed_file" ]]; then
   exit 1
 fi
 
-container="supabase_db_ade-showdown"
+container="supabase_db_ade-arena"
 if ! docker ps --format '{{.Names}}' | grep -qx "$container"; then
   echo "Error: container '$container' is not running." >&2
   echo "       Start the local Supabase stack first: \`supabase start\`." >&2

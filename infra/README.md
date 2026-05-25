@@ -1,4 +1,4 @@
-# ade-showdown — local dev environment
+# ade-arena — local dev environment
 
 This directory holds the local-only infra wiring.  
 **Remote environments (dev/prod) live in some private repository** elsewhere.

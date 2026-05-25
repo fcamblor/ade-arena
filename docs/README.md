@@ -1,4 +1,4 @@
-# Documentation — ADE Showdown
+# Documentation — ADE Arena
 
 This directory captures the structural choices behind the project and the reasoning that backs them.
 

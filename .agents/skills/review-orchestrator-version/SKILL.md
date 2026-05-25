@@ -1,6 +1,6 @@
 ---
 name: review-orchestrator-version
-description: Interactive review of every feature row for one orchestrator+version in the ADE Showdown dataset. Lets the user pick a version (latest by default, with a drill-down into older ones), then walks feature by feature — showing the currently persisted support state, delegating a fresh research pass to a per-feature subagent, and asking the user to confirm/override with sources or screenshots. Persists every accepted change (including screenshot assets) and ends with a commit. Triggers: "review a version", "review feature matrix", "challenge orchestrator data", "audit <tool>@<version>", "fact-check the showdown".
+description: Interactive review of every feature row for one orchestrator+version in the ADE Arena dataset. Lets the user pick a version (latest by default, with a drill-down into older ones), then walks feature by feature — showing the currently persisted support state, delegating a fresh research pass to a per-feature subagent, and asking the user to confirm/override with sources or screenshots. Persists every accepted change (including screenshot assets) and ends with a commit. Triggers: "review a version", "review feature matrix", "challenge orchestrator data", "audit <tool>@<version>", "fact-check the arena".
 ---
 
 # Skill — `review-orchestrator-version`

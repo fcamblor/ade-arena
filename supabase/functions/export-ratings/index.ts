@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     },
     200,
     {
-      'Content-Disposition': 'attachment; filename="ade-showdown-export.json"',
+      'Content-Disposition': 'attachment; filename="ade-arena-export.json"',
     },
   );
 });

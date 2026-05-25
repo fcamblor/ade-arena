@@ -1,6 +1,6 @@
 ---
 name: add-orchestrator-version
-description: Bootstrap a brand-new orchestrator or add a new version to an existing one in the ADE Showdown dataset. Asks the user for the orchestrator name and latest known version, infers the meta block from public sources when new, creates the version file, then hands off to `review-orchestrator-version` to walk the feature matrix interactively. Triggers: "add a new version", "new orchestrator version", "bump <tool> to <version>", "enrich showdown".
+description: Bootstrap a brand-new orchestrator or add a new version to an existing one in the ADE Arena dataset. Asks the user for the orchestrator name and latest known version, infers the meta block from public sources when new, creates the version file, then hands off to `review-orchestrator-version` to walk the feature matrix interactively. Triggers: "add a new version", "new orchestrator version", "bump <tool> to <version>", "enrich arena".
 ---
 
 # Skill — `add-orchestrator-version`
