@@ -56,6 +56,7 @@ export const FEATURE_IDS = [
   'custom-deterministic-workflows',
   'shared-discussion-workflows',
   'fork-workspace',
+  'unarchive-worktree',
   'in-app-voice-input',
   'local-target-branch-merge',
   'llm-assisted-merge-rebase',

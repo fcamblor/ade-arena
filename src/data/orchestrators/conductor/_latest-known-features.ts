@@ -596,6 +596,20 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       },
     ],
   },
+  {
+    featureId: 'unarchive-worktree',
+    support: 'yes',
+    note: 'Since v0.50.0, an explicit Unarchive action restores an auto-archived workspace (typically archived after PR merge) back to the active list with its worktree and session history intact.',
+    screenshots: [
+      {
+        src: '/screenshots/conductor/unarchive-worktree_20260525_1.png',
+        alt: 'Conductor History tab listing archived workspaces grouped by date, with an Unarchive action exposed on a row',
+        caption: 'History tab in the sidebar surfaces previously archived workspaces with an Unarchive action to bring them back to the active list.',
+      },
+    ],
+    sourceUrl: 'https://www.conductor.build/changelog',
+    sourceExtract: 'v0.50.0: Added an Unarchive action after auto-archiving a workspace when its PR is merged.',
+  },
   { featureId: 'readonly-plan-research-mode', support: 'unknown', screenshots: [] },
   { featureId: 'in-app-voice-input', support: 'unknown', screenshots: [] },
   { featureId: 'web-preview-annotation', support: 'unknown', screenshots: [] },

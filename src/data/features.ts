@@ -389,6 +389,14 @@ const features: Feature[] = [
       'Fork the entire state of a workspace — git worktree contents, session/chat history, and any local-only files — into a brand-new worktree, so you can branch off an alternative exploration without disturbing the original session.',
   },
   {
+    id: 'unarchive-worktree',
+    label: 'Unarchive a worktree',
+    category: 'workflow',
+    shortDescription: 'Restore an archived worktree back to the active list so its session, files and history can be resumed.',
+    longDescription:
+      'After a worktree has been archived — manually or automatically (e.g. on PR merge) — the orchestrator exposes an action to bring it back as an active workspace, preserving its session/chat history and git state. "Partial" when only the metadata is restored (no underlying worktree/state), "yes" when the restored workspace is fully resumable.',
+  },
+  {
     id: 'in-app-voice-input',
     label: 'In-app voice input',
     category: 'ux',

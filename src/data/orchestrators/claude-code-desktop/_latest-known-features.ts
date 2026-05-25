@@ -528,6 +528,15 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'multi-repository-view', support: 'unknown', screenshots: [] },
   { featureId: 'multi-repository-chat-targeting', support: 'unknown', screenshots: [] },
   {
+    featureId: 'unarchive-worktree',
+    support: 'no',
+    note: 'Archive (manual or auto on PR merge/close) is documented as the way to "remove a worktree when you\'re done"; no inverse unarchive/restore action is documented.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'To remove a worktree when you\'re done, hover over the session in the sidebar and click the archive icon. To have sessions archive themselves when their pull request merges or closes, turn on Auto-archive after PR merge or close in Settings → Claude Code.',
+  },
+  {
     featureId: 'chat-turn-diff',
     support: 'no',
     note: 'A single session-wide diff stats indicator (e.g. `+12 -1`) opens the global diff viewer; no per-turn file list or per-turn diff scope exposed inside the chat transcript.',
