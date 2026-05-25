@@ -2,6 +2,9 @@
 import { FEATURES, ORCHESTRATORS, ORCHESTRATORS_BY_TOOL, isApproved, isDefaultVisible } from '../data';
 import type { SupportLevel, FeatureCategory, Feature, Platform, TrackingSourceKind, ModelIntegrationKind } from '../data/schema';
 import Evidence from './Evidence.astro';
+import ComparisonRankings from './ComparisonRankings.svelte';
+import FeatureRatingSummary from './FeatureRatingSummary.svelte';
+import { getRankingTools } from '../lib/static-comparison';
 
 // Each orchestrator column carries a stable `<toolId>@<version>` key. The
 // preview query param (?preview=tool@ver[,tool@ver…], ?preview=tool, or
@@ -179,7 +182,67 @@ const toolCount = Object.values(ORCHESTRATORS_BY_TOOL).filter((versions) =>
   versions.some(isApproved),
 ).length;
 const featureCount = visibleFeatures.length;
+const rankingTools = getRankingTools();
 ---
+
+<section class="engage" aria-labelledby="engage-title">
+  <div class="engage__copy">
+    <p class="engage__eyebrow">Your call</p>
+    <h2 id="engage-title" class="engage__title">Rate features.<br />Shape <em>your</em> ranking.</h2>
+    <p class="engage__body">
+      Raw coverage treats every feature the same. Weigh the {featureCount} features by how
+      much they matter to <em>your</em> workflow — three things change:
+    </p>
+    <ol class="engage__perks">
+      <li class="engage__perk">
+        <span class="engage__perk-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="5" />
+            <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+            <path d="M21 3l-6 6" />
+            <path d="M15 3h6v6" />
+          </svg>
+        </span>
+        <strong class="engage__perk-title">Your leaderboard reshuffles.</strong>
+        <span class="engage__perk-desc">Tools that nail what <em>you</em> actually need rise to the top.</span>
+      </li>
+      <li class="engage__perk">
+        <span class="engage__perk-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+            <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+        <strong class="engage__perk-title">You discover blind spots.</strong>
+        <span class="engage__perk-desc">You'll bump into capabilities you didn't know to look for.</span>
+      </li>
+      <li class="engage__perk">
+        <span class="engage__perk-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 20v-4" />
+            <path d="M9 20v-8" />
+            <path d="M15 20v-6" />
+            <path d="M21 20V8" />
+            <path d="M3 11l6-5 6 3 6-6" />
+          </svg>
+        </span>
+        <strong class="engage__perk-title">The community signal grows.</strong>
+        <span class="engage__perk-desc">Aggregated votes surface what the wider field values most.</span>
+      </li>
+    </ol>
+    <a class="engage__btn" href="/rate">
+      Start rating
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+        <path fill="currentColor" d="M9 3l5 5-5 5v-3H2V6h7V3z"/>
+      </svg>
+    </a>
+  </div>
+  <div class="engage__aside">
+    <ComparisonRankings tools={rankingTools} client:load />
+  </div>
+</section>
+
 
 <section class="comparator" aria-labelledby="comparator-title">
   <header class="comparator__intro">
@@ -556,6 +619,7 @@ const featureCount = visibleFeatures.length;
                     <div class="feature">
                       <p class="feature__label">{feature.label}</p>
                       <p class="feature__body">{feature.longDescription ?? feature.shortDescription}</p>
+                      <FeatureRatingSummary featureId={feature.id} client:visible />
                     </div>
                   </th>
                   {ORCHESTRATORS.map((orch, i) => {
@@ -634,6 +698,141 @@ const featureCount = visibleFeatures.length;
 </section>
 
 <style>
+  /* ============ Engage strip — CTA + leaderboard ============ */
+  .engage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(420px, 1fr);
+    gap: clamp(var(--s-5), 4vw, var(--s-7));
+    align-items: start;
+    padding: clamp(var(--s-5), 3vw, var(--s-6)) 0;
+    border-top: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
+    margin: 0 0 var(--s-6);
+  }
+  .engage__copy { min-width: 0; }
+  .engage__eyebrow {
+    margin: 0 0 var(--s-3);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+  }
+  .engage__title {
+    margin: 0 0 var(--s-3);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+    line-height: 0.98;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  .engage__title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .engage__body {
+    margin: 0 0 var(--s-4);
+    color: var(--fg-soft);
+    font-size: 1rem;
+    line-height: 1.55;
+    max-width: 60ch;
+  }
+  .engage__body em {
+    font-style: normal;
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .engage__perks {
+    list-style: none;
+    margin: 0 0 var(--s-5);
+    padding: 0;
+    max-width: 60ch;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+  }
+  .engage__perk {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: var(--s-3);
+    row-gap: 2px;
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--border-soft);
+  }
+  .engage__perk:first-child { border-top: 0; padding-top: 0; }
+  .engage__perk span.engage__perk-icon {
+    grid-row: 1;
+    grid-column: 1;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: color-mix(in oklch, var(--accent) 14%, transparent);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .engage__perk-title {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    color: var(--fg);
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .engage__perk-desc {
+    grid-row: 2;
+    grid-column: 2;
+    color: var(--fg-soft);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .engage__perk em {
+    font-style: normal;
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .engage__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--bg);
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+    box-shadow: 0 6px 20px -10px color-mix(in oklch, var(--accent) 70%, transparent);
+  }
+  .engage__btn:hover,
+  .engage__btn:focus-visible {
+    text-decoration: none;
+    color: var(--bg);
+    transform: translateY(-1px);
+    background: color-mix(in oklch, var(--accent) 88%, oklch(0.95 0 0));
+  }
+  .engage__btn svg { transition: transform .2s ease; }
+  .engage__btn:hover svg { transform: translateX(2px); }
+
+  .engage__aside { min-width: 0; align-self: stretch; }
+
+  @media (max-width: 900px) {
+    .engage {
+      grid-template-columns: 1fr;
+      gap: var(--s-5);
+    }
+  }
+
   /* ============ Intro ============ */
   .comparator { display: flex; flex-direction: column; gap: var(--s-5); }
   .comparator__intro {
