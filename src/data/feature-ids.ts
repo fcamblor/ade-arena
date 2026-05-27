@@ -63,6 +63,7 @@ export const FEATURE_IDS = [
   'chat-message-stacking',
   'multi-repository-view',
   'multi-repository-chat-targeting',
+  'chat-transcript-export',
 ] as const;
 
 export type FeatureId = (typeof FEATURE_IDS)[number];

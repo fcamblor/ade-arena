@@ -432,6 +432,18 @@ const features: Feature[] = [
     category: 'workflow',
     shortDescription: 'Target several repositories, such as frontend and backend, within one discussion.',
   },
+  {
+    id: 'chat-transcript-export',
+    label: 'Chat transcript export',
+    category: 'observability',
+    shortDescription: 'Retrieve the full transcript of a discussion (user messages, agent turns, tool calls) for downstream analysis.',
+    longDescription:
+      'Expose a frictionless way to extract a complete, machine-readable transcript of a discussion — including user messages, assistant turns, tool calls and their results — through a copy/export action, a file on disk, or a dedicated API. Useful to fork the conversation in another tool, run meta analyses on agent behavior, identify recurring failure modes, or build prompts/skills from past sessions. "Partial" when only the visible chat text can be copied piecemeal; "yes" when a structured export covering the full session (including tool I/O) is available.',
+    whyImportant: {
+      short: 'A transcript export turns past sessions into reusable material for forking, debugging and improving agent workflows.',
+      long: 'Discussions are the richest signal an ADE produces. Being able to extract them in full lets users fork a promising run into another tool, mine recurring agent mistakes, distill new prompts/skills, or share reproducible cases with teammates. Without an export, that knowledge stays locked inside the orchestrator UI.',
+    },
+  },
 ];
 
 export const FEATURES: readonly Feature[] = z.array(FeatureSchema).parse(features);
