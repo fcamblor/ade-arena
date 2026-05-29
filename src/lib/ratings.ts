@@ -76,18 +76,29 @@ export function supportWeight(level: SupportLevel | undefined): number {
 }
 
 export function computeWeightedScores(
-  orchestrators: Pick<OrchestratorVersion, 'toolId' | 'toolName' | 'version' | 'features'>[],
+  orchestrators: Pick<OrchestratorVersion, 'toolId' | 'toolName' | 'version' | 'features' | 'codebase'>[],
   ratings: RatingMap,
+  // Optional 1-5 weight for a synthetic "open-source codebase" criterion. When
+  // provided (> 0), it contributes to every tool's score just like a feature:
+  // an open-source codebase scores full points, anything else scores zero. Used
+  // by the personal ranking only; community/objective rankings omit it.
+  opensourceImportance: number | null = null,
 ): WeightedScore[] {
   const ratedEntries = Object.entries(ratings).filter(([, rating]) => rating > 0);
-  const possible = ratedEntries.reduce((sum, [, rating]) => sum + ratingToPoints(rating), 0);
+  const opensourcePoints =
+    opensourceImportance && opensourceImportance > 0 ? ratingToPoints(opensourceImportance) : 0;
+  const possible =
+    ratedEntries.reduce((sum, [, rating]) => sum + ratingToPoints(rating), 0) + opensourcePoints;
 
   return orchestrators
     .map((tool) => {
-      const score = ratedEntries.reduce((sum, [featureId, rating]) => {
+      let score = ratedEntries.reduce((sum, [featureId, rating]) => {
         const support = tool.features.find((feature) => feature.featureId === featureId)?.support;
         return sum + ratingToPoints(rating) * supportWeight(support);
       }, 0);
+      if (opensourcePoints > 0) {
+        score += opensourcePoints * supportWeight(tool.codebase === 'open-source' ? 'yes' : 'no');
+      }
       return {
         toolId: tool.toolId,
         toolName: tool.toolName,

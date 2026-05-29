@@ -3,7 +3,10 @@ import { isApproved, isDefaultVisible } from '../data';
 import type { OrchestratorVersion } from '../data/schema';
 import { RATABLE_FEATURES } from './ratable-features';
 
-export type RankingToolData = Pick<OrchestratorVersion, 'toolId' | 'toolName' | 'version' | 'features'> & {
+export type RankingToolData = Pick<
+  OrchestratorVersion,
+  'toolId' | 'toolName' | 'version' | 'features' | 'platforms' | 'codebase'
+> & {
   isDefaultVisible: boolean;
   status: 'approved' | 'waiting-for-review';
 };
@@ -17,6 +20,8 @@ export function getRankingTools(): RankingToolData[] {
     version: tool.version,
     isDefaultVisible: isDefaultVisible(tool),
     status: isApproved(tool) ? 'approved' : 'waiting-for-review',
+    platforms: tool.platforms,
+    codebase: tool.codebase,
     features: tool.features
       .filter((feature) => visibleFeatureIds.has(feature.featureId))
       .map((feature) => ({

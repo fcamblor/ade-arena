@@ -35,7 +35,11 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return jsonResponse({ error: 'Unauthorized' }, 401);
 
-  const [{ data: ratings, error: ratingsError }, { data: skips, error: skipsError }] = await Promise.all([
+  const [
+    { data: ratings, error: ratingsError },
+    { data: skips, error: skipsError },
+    { data: preferences, error: preferencesError },
+  ] = await Promise.all([
     supabase
       .from('ratings')
       .select('feature_id, rating, updated_at')
@@ -44,9 +48,13 @@ Deno.serve(async (req) => {
       .from('feature_skips')
       .select('feature_id, updated_at')
       .order('feature_id', { ascending: true }),
+    supabase
+      .from('user_preferences')
+      .select('daily_os, opensource_importance, willing_to_pay, updated_at')
+      .maybeSingle(),
   ]);
-  if (ratingsError || skipsError) {
-    console.error('export-ratings query failed', { ratingsError, skipsError });
+  if (ratingsError || skipsError || preferencesError) {
+    console.error('export-ratings query failed', { ratingsError, skipsError, preferencesError });
     return jsonResponse({ error: 'Unable to export your data right now' }, 500);
   }
 
@@ -80,6 +88,7 @@ Deno.serve(async (req) => {
       account,
       ratings: ratings ?? [],
       skips: skips ?? [],
+      preferences: preferences ?? null,
     },
     200,
     {

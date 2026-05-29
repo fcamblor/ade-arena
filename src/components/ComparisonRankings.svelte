@@ -3,6 +3,7 @@
   import type { SupabaseClient, Session } from '@supabase/supabase-js';
   import type { RankingToolData } from '../lib/static-comparison';
   import { computeWeightedScores, fetchFeatureStats, fetchMyRatings, fetchUniqueVoterCount, type RatingMap } from '../lib/ratings';
+  import { EMPTY_PREFERENCES, fetchMyPreferences, isToolCompatibleWithOs, type UserPreferences } from '../lib/preferences';
   import { RATABLE_FEATURES } from '../lib/ratable-features';
   import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
   import SignInButton from './SignInButton.svelte';
@@ -16,6 +17,7 @@
   let tab = initialTab;
   let visibleTools: RankingToolData[] = tools.filter((tool) => tool.isDefaultVisible);
   let personalRatings: RatingMap = {};
+  let preferences: UserPreferences = { ...EMPTY_PREFERENCES };
   let communityStats: Record<string, FeatureStatsRow> = {};
   let uniqueVoterCount = 0;
   let signedIn = false;
@@ -36,7 +38,10 @@
       return { toolId: tool.toolId, toolName: tool.toolName, version: tool.version, percent, score, possible: tool.features.length, ratedFeatureCount: tool.features.length };
     })
     .sort((a, b) => b.percent - a.percent || a.toolName.localeCompare(b.toolName));
-  $: personalScores = computeWeightedScores(visibleTools, personalRatings);
+  // Personal ranking drops tools that don't cover every OS the user selected,
+  // and folds their open-source weighting into the score (both prefs-driven).
+  $: personalTools = visibleTools.filter((tool) => isToolCompatibleWithOs(tool.platforms, preferences.dailyOs));
+  $: personalScores = computeWeightedScores(personalTools, personalRatings, preferences.opensourceImportance);
   $: communityScores = computeWeightedScores(
     visibleTools,
     Object.fromEntries(Object.entries(communityStats).map(([featureId, row]) => [featureId, Number(row.avg_rating ?? 0)])),
@@ -51,13 +56,17 @@
     activeUserId = session?.user.id ?? '';
     if (!session) {
       personalRatings = {};
+      preferences = { ...EMPTY_PREFERENCES };
       if (wasSignedIn) await refreshCommunityStats(supabase);
       return;
     }
 
     const userId = session.user.id;
-    const ratings = await fetchMyRatings(supabase);
-    if (activeUserId === userId) personalRatings = ratings;
+    const [ratings, prefs] = await Promise.all([fetchMyRatings(supabase), fetchMyPreferences(supabase)]);
+    if (activeUserId === userId) {
+      personalRatings = ratings;
+      preferences = prefs;
+    }
     if (!wasSignedIn) await refreshCommunityStats(supabase);
   }
 
@@ -224,7 +233,9 @@
         <a href="/rate" class="lb__hint-btn">Rate features</a>
       </div>
     {:else}
-      {#if tab === 'community' && communityScores[0]?.ratedFeatureCount === 0}
+      {#if tab === 'personal' && activeScores.length === 0}
+        <p class="lb__notice">No tool supports all the OS you selected. Adjust your OS preferences on the <a href="/rate">rating page</a> to see a ranking.</p>
+      {:else if tab === 'community' && communityScores[0]?.ratedFeatureCount === 0}
         <p class="lb__notice">Community averages will appear once the first votes are saved.</p>
       {:else if tab === 'community' && uniqueVoterCount > 0}
         <p class="lb__voters">Based on <strong>{uniqueVoterCount}</strong> {uniqueVoterCount === 1 ? 'voter' : 'voters'}</p>

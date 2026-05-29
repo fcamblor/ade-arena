@@ -5,6 +5,14 @@
   import type { FeatureScreenshot } from '../lib/feature-screenshots';
   import { fetchMyRatings, upsertRating, type RatingMap } from '../lib/ratings';
   import { deleteSkip, fetchMySkips, upsertSkip, type SkipMap } from '../lib/skips';
+  import {
+    DAILY_OS_OPTIONS,
+    EMPTY_PREFERENCES,
+    fetchMyPreferences,
+    upsertPreferences,
+    type DailyOs,
+    type UserPreferences,
+  } from '../lib/preferences';
   import { getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
   import SignInButton from './SignInButton.svelte';
   import StarRating from './StarRating.svelte';
@@ -18,6 +26,10 @@
   let user: User | null = null;
   let ratings: RatingMap = {};
   let skips: SkipMap = {};
+  let prefs: UserPreferences = { ...EMPTY_PREFERENCES };
+  // The tunnel opens on the preference questions, then moves on to features.
+  let phase: 'prefs' | 'features' = 'prefs';
+  let prefStep = 0;
   let currentIndex = 0;
   let previousIndexes: number[] = [];
   let loading = true;
@@ -29,11 +41,16 @@
   // Default: skip already-rated features, and ignore skipped ones while non-skipped remain.
   let reviewAll = false;
 
+  // The three preference steps shown before the feature tunnel, in order.
+  const PREF_STEPS = ['os', 'opensource', 'pay'] as const;
+
   $: ratedCount = Object.keys(ratings).length;
   $: currentFeature = features[currentIndex];
-  $: complete = features.length > 0 && currentIndex >= features.length;
+  $: complete = phase === 'features' && features.length > 0 && currentIndex >= features.length;
   $: progressPercent = features.length ? Math.round((ratedCount / features.length) * 100) : 0;
-  $: canGoBack = !saving && (reviewAll ? currentIndex > 0 : previousIndexes.length > 0);
+  // In the preferences phase only the first step has nothing before it. In the
+  // features phase "Previous" can always step back — eventually into prefs.
+  $: canGoBack = !saving && (phase === 'prefs' ? prefStep > 0 : true);
   $: currentSkipped = currentFeature ? Boolean(skips[currentFeature.id]) : false;
 
   async function applySession(supabase: SupabaseClient<Database>, session: Session | null) {
@@ -42,6 +59,9 @@
     if (!user) {
       ratings = {};
       skips = {};
+      prefs = { ...EMPTY_PREFERENCES };
+      phase = 'prefs';
+      prefStep = 0;
       currentIndex = 0;
       previousIndexes = [];
       saving = false;
@@ -50,11 +70,30 @@
     }
 
     const userId = user.id;
-    const [nextRatings, nextSkips] = await Promise.all([fetchMyRatings(supabase), fetchMySkips(supabase)]);
+    const [nextRatings, nextSkips, nextPrefs] = await Promise.all([
+      fetchMyRatings(supabase),
+      fetchMySkips(supabase),
+      fetchMyPreferences(supabase),
+    ]);
     if (activeUserId !== userId) return;
     ratings = nextRatings;
     skips = nextSkips;
-    moveToNext(0, false);
+    prefs = nextPrefs;
+    // Returning users who already went through the preference questions jump
+    // straight to the features; newcomers start on the preferences. They can
+    // still revisit prefs via "Previous" from the first feature.
+    if (prefsAnswered(nextPrefs)) {
+      phase = 'features';
+      prefStep = 0;
+      moveToNext(0, false);
+    } else {
+      phase = 'prefs';
+      prefStep = 0;
+    }
+  }
+
+  function prefsAnswered(value: UserPreferences): boolean {
+    return value.dailyOs.length > 0 || value.opensourceImportance !== null || value.willingToPay !== null;
   }
 
   onMount(() => {
@@ -76,7 +115,7 @@
     })();
 
     const keyHandler = (event: KeyboardEvent) => {
-      if (!user || saving || event.defaultPrevented) return;
+      if (!user || saving || event.defaultPrevented || phase !== 'features') return;
       const rating = Number(event.key);
       if (rating >= 1 && rating <= 5) void saveRating(rating);
     };
@@ -115,18 +154,77 @@
     currentIndex = next >= 0 ? next : features.length;
   }
 
+  function backToLastPrefStep() {
+    phase = 'prefs';
+    prefStep = PREF_STEPS.length - 1;
+  }
+
   function goBack() {
+    if (phase === 'prefs') {
+      if (prefStep > 0) prefStep -= 1;
+      error = '';
+      celebration = '';
+      return;
+    }
     if (reviewAll) {
-      if (currentIndex <= 0) return;
-      currentIndex = Math.min(currentIndex, features.length) - 1;
+      if (currentIndex <= 0) {
+        backToLastPrefStep();
+      } else {
+        currentIndex = Math.min(currentIndex, features.length) - 1;
+      }
     } else {
       const previousIndex = previousIndexes.at(-1);
-      if (previousIndex === undefined) return;
-      previousIndexes = previousIndexes.slice(0, -1);
-      currentIndex = previousIndex;
+      if (previousIndex === undefined) {
+        backToLastPrefStep();
+      } else {
+        previousIndexes = previousIndexes.slice(0, -1);
+        currentIndex = previousIndex;
+      }
     }
     error = '';
     celebration = '';
+  }
+
+  async function savePreferences(next: UserPreferences) {
+    prefs = next;
+    if (!user) return;
+    if (!consent) {
+      error = 'Check the privacy policy box above to save your preferences.';
+      return;
+    }
+    error = '';
+    try {
+      const supabase = await getSupabase();
+      await upsertPreferences(supabase, user.id, next);
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Unable to save your preferences.';
+    }
+  }
+
+  function toggleDailyOs(os: DailyOs) {
+    const nextOs = prefs.dailyOs.includes(os)
+      ? prefs.dailyOs.filter((value) => value !== os)
+      : [...prefs.dailyOs, os];
+    void savePreferences({ ...prefs, dailyOs: nextOs });
+  }
+
+  function setOpensourceImportance(rating: number) {
+    void savePreferences({ ...prefs, opensourceImportance: rating });
+  }
+
+  function setWillingToPay(value: boolean) {
+    const next = prefs.willingToPay === value ? null : value;
+    void savePreferences({ ...prefs, willingToPay: next });
+  }
+
+  function prefNext() {
+    error = '';
+    if (prefStep < PREF_STEPS.length - 1) {
+      prefStep += 1;
+      return;
+    }
+    phase = 'features';
+    moveToNext(0, false);
   }
 
   async function saveRating(rating: number) {
@@ -228,6 +326,75 @@
         <a class="rate__link rate__link--secondary" href="/compare?ranked=community">See community averages</a>
       </div>
     </div>
+  {:else if phase === 'prefs'}
+    <div class="rate__progress" aria-label={`Preference question ${prefStep + 1} of ${PREF_STEPS.length}`}>
+      <span>Preferences · step {prefStep + 1} / {PREF_STEPS.length}</span>
+      <div><i style={`width: ${Math.round(((prefStep + 1) / PREF_STEPS.length) * 100)}%`}></i></div>
+    </div>
+    <article class="rate__panel">
+      <p class="rate__eyebrow">About you</p>
+      <ConsentGate bind:checked={consent} />
+      {#if PREF_STEPS[prefStep] === 'os'}
+        <h2>Which OS do you use daily?</h2>
+        <p>
+          Tools that don't support <strong>all</strong> the OS you pick are dropped from your personal ranking.
+          A web-based tool always counts. Leave everything unchecked to keep every tool.
+        </p>
+        <div class="rate__choices" role="group" aria-label="Daily operating systems">
+          {#each DAILY_OS_OPTIONS as option}
+            <label class="rate__choice" class:rate__choice--on={prefs.dailyOs.includes(option.value)}>
+              <input
+                type="checkbox"
+                checked={prefs.dailyOs.includes(option.value)}
+                disabled={!consent}
+                on:change={() => toggleDailyOs(option.value)}
+              />
+              <span>{option.label}</span>
+            </label>
+          {/each}
+        </div>
+      {:else if PREF_STEPS[prefStep] === 'opensource'}
+        <h2>How much do you value an open-source codebase?</h2>
+        <p>This weights an open-source bonus in your personal ranking, exactly like a feature you rate.</p>
+        <section class="rate__vote" aria-label="Open-source importance">
+          <StarRating
+            value={prefs.opensourceImportance ?? 0}
+            disabled={!consent}
+            disabledReason={!consent ? 'Check the privacy policy box above to enable this.' : ''}
+            on:change={(event) => setOpensourceImportance(event.detail)}
+          />
+        </section>
+      {:else}
+        <h2>Would you be willing to pay for an ADE?</h2>
+        <p>This is counted on the side — it does not change any tool's score.</p>
+        <div class="rate__choices" role="group" aria-label="Willingness to pay">
+          <button
+            type="button"
+            class="rate__toggle"
+            class:rate__toggle--on={prefs.willingToPay === true}
+            disabled={!consent}
+            aria-pressed={prefs.willingToPay === true}
+            on:click={() => setWillingToPay(true)}
+          >Yes</button>
+          <button
+            type="button"
+            class="rate__toggle"
+            class:rate__toggle--on={prefs.willingToPay === false}
+            disabled={!consent}
+            aria-pressed={prefs.willingToPay === false}
+            on:click={() => setWillingToPay(false)}
+          >No</button>
+        </div>
+      {/if}
+      <div class="rate__actions">
+        <button type="button" disabled={!canGoBack} on:click={goBack}>Previous</button>
+        <button type="button" on:click={prefNext}>
+          {#if prefStep < PREF_STEPS.length - 1}Next{:else}Start rating features{/if}
+        </button>
+        <a class="rate__link rate__link--secondary" href="/">Save & continue later</a>
+      </div>
+      {#if error}<p class="rate__error">{error}</p>{/if}
+    </article>
   {:else if currentFeature}
     <div class="rate__progress" aria-label={`${ratedCount} of ${features.length} rated`}>
       <span>{ratedCount} / {features.length} rated</span>
@@ -320,6 +487,35 @@
   .rate__progress { display: grid; gap: 8px; color: var(--fg-soft); font-weight: 700; }
   .rate__progress div { height: 8px; border-radius: 999px; background: var(--bg-row); overflow: hidden; border: 1px solid var(--border); }
   .rate__progress i { display: block; height: 100%; background: var(--accent); }
+  .rate__choices { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .rate__choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-row);
+    color: var(--fg);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .rate__choice input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .rate__choice--on { border-color: var(--accent); background: color-mix(in oklch, var(--accent) 12%, var(--bg-row)); }
+  .rate__choice:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
+  .rate__toggle {
+    min-width: 92px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-row);
+    color: var(--fg);
+    padding: 12px 18px;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .rate__toggle--on { border-color: var(--accent); background: color-mix(in oklch, var(--accent) 18%, var(--bg-row)); }
+  .rate__toggle:disabled { cursor: not-allowed; opacity: 0.55; }
   .rate__error { color: var(--cell-no-ink); }
   .rate__muted { text-align: center; color: var(--fg-muted); }
   .rate__celebration { margin: 0; padding: 10px 12px; border: 1px solid var(--cell-partial); border-radius: var(--radius-md); background: color-mix(in oklch, var(--cell-partial) 40%, transparent); color: var(--cell-partial-ink); }

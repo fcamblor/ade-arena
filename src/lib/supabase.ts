@@ -28,6 +28,14 @@ export type FeatureSkipRow = {
   updated_at: string;
 };
 
+export type UserPreferencesRow = {
+  user_id: string;
+  daily_os: string[];
+  opensource_importance: number | null;
+  willing_to_pay: boolean | null;
+  updated_at: string;
+};
+
 // `Relationships: []` is required by @supabase/postgrest-js GenericTable /
 // GenericView. Leaving it off causes `from('ratings')` to resolve to
 // `never`, which then forces `as any` casts on every call site.
@@ -44,6 +52,23 @@ export type Database = {
         Row: FeatureSkipRow;
         Insert: { user_id: string; feature_id: string; updated_at?: string };
         Update: { updated_at?: string };
+        Relationships: [];
+      };
+      user_preferences: {
+        Row: UserPreferencesRow;
+        Insert: {
+          user_id: string;
+          daily_os?: string[];
+          opensource_importance?: number | null;
+          willing_to_pay?: boolean | null;
+          updated_at?: string;
+        };
+        Update: {
+          daily_os?: string[];
+          opensource_importance?: number | null;
+          willing_to_pay?: boolean | null;
+          updated_at?: string;
+        };
         Relationships: [];
       };
     };
