@@ -1,0 +1,122 @@
+name: 💡 Feature proposal
+description: Propose a new comparison feature (a row in the orchestrator comparison table).
+title: "feat: <short feature label>"
+labels: ["feature-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new **comparison feature**!
+
+        In ADE Arena, a "feature" is one **row** of the orchestrator comparison
+        table — a single capability we evaluate across every orchestrator
+        (Conductor, Vibe Kanban, GitHub Copilot Coding Agent, …).
+
+        Each accepted feature ends up as an entry in
+        [`src/data/features.ts`](https://github.com/fcamblor/ade-arena/blob/main/src/data/features.ts), validated by
+        the `FeatureSchema`. The fields below map 1:1 to that schema so a
+        maintainer can transcribe your proposal directly.
+
+  - type: input
+    id: label
+    attributes:
+      label: Feature label
+      description: Short, human-readable title shown in the comparison table (schema field `label`).
+      placeholder: e.g. "Git worktree isolation"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Which section of the table this feature belongs to (schema field `category`).
+      options:
+        - workflow
+        - ux
+        - integrations
+        - observability
+        - collaboration
+        - pricing
+        - platform
+    validations:
+      required: true
+
+  - type: textarea
+    id: short-description
+    attributes:
+      label: Short description
+      description: One sentence describing the capability (schema field `shortDescription`). Shown inline in the table.
+      placeholder: e.g. "Each agent works in its own isolated git worktree."
+    validations:
+      required: true
+
+  - type: textarea
+    id: long-description
+    attributes:
+      label: Long description (optional)
+      description: >
+        A longer paragraph clarifying scope, edge cases, and what counts as
+        "yes" / "partial" / "no" (schema field `longDescription`). This is the
+        rubric maintainers use to rate each orchestrator consistently.
+      placeholder: >
+        Describe precisely what is in scope, what is out of scope, and the
+        boundary between full support, partial support, and no support.
+    validations:
+      required: false
+
+  - type: textarea
+    id: why-important-short
+    attributes:
+      label: Why is this important? (short)
+      description: One sentence on why a user comparing orchestrators should care (schema field `whyImportant.short`).
+      placeholder: e.g. "Worktrees decide how safely you can run several agents without branch and file conflicts."
+    validations:
+      required: false
+
+  - type: textarea
+    id: why-important-long
+    attributes:
+      label: Why is this important? (long)
+      description: >
+        A fuller explanation of the impact (schema field `whyImportant.long`).
+        If you fill in either "why important" field, please fill in both — the
+        schema requires `short` and `long` together.
+    validations:
+      required: false
+
+  - type: textarea
+    id: differentiation
+    attributes:
+      label: Why is this a distinct feature?
+      description: >
+        How is this different from features already in the table? If it is
+        related to an existing family (e.g. the `diff-*`, `web-preview-*`
+        families), say which one and how it differs.
+    validations:
+      required: false
+
+  - type: textarea
+    id: support-examples
+    attributes:
+      label: Known support across orchestrators (optional)
+      description: >
+        If you already know how some orchestrators handle this, list them with
+        a support level (`yes` / `partial` / `no` / `unknown`) and a source URL.
+        This seeds the per-orchestrator `FeatureSupport` entries.
+      placeholder: |
+        - Conductor: yes — https://docs.example.com/...
+        - Vibe Kanban: partial — only via plugin — https://...
+        - GitHub Copilot Coding Agent: unknown
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and `src/data/features.ts` and this feature is not already covered.
+          required: true
+        - label: This describes a capability that can be evaluated objectively across multiple orchestrators (not a request for the ADE Arena app itself).
+          required: true

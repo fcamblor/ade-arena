@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📊 Add or update an orchestrator
+    url: https://github.com/fcamblor/ade-arena/blob/main/README.md#contributing-an-orchestrator
+    about: Orchestrators are defined "as code" — open a PR rather than an issue.
