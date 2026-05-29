@@ -70,25 +70,83 @@
     slot.el.classList.add('feature-rating');
     slot.el.setAttribute('aria-label', 'Feature rating summary');
 
+    // A single community vote that exists alongside a personal rating can only
+    // be the user's own — surfacing both rows would just repeat the same value.
+    const onlyVoteIsMine = personal != null && votes === 1;
+
     const children: HTMLElement[] = [];
     if (personal) {
-      const s = document.createElement('span');
-      s.title = 'Your rating';
-      s.textContent = `${personal} ★ mine`;
-      children.push(s);
+      children.push(
+        starRow('mine', 'You', personal, onlyVoteIsMine ? 'only vote so far' : '', 'Your rating'),
+      );
     }
-    if (avg != null) {
-      const s = document.createElement('span');
-      s.title = 'Community average';
-      s.textContent = `${avg.toFixed(1)} ★ · ${votes} vote${votes === 1 ? '' : 's'}`;
-      children.push(s);
+    if (avg != null && !onlyVoteIsMine) {
+      children.push(
+        starRow(
+          'avg',
+          'Community',
+          avg,
+          `${avg.toFixed(1)} · ${votes} vote${votes === 1 ? '' : 's'}`,
+          'Community average',
+        ),
+      );
     }
     if (deltaLabel) {
       const strong = document.createElement('strong');
+      strong.className = 'feature-rating__delta';
       strong.textContent = deltaLabel;
       children.push(strong);
     }
     slot.el.replaceChildren(...children);
+  }
+
+  const MAX_STARS = 5;
+
+  // Builds a single labelled row of 5 stars where `value` (1–5, possibly
+  // fractional for the community average) fills a coloured overlay clipped to
+  // its proportional width over a muted empty track.
+  function starRow(
+    variant: 'mine' | 'avg',
+    label: string,
+    value: number,
+    meta: string,
+    title: string,
+  ): HTMLElement {
+    const root = document.createElement('span');
+    root.className = `feature-rating__row feature-rating__row--${variant}`;
+    root.title = title;
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'feature-rating__label';
+    labelEl.textContent = label;
+
+    const track = document.createElement('span');
+    track.className = 'feature-rating__stars';
+    track.setAttribute('role', 'img');
+    track.setAttribute('aria-label', `${value.toFixed(1)} out of ${MAX_STARS} stars`);
+
+    const base = document.createElement('span');
+    base.className = 'feature-rating__stars-base';
+    base.textContent = '★'.repeat(MAX_STARS);
+    base.setAttribute('aria-hidden', 'true');
+
+    const fill = document.createElement('span');
+    fill.className = 'feature-rating__stars-fill';
+    fill.textContent = '★'.repeat(MAX_STARS);
+    fill.setAttribute('aria-hidden', 'true');
+    const ratio = Math.max(0, Math.min(1, value / MAX_STARS));
+    fill.style.width = `${(ratio * 100).toFixed(2)}%`;
+
+    track.append(base, fill);
+    root.append(labelEl, track);
+
+    if (meta) {
+      const metaEl = document.createElement('span');
+      metaEl.className = 'feature-rating__meta';
+      metaEl.textContent = meta;
+      root.append(metaEl);
+    }
+    return root;
   }
 
   function applyContext(ctx: RatingContext) {
@@ -148,32 +206,79 @@
 <!--
   This island holds zero DOM of its own. It mounts once (client:idle from
   ComparisonTable), discovers every `.feature-rating-slot` placeholder in the
-  page, and writes the rating chips imperatively into them. Replaces the prior
+  page, and writes the rating rows imperatively into them. Replaces the prior
   per-feature `client:visible` approach which spawned ~56 IntersectionObservers
   + 56 Supabase auth subscriptions on a single page render.
 -->
 
-<style is:global>
-  /* Hosted globally because the slots are owned by ComparisonTable.astro's
-     SSR markup, not by this component — Svelte's scoped CSS wouldn't reach
-     them. The class is added at runtime by `renderInto` only when there's
-     actually a rating to display, so an empty slot collapses to nothing. */
-  .feature-rating { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .feature-rating span,
-  .feature-rating strong {
-    display: inline-flex;
+<style>
+  /* Emitted as global CSS (Svelte `:global {}` block) because the slots are
+     owned by ComparisonTable.astro's SSR markup, not by this component, and the
+     rows are injected imperatively at runtime — Svelte's scoped class hash
+     never lands on them, so scoped rules wouldn't match. The `.feature-rating`
+     class is added by `renderInto` only when there's actually a rating to
+     display, so an empty slot collapses to nothing. */
+  :global {
+  .feature-rating {
+    --rating-mine-ink: var(--cell-yes-ink);
+    --rating-avg-ink: var(--cell-partial-ink);
+    display: grid;
+    gap: 4px;
+    margin-top: 10px;
+  }
+
+  /* One row = label + star track + numeric meta. */
+  .feature-rating__row {
+    display: grid;
+    grid-template-columns: 4.5rem auto 1fr;
     align-items: center;
-    min-height: 22px;
+    gap: 8px;
+  }
+  .feature-rating__label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+  .feature-rating__row--mine .feature-rating__label { color: var(--rating-mine-ink); }
+  .feature-rating__row--avg .feature-rating__label { color: var(--rating-avg-ink); }
+
+  /* Stars: a muted empty track with a coloured fill layer clipped to width. */
+  .feature-rating__stars {
+    position: relative;
+    display: inline-block;
+    font-size: 0.9rem;
+    line-height: 1;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .feature-rating__stars-base { color: var(--border-strong); }
+  .feature-rating__stars-fill {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .feature-rating__row--mine .feature-rating__stars-fill { color: var(--rating-mine-ink); }
+  .feature-rating__row--avg .feature-rating__stars-fill { color: var(--rating-avg-ink); }
+
+  .feature-rating__meta {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--fg-muted);
+  }
+
+  .feature-rating__delta {
+    justify-self: start;
+    margin-top: 2px;
     padding: 2px 7px;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border-soft);
+    border: 1px solid color-mix(in oklch, var(--cell-partial-ink) 45%, var(--border));
     background: var(--bg-row);
-    color: var(--fg-muted);
-    font-size: 0.72rem;
+    color: var(--cell-partial-ink);
+    font-size: 0.7rem;
     font-weight: 700;
   }
-  .feature-rating strong {
-    color: var(--cell-partial-ink);
-    border-color: color-mix(in oklch, var(--cell-partial-ink) 45%, var(--border));
   }
 </style>

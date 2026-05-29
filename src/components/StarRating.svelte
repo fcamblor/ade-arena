@@ -41,7 +41,17 @@
           on:blur={() => (preview = 0)}
           on:click={() => choose(rating)}
         >★</button>
-        <span class="stars__legend" aria-hidden="true">
+        <!-- The legend mirrors the button as a click target so the whole
+             option (star + label) feels interactive; the button above keeps
+             keyboard/AT semantics, hence aria-hidden here. -->
+        <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+        <span
+          class="stars__legend"
+          aria-hidden="true"
+          on:mouseenter={() => showPreview(rating)}
+          on:mouseleave={() => (preview = 0)}
+          on:click={() => choose(rating)}
+        >
           <span>{rating}★</span>
           <strong>{label}</strong>
           <em>{points[index]} point{points[index] === 1 ? '' : 's'}</em>
@@ -107,7 +117,9 @@
     color: var(--fg-muted);
     font-size: 0.74rem;
     text-align: center;
+    cursor: pointer;
   }
+  .stars-wrap.stars--disabled .stars__legend { cursor: not-allowed; }
   .stars__legend span,
   .stars__legend strong,
   .stars__legend em {
