@@ -18,6 +18,7 @@
     saveDraft,
   } from '../lib/contribution/db';
   import { buildProposal, copyToClipboard, downloadBlob, type BuiltProposal } from '../lib/contribution/export';
+  import ContributeDiff from './ContributeDiff.svelte';
   import ProofPreview from './ProofPreview.svelte';
 
   type ContributeFeature = {
@@ -32,6 +33,14 @@
   export let features: ContributeFeature[] = [];
   export let baselines: ToolBaseline[] = [];
 
+  // Glyphs mirror the comparison grid (ComparisonTable.astro `supportGlyph`) so
+  // the tunnel reads the same as the homepage: ● yes / ◐ partial / ○ no / ? unknown.
+  const SUPPORT_GLYPH: Record<SupportLevel, string> = {
+    yes: '●',
+    partial: '◐',
+    no: '○',
+    unknown: '?',
+  };
   const SUPPORT_OPTIONS: { value: SupportLevel; label: string }[] = [
     { value: 'yes', label: 'Yes' },
     { value: 'partial', label: 'Partial' },
@@ -461,11 +470,25 @@
   }
 
   // ----- baseline references (new-version mode) ----------------------------
-  // Resolves the preview source for a screenshot: baseline shots render from
-  // their published path, freshly-added ones from their IndexedDB blob URL.
+  // When a text field diverges from the baseline, the tunnel keeps the original
+  // value visible for history. These helpers drive that reference display.
+
+  function textChanged(current: string | undefined, base: string | undefined): boolean {
+    return (current ?? '') !== (base ?? '');
+  }
+
+  $: inheritedSupport = currentSupport?.inherited;
 
   function shotPreview(s: DraftScreenshot): string | undefined {
     return s.baselineSrc ?? previews[s.id];
+  }
+
+  function shotAltChanged(s: DraftScreenshot): boolean {
+    return Boolean(s.inherited) && textChanged(s.alt, s.inherited?.alt);
+  }
+
+  function shotCaptionChanged(s: DraftScreenshot): boolean {
+    return Boolean(s.inherited) && textChanged(s.caption, s.inherited?.caption);
   }
 
   // ----- fullscreen preview (lightbox) -------------------------------------
@@ -759,8 +782,18 @@
 
       {#if currentSupport?.inherited}
         <p class="contrib__inherited">
-          Baseline ({draft.baseVersion}): <strong>{currentSupport.inherited.support}</strong>
-          {#if currentSupport.inherited.note} — {currentSupport.inherited.note}{/if}
+          <span class="contrib__inherited-label">Baseline ({draft.baseVersion})</span>
+          <span class="contrib__verdict contrib__verdict--{currentSupport.inherited.support}">
+            <span class="contrib__glyph contrib__glyph--{currentSupport.inherited.support}" aria-hidden="true">{SUPPORT_GLYPH[currentSupport.inherited.support]}</span>
+            {SUPPORT_OPTIONS.find((o) => o.value === currentSupport.inherited?.support)?.label}
+          </span>
+          {#if currentSupport.inherited.support !== currentSupport.support}
+            <span class="contrib__inherited-arrow" aria-hidden="true">→</span>
+            <span class="contrib__verdict contrib__verdict--{currentSupport.support}">
+              <span class="contrib__glyph contrib__glyph--{currentSupport.support}" aria-hidden="true">{SUPPORT_GLYPH[currentSupport.support]}</span>
+              {SUPPORT_OPTIONS.find((o) => o.value === currentSupport?.support)?.label}
+            </span>
+          {/if}
         </p>
       {/if}
 
@@ -768,10 +801,14 @@
         {#each SUPPORT_OPTIONS as opt}
           <button
             type="button"
-            class="contrib__toggle"
+            class="contrib__toggle contrib__toggle--{opt.value}"
             class:contrib__toggle--on={currentSupport?.support === opt.value}
+            aria-pressed={currentSupport?.support === opt.value}
             on:click={() => setSupport(opt.value)}
-          >{opt.label}</button>
+          >
+            <span class="contrib__glyph contrib__glyph--{opt.value}" aria-hidden="true">{SUPPORT_GLYPH[opt.value]}</span>
+            {opt.label}
+          </button>
         {/each}
       </div>
 
@@ -784,14 +821,23 @@
             value={currentSupport?.note ?? ''}
             on:input={(e) => setField('note', e.currentTarget.value)}
           ></textarea>
+          {#if inheritedSupport && textChanged(currentSupport?.note, inheritedSupport.note)}
+            <ContributeDiff baseline={inheritedSupport.note} current={currentSupport?.note} label={`vs baseline (${draft.baseVersion})`} />
+          {/if}
         </label>
         <label class="contrib__wide">
           <span>Source URL <em>(optional)</em></span>
           <input type="url" value={currentSupport?.sourceUrl ?? ''} on:input={(e) => setField('sourceUrl', e.currentTarget.value)} placeholder="https://…" />
+          {#if inheritedSupport && textChanged(currentSupport?.sourceUrl, inheritedSupport.sourceUrl)}
+            <ContributeDiff baseline={inheritedSupport.sourceUrl} current={currentSupport?.sourceUrl} label={`vs baseline (${draft.baseVersion})`} />
+          {/if}
         </label>
         <label class="contrib__wide">
           <span>Source extract <em>(optional quote)</em></span>
           <textarea rows="2" value={currentSupport?.sourceExtract ?? ''} on:input={(e) => setField('sourceExtract', e.currentTarget.value)}></textarea>
+          {#if inheritedSupport && textChanged(currentSupport?.sourceExtract, inheritedSupport.sourceExtract)}
+            <ContributeDiff baseline={inheritedSupport.sourceExtract} current={currentSupport?.sourceExtract} label={`vs baseline (${draft.baseVersion})`} />
+          {/if}
         </label>
       </div>
 
@@ -857,12 +903,18 @@
                   value={shot.alt}
                   on:input={(e) => setShotMeta(shot.id, 'alt', e.currentTarget.value)}
                 />
+                {#if shotAltChanged(shot)}
+                  <ContributeDiff baseline={shot.inherited?.alt} current={shot.alt} label="vs baseline alt" />
+                {/if}
                 <input
                   type="text"
                   placeholder="Caption (optional)"
                   value={shot.caption ?? ''}
                   on:input={(e) => setShotMeta(shot.id, 'caption', e.currentTarget.value)}
                 />
+                {#if shotCaptionChanged(shot)}
+                  <ContributeDiff baseline={shot.inherited?.caption} current={shot.caption} label="vs baseline caption" />
+                {/if}
               </div>
               <button type="button" class="contrib__del" on:click={() => removeScreenshot(shot.id)} aria-label={shot.baselineSrc ? 'Remove baseline screenshot' : 'Remove screenshot'}>✕</button>
             </div>
@@ -1036,12 +1088,35 @@
 
   .contrib__support { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .contrib__toggle {
+    display: inline-flex; align-items: center; gap: 8px;
     min-width: 84px; border: 1px solid var(--border); border-radius: var(--radius-md);
-    background: var(--bg-row); color: var(--fg); padding: 10px 16px; font: inherit; font-weight: 800; cursor: pointer;
+    background: var(--bg-row); color: var(--fg-muted); padding: 10px 16px; font: inherit; font-weight: 800; cursor: pointer;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
   }
-  .contrib__toggle--on { border-color: var(--accent); background: color-mix(in oklch, var(--accent) 18%, var(--bg-row)); }
+  .contrib__toggle:hover { color: var(--fg); }
+  /* Selected verdict adopts its own support-cell colour, echoing the grid. */
+  .contrib__toggle--on { color: var(--fg); }
+  .contrib__toggle--yes.contrib__toggle--on     { border-color: var(--cell-yes-ink);     background: color-mix(in oklch, var(--cell-yes) 60%, var(--bg)); }
+  .contrib__toggle--no.contrib__toggle--on      { border-color: var(--cell-no-ink);      background: color-mix(in oklch, var(--cell-no) 55%, var(--bg)); }
+  .contrib__toggle--partial.contrib__toggle--on { border-color: var(--cell-partial-ink); background: color-mix(in oklch, var(--cell-partial) 55%, var(--bg)); }
+  .contrib__toggle--unknown.contrib__toggle--on { border-color: var(--cell-unknown-ink); background: color-mix(in oklch, var(--cell-unknown) 70%, var(--bg)); }
 
-  .contrib__inherited { margin-top: 12px; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--bg-row); font-size: 0.85rem; }
+  /* Status glyphs reused from the comparison grid (●/◐/○/?). */
+  .contrib__glyph { font: 1.25rem/1 var(--font-body); }
+  .contrib__glyph--yes     { color: var(--cell-yes-ink); }
+  .contrib__glyph--no      { color: var(--cell-no-ink); }
+  .contrib__glyph--partial { color: var(--cell-partial-ink); }
+  .contrib__glyph--unknown { color: var(--cell-unknown-ink); font-size: 1rem; font-weight: 800; }
+
+  .contrib__inherited { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding: 8px 12px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--bg-row); font-size: 0.85rem; }
+  .contrib__inherited-label { color: var(--fg-muted); font-weight: 700; }
+  .contrib__inherited-arrow { color: var(--fg-muted); font-weight: 800; }
+  .contrib__verdict { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
+  .contrib__verdict--yes     { color: var(--cell-yes-ink); }
+  .contrib__verdict--no      { color: var(--cell-no-ink); }
+  .contrib__verdict--partial { color: var(--cell-partial-ink); }
+  .contrib__verdict--unknown { color: var(--cell-unknown-ink); }
+  .contrib__verdict .contrib__glyph { font-size: 1rem; }
 
   .contrib__shots { margin-top: 18px; border-top: 1px solid var(--border-soft); padding-top: 14px; display: grid; gap: 12px; border-radius: var(--radius-md); transition: background 140ms ease; }
   .contrib__shots--drag { background: color-mix(in oklch, var(--accent) 12%, transparent); outline: 2px dashed var(--accent); outline-offset: 4px; }
