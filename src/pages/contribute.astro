@@ -1,0 +1,58 @@
+---
+import Base from '../layouts/Base.astro';
+import ContributeTunnel from '../components/ContributeTunnel.svelte';
+import Evidence from '../components/Evidence.astro';
+import { ORCHESTRATORS_BY_TOOL } from '../data';
+import { RATABLE_FEATURES } from '../lib/ratable-features';
+import type { ToolBaseline } from '../lib/contribution/types';
+
+// Lightweight, serializable feature list for the tunnel — only the fields the
+// UI renders, so the whole data layer is not shipped to the client.
+const features = RATABLE_FEATURES.map((f) => ({
+  id: f.id,
+  label: f.label,
+  category: f.category,
+  shortDescription: f.shortDescription,
+  longDescription: f.longDescription,
+  whyImportant: f.whyImportant,
+}));
+
+// One baseline per tool — its newest known version — so "new version of an
+// existing tool" can pre-fill every feature and flag what the contributor
+// changes.
+const baselines: ToolBaseline[] = Object.values(ORCHESTRATORS_BY_TOOL)
+  .map((versions) => versions[0])
+  .map((latest) => ({
+    toolId: latest.toolId,
+    toolName: latest.toolName,
+    homepage: latest.homepage,
+    vendor: latest.vendor,
+    pricing: latest.pricing,
+    codebase: latest.codebase,
+    platforms: [...latest.platforms],
+    modelRestriction: latest.modelRestriction?.message,
+    baseVersion: latest.version,
+    features: latest.features.map((s) => ({
+      featureId: s.featureId,
+      support: s.support,
+      note: s.note,
+      sourceUrl: s.sourceUrl,
+      sourceExtract: s.sourceExtract,
+      screenshots: (s.screenshots ?? []).map((shot) => ({
+        src: shot.src,
+        alt: shot.alt,
+        caption: shot.caption,
+      })),
+    })),
+  }))
+  .sort((a, b) => a.toolName.localeCompare(b.toolName));
+---
+<Base title="Propose an orchestrator — ADE Arena">
+  <ContributeTunnel features={features} baselines={baselines} client:load />
+  {/* The tunnel renders its own `.evidence` proof popovers client-side to preview
+      a feature's evidence. This hidden instance pulls Evidence's global styles +
+      delegated behaviour script onto the page so those popovers work. */}
+  <div hidden aria-hidden="true">
+    <Evidence refLabel="preview" />
+  </div>
+</Base>

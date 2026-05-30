@@ -1,4 +1,6 @@
 ---
+import EvidenceCard from './EvidenceCard.svelte';
+
 interface Screenshot {
   src: string;
   alt: string;
@@ -29,20 +31,10 @@ const {
   ariaLabel,
 } = Astro.props;
 
+// `shots` / `hasShots` drive the trigger's screenshot badge below. The card
+// body (incl. its own quote/footer + prettyUrl) is owned by EvidenceCard.
 const shots = screenshots.filter((s) => s && s.src);
 const hasShots = shots.length > 0;
-const hasQuote = !!(sourceUrl && sourceExtract);
-
-function prettyUrl(u: string): string {
-  try {
-    const url = new URL(u);
-    const host = url.hostname.replace(/^www\./, '');
-    const path = url.pathname.replace(/\/$/, '');
-    return path && path.length > 1 ? `${host}${path}` : host;
-  } catch {
-    return u;
-  }
-}
 ---
 
 <details class={`evidence evidence--${variant}`} name="proof">
@@ -91,56 +83,18 @@ function prettyUrl(u: string): string {
       <slot />
     )}
   </summary>
-  <div class="evidence__backdrop" data-close aria-hidden="true"></div>
-  <div
-    class={`evidence__card${hasShots ? ' evidence__card--wide' : ''}`}
-    role="dialog"
-    aria-modal="true"
-    aria-label={ariaLabel ?? `Proof — ${refLabel}`}
-  >
-    <header class="evidence__head">
-      <span class="evidence__kicker">On record</span>
-      <span class="evidence__ref">{refLabel}</span>
-    </header>
-    <button
-      type="button"
-      class="evidence__close"
-      data-close
-      aria-label="Close proof"
-      title="Close"
-    >
-      <span aria-hidden="true">×</span>
-    </button>
-
-    {hasShots && (
-      /* Lazy-mounted gallery: the <img> markup is built by the inline script
-       * on the first <details> toggle. The shots payload travels as JSON in
-       * `data-shots` so we keep 0 bytes of <img> in the initial DOM — that
-       * cuts the request fan-out on first paint (was ~260 lazy-img requests
-       * across the comparison table) and the content-visibility:hidden
-       * warnings caused by walking these subtrees at init. */
-      <div
-        class={`evidence__gallery${shots.length > 1 ? ' evidence__gallery--carousel' : ''}`}
-        data-count={shots.length}
-        data-index="0"
-        data-shots={JSON.stringify(shots)}
-        tabindex={shots.length > 1 ? 0 : undefined}
-      ></div>
-    )}
-
-    {hasQuote && (
-      <blockquote class="evidence__quote">
-        <span class="evidence__quote-mark" aria-hidden="true">&ldquo;</span>
-        <p>{sourceExtract}</p>
-      </blockquote>
-    )}
-    {sourceUrl && (
-      <footer class="evidence__foot">
-        <span class="evidence__foot-label">Filed at</span>
-        <a class="evidence__foot-link" href={sourceUrl} target="_blank" rel="noreferrer">{prettyUrl(sourceUrl)}</a>
-      </footer>
-    )}
-  </div>
+  {/* Backdrop + card markup is shared with the contribution tunnel preview via
+      EvidenceCard. The lazy-mounted gallery (built by the inline script on first
+      toggle from the `data-shots` JSON) keeps 0 bytes of <img> in the initial
+      DOM — cutting the request fan-out on first paint across the comparison
+      table. Rendered SSR-only (no client directive) so it stays static HTML. */}
+  <EvidenceCard
+    refLabel={refLabel}
+    sourceUrl={sourceUrl}
+    sourceExtract={sourceExtract}
+    screenshots={shots}
+    ariaLabel={ariaLabel}
+  />
 </details>
 
 <style is:global>
@@ -325,7 +279,14 @@ function prettyUrl(u: string): string {
     z-index: 999;
     width: min(640px, 92vw);
     max-height: min(88vh, 900px);
-    overflow: auto;
+    /* Vertical scroll only. The absolutely-positioned `.evidence__close` button
+     * rotates on hover; mid-rotation its square corners sweep ~1.4x past its
+     * axis-aligned box and poke a pixel beyond the right edge. With `overflow:
+     * auto` that briefly registers horizontal scrollable overflow → a transient
+     * scrollbar appears and the whole card visibly jumps. Clipping the x-axis
+     * (the card never needs to scroll horizontally) removes that overflow path. */
+    overflow-x: clip;
+    overflow-y: auto;
     padding: var(--s-4) var(--s-5);
     color: oklch(0.22 0.025 35);
     font-family: var(--font-body);
