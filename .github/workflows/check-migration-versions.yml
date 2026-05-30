@@ -1,0 +1,24 @@
+name: Check migration versions
+
+# Supabase derives a migration's version (the schema_migrations primary key)
+# from the leading numeric token of its filename. Two files sharing that
+# prefix collide at `db push` time with SQLSTATE 23505 — a failure that only
+# surfaces in the deploy job against the remote DB. This workflow runs the
+# same deterministic check locally on every change to a migration file, so a
+# duplicate is caught at push / PR time instead.
+
+on:
+  push:
+    paths:
+      - "supabase/migrations/**.sql"
+  pull_request:
+    paths:
+      - "supabase/migrations/**.sql"
+
+jobs:
+  check-migration-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Ensure every migration version prefix is unique
+        run: bash .claude/scripts/check-migration-versions-unique.sh

@@ -10,6 +10,10 @@
           {
             "type": "command",
             "command": "npm exec -y -- delta-gate@0.3.0 --on 'src/data/features.ts' --exec '.claude/scripts/check-features-catalog-sync.sh'"
+          },
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'supabase/migrations/*.sql' --exec '.claude/scripts/check-migration-versions-unique.sh'"
           }
         ]
       }
@@ -24,6 +28,10 @@
           {
             "type": "command",
             "command": "npm exec -y -- delta-gate@0.3.0 --on 'src/data/features.ts' --exec '.claude/scripts/check-features-catalog-sync.sh'"
+          },
+          {
+            "type": "command",
+            "command": "npm exec -y -- delta-gate@0.3.0 --on 'supabase/migrations/*.sql' --exec '.claude/scripts/check-migration-versions-unique.sh'"
           }
         ]
       }
