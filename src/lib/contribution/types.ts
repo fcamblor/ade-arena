@@ -9,9 +9,14 @@ import type { FeatureId, Platform, SupportLevel } from '../../data/schema';
 
 export type ContributionMode = 'new-tool' | 'new-version';
 
-// A screenshot attached to a feature. The binary itself is stored separately
-// in the `blobs` IndexedDB store under `id`; this record only carries the
-// metadata that ends up in the generated `Screenshot` entry.
+// A screenshot attached to a feature. For freshly uploaded shots the binary is
+// stored separately in the `blobs` IndexedDB store under `id`; this record only
+// carries the metadata that ends up in the generated `Screenshot` entry.
+//
+// In `new-version` mode the list is pre-filled with the baseline's existing
+// screenshots: those carry `baselineSrc` (the already-published public path,
+// rendered directly — no Blob) and `inherited` (the original alt/caption, so
+// the tunnel can show the baseline text once the contributor edits it).
 export type DraftScreenshot = {
   id: string; // uuid — also the key of the Blob in the `blobs` store
   /** Generated, repo-convention filename: `<featureId>_<YYYYMMDD>_<n>.<ext>`. */
@@ -21,6 +26,23 @@ export type DraftScreenshot = {
   alt: string;
   /** Optional `caption` for the generated `Screenshot`. */
   caption?: string;
+  /**
+   * Baseline-origin only: the existing public `src` to render directly. These
+   * screenshots already live in the repo, so there is no Blob in IndexedDB and
+   * nothing is re-added to the export ZIP.
+   */
+  baselineSrc?: string;
+  /**
+   * Baseline-origin only: the alt/caption the screenshot was inherited with, so
+   * the tunnel can show the original text for reference once it is edited.
+   */
+  inherited?: { src: string; alt: string; caption?: string };
+  /**
+   * Baseline-origin only: marked for removal vs the baseline. Kept in the list
+   * (not hard-deleted) so the diff against the baseline stays explicit in both
+   * the UI and the generated override.
+   */
+  removed?: boolean;
 };
 
 // The baseline value a feature support was inherited from, in `new-version`
@@ -33,6 +55,15 @@ export type InheritedSupport = {
   sourceExtract?: string;
   /** Count of screenshots carried by the baseline (display only). */
   screenshotCount: number;
+};
+
+// A baseline screenshot, as published in the existing dataset. Pre-filled into
+// the draft (and rendered) so a `new-version` contributor edits/removes against
+// the real screenshots rather than starting from an empty slate.
+export type BaselineScreenshot = {
+  src: string;
+  alt: string;
+  caption?: string;
 };
 
 // Per-feature support the contributor fills in. Maps closely onto the
@@ -104,6 +135,7 @@ export type ToolBaseline = {
     note?: string;
     sourceUrl?: string;
     sourceExtract?: string;
-    screenshotCount: number;
+    /** The baseline's published screenshots, pre-filled into the draft. */
+    screenshots: BaselineScreenshot[];
   }>;
 };

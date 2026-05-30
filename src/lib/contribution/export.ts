@@ -24,11 +24,17 @@ function screenshotSrc(toolId: string, filename: string): string {
 }
 
 function toGenScreenshots(toolId: string, fs: DraftFeatureSupport): GenScreenshot[] {
-  return fs.screenshots.map((s) => ({
-    src: screenshotSrc(toolId, s.filename),
-    alt: s.alt,
-    caption: norm(s.caption),
-  }));
+  return fs.screenshots
+    // Baseline screenshots flagged removed are dropped from the generated
+    // feature so the override expresses the deletion against the baseline.
+    .filter((s) => !s.removed)
+    .map((s) => ({
+      // Baseline-origin shots keep their already-published path; freshly added
+      // ones get the repo-convention path under the tool's screenshot folder.
+      src: s.baselineSrc ?? screenshotSrc(toolId, s.filename),
+      alt: s.alt,
+      caption: norm(s.caption),
+    }));
 }
 
 function toGenFeatureSupport(toolId: string, fs: DraftFeatureSupport): GenFeatureSupport {
@@ -44,6 +50,14 @@ function toGenFeatureSupport(toolId: string, fs: DraftFeatureSupport): GenFeatur
 
 // A feature differs from its inherited baseline if any persisted field changed
 // or its screenshot set changed. Drives which rows become `override` diffs.
+function screenshotsChanged(fs: DraftFeatureSupport): boolean {
+  return fs.screenshots.some((s) => {
+    if (!s.inherited) return true; // freshly attached
+    if (s.removed) return true; // baseline shot dropped
+    return norm(s.alt) !== norm(s.inherited.alt) || norm(s.caption) !== norm(s.inherited.caption);
+  });
+}
+
 function hasChanged(fs: DraftFeatureSupport): boolean {
   const base = fs.inherited;
   if (!base) return true;
@@ -52,7 +66,7 @@ function hasChanged(fs: DraftFeatureSupport): boolean {
     norm(fs.note) !== norm(base.note) ||
     norm(fs.sourceUrl) !== norm(base.sourceUrl) ||
     norm(fs.sourceExtract) !== norm(base.sourceExtract) ||
-    fs.screenshots.length !== base.screenshotCount
+    screenshotsChanged(fs)
   );
 }
 
@@ -104,11 +118,13 @@ export async function buildProposal(
     );
   }
 
-  // Screenshots — pull each Blob out of IndexedDB and place it at its
-  // public/ path under the convention filename.
+  // Screenshots — only the freshly added ones carry a Blob to bundle. Baseline
+  // screenshots already live in the repo (skipped), and removed ones are
+  // excluded from both the feature data and the ZIP.
   let screenshotCount = 0;
   for (const fs of ordered) {
     for (const shot of fs.screenshots) {
+      if (shot.baselineSrc || shot.removed) continue;
       const blob = await getBlob(shot.id);
       if (!blob) continue;
       entries.push(await blobEntry(`public/screenshots/${toolId}/${shot.filename}`, blob));

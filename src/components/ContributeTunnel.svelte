@@ -18,6 +18,7 @@
     saveDraft,
   } from '../lib/contribution/db';
   import { buildProposal, copyToClipboard, downloadBlob, type BuiltProposal } from '../lib/contribution/export';
+  import ProofPreview from './ProofPreview.svelte';
 
   type ContributeFeature = {
     id: string;
@@ -60,6 +61,9 @@
   let previews: Record<string, string> = {};
   let built: BuiltProposal | null = null;
   let copiedMd = false;
+  // Explicit acknowledgement that user-added screenshots carry no sensitive data.
+  // Required before generating the proposal whenever at least one screenshot was added.
+  let screenshotConsent = false;
 
   const orderedFeatureIds = features.map((f) => f.id);
 
@@ -69,6 +73,16 @@
     ? Object.values(draft.features).filter((f) => f.reviewed).length
     : 0;
   $: atLast = currentIndex >= features.length - 1;
+  // Screenshots freshly uploaded by the contributor (no `baselineSrc`). Baseline
+  // screenshots are already public and consented to, so they are excluded from
+  // the privacy warning and the consent gate.
+  const isUserAdded = (s: DraftScreenshot) => !s.baselineSrc;
+  $: addedScreenshots = draft
+    ? Object.values(draft.features).reduce(
+        (n, f) => n + f.screenshots.filter(isUserAdded).length,
+        0,
+      )
+    : 0;
 
   function todayStamp(): string {
     return new Date().toISOString().slice(0, 10);
@@ -103,6 +117,10 @@
 
   async function persist() {
     if (!draft) return;
+    // Any edit invalidates a previously generated proposal: drop the stale recap
+    // so the export screen always reflects the current draft (and re-shows the
+    // privacy warning / consent gate when needed).
+    built = null;
     draft.updatedAt = new Date().toISOString();
     draft = draft; // trigger reactivity
     await saveDraft(draft);
@@ -172,13 +190,24 @@
           note: b.note,
           sourceUrl: b.sourceUrl,
           sourceExtract: b.sourceExtract,
-          screenshots: [],
+          // Pre-fill the baseline's published screenshots so the contributor
+          // edits/removes against the real shots; each carries its origin so
+          // the tunnel can flag text edits and explicit removals.
+          screenshots: b.screenshots.map((sc) => ({
+            id: uuid(),
+            filename: filenameFromSrc(sc.src),
+            mimeType: mimeFromSrc(sc.src),
+            alt: sc.alt,
+            caption: sc.caption,
+            baselineSrc: sc.src,
+            inherited: { src: sc.src, alt: sc.alt, caption: sc.caption },
+          })),
           inherited: {
             support: b.support,
             note: b.note,
             sourceUrl: b.sourceUrl,
             sourceExtract: b.sourceExtract,
-            screenshotCount: b.screenshotCount,
+            screenshotCount: b.screenshots.length,
           },
         };
       } else {
@@ -281,6 +310,27 @@
     return n;
   }
 
+  // Last path segment of a published screenshot `src`, used as the draft
+  // filename so newly-added shots keep numbering past the baseline ones.
+  function filenameFromSrc(src: string): string {
+    const clean = src.split(/[?#]/)[0];
+    const slash = clean.lastIndexOf('/');
+    return slash >= 0 ? clean.slice(slash + 1) : clean;
+  }
+
+  function mimeFromSrc(src: string): string {
+    const ext = filenameFromSrc(src).split('.').pop()?.toLowerCase() ?? '';
+    const map: Record<string, string> = {
+      webp: 'image/webp',
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      gif: 'image/gif',
+      avif: 'image/avif',
+    };
+    return map[ext] ?? 'application/octet-stream';
+  }
+
   function extFor(file: File): string {
     const map: Record<string, string> = {
       'image/webp': 'webp',
@@ -313,6 +363,8 @@
       fs.screenshots = [...fs.screenshots, shot];
     }
     previews = previews;
+    // Newly added content must be re-acknowledged before export.
+    screenshotConsent = false;
     await persist();
   }
 
@@ -342,6 +394,17 @@
   async function removeScreenshot(shotId: string) {
     if (!draft || !currentFeature) return;
     const fs = draft.features[currentFeature.id];
+    const shot = fs.screenshots.find((s) => s.id === shotId);
+    if (!shot) return;
+    if (shot.inherited) {
+      // Baseline-origin: keep it in the list, flagged removed, so the diff
+      // against the baseline stays explicit (and can be undone).
+      shot.removed = true;
+      fs.screenshots = fs.screenshots;
+      await persist();
+      return;
+    }
+    // Freshly uploaded: drop it entirely and reclaim its Blob + preview.
     fs.screenshots = fs.screenshots.filter((s) => s.id !== shotId);
     await deleteBlob(shotId);
     if (previews[shotId]) {
@@ -350,6 +413,16 @@
       previews = previews;
     }
     await persist();
+  }
+
+  function restoreScreenshot(shotId: string) {
+    if (!draft || !currentFeature) return;
+    const fs = draft.features[currentFeature.id];
+    const shot = fs.screenshots.find((s) => s.id === shotId);
+    if (!shot) return;
+    shot.removed = false;
+    fs.screenshots = fs.screenshots;
+    void persist();
   }
 
   function setShotMeta(shotId: string, field: 'alt' | 'caption', value: string) {
@@ -362,6 +435,19 @@
     void persist();
   }
 
+  // True if any baseline-origin screenshot was removed, re-captioned, or any
+  // brand-new screenshot was attached.
+  function screenshotsChanged(fs: DraftFeatureSupport): boolean {
+    return fs.screenshots.some((s) => {
+      if (!s.inherited) return true; // newly attached
+      if (s.removed) return true; // baseline shot dropped
+      return (
+        (s.alt ?? '') !== (s.inherited.alt ?? '') ||
+        (s.caption ?? '') !== (s.inherited.caption ?? '')
+      );
+    });
+  }
+
   function changedFromBaseline(fs: DraftFeatureSupport | undefined): boolean {
     if (!fs || !fs.inherited) return false;
     const b = fs.inherited;
@@ -370,9 +456,67 @@
       (fs.note ?? '') !== (b.note ?? '') ||
       (fs.sourceUrl ?? '') !== (b.sourceUrl ?? '') ||
       (fs.sourceExtract ?? '') !== (b.sourceExtract ?? '') ||
-      fs.screenshots.length !== b.screenshotCount
+      screenshotsChanged(fs)
     );
   }
+
+  // ----- baseline references (new-version mode) ----------------------------
+  // Resolves the preview source for a screenshot: baseline shots render from
+  // their published path, freshly-added ones from their IndexedDB blob URL.
+
+  function shotPreview(s: DraftScreenshot): string | undefined {
+    return s.baselineSrc ?? previews[s.id];
+  }
+
+  // ----- fullscreen preview (lightbox) -------------------------------------
+  // Navigates every screenshot shown for the feature — added, inherited and
+  // those flagged removed — full-size with its alt text, so each piece of
+  // evidence can be inspected before exporting.
+
+  $: featureShots = currentSupport?.screenshots ?? [];
+  let lightboxIndex: number | null = null;
+  $: lightboxShot =
+    lightboxIndex !== null ? (featureShots[lightboxIndex] ?? null) : null;
+
+  function openLightbox(shot: DraftScreenshot) {
+    const idx = featureShots.findIndex((s) => s.id === shot.id);
+    if (idx >= 0) lightboxIndex = idx;
+  }
+
+  function closeLightbox() {
+    lightboxIndex = null;
+  }
+
+  function moveLightbox(direction: -1 | 1) {
+    if (lightboxIndex === null || featureShots.length <= 1) return;
+    lightboxIndex = (lightboxIndex + direction + featureShots.length) % featureShots.length;
+  }
+
+  function onLightboxKey(event: KeyboardEvent) {
+    if (lightboxShot === null) return;
+    if (event.key === 'Escape') closeLightbox();
+    else if (event.key === 'ArrowLeft') moveLightbox(-1);
+    else if (event.key === 'ArrowRight') moveLightbox(1);
+  }
+
+  // ----- proof popup preview -----------------------------------------------
+  // Renders the real `<Evidence>` ("Proof") popover for the current feature,
+  // fed from the draft's current state so the contributor sees exactly how the
+  // evidence will look. Removed screenshots are excluded from the carousel.
+
+  $: proofShots = (currentSupport?.screenshots ?? [])
+    .filter((s) => !s.removed)
+    .map((s) => ({ src: shotPreview(s) ?? '', alt: s.alt, caption: s.caption?.trim() ? s.caption : undefined }))
+    .filter((s) => s.src);
+  $: proofSourceUrl = currentSupport?.sourceUrl?.trim() ?? '';
+  $: proofSourceExtract = currentSupport?.sourceExtract?.trim() ?? '';
+  $: proofRefLabel = draft
+    ? `${draft.meta.toolId.replace(/-/g, ' ')} · ${(currentFeature?.id ?? '').replace(/-/g, ' ')}`
+    : '';
+  $: hasProof = proofShots.length > 0 || Boolean(proofSourceUrl) || Boolean(proofSourceExtract);
+  // Rebuild the <details> whenever the evidence changes so the lazy-mounted
+  // gallery (keyed off `data-shots`) never serves a stale snapshot.
+  $: proofKey = `${currentFeature?.id ?? ''}|${JSON.stringify(proofShots)}|${proofSourceUrl}|${proofSourceExtract}`;
 
   function goPrev() {
     if (currentIndex > 0) currentIndex -= 1;
@@ -392,17 +536,22 @@
     if (!draft) return ['No draft.'];
     const errs: string[] = [];
     if (!metaValid()) errs.push('Tool metadata is incomplete (name, id, homepage, version, release date, platforms).');
-    for (const f of features) {
-      for (const shot of draft.features[f.id]?.screenshots ?? []) {
-        if (!shot.alt.trim()) {
-          errs.push(`Screenshot "${shot.filename}" needs alt text.`);
-        }
-      }
-    }
+    // Screenshot alt/caption text is intentionally NOT required here: it can be
+    // authored later during the contribution review, so missing alt text must
+    // not block proposal generation.
     return errs;
   }
 
   $: reviewErrors = step === 'review' ? validationErrors() : [];
+  // Human-readable reason the export button is disabled, so the blocker is never
+  // a mystery (e.g. metadata incomplete, or consent not yet ticked).
+  $: exportBlockReason = busy
+    ? ''
+    : reviewErrors.length > 0
+      ? 'Resolve the issue(s) listed above to enable export.'
+      : addedScreenshots > 0 && !screenshotConsent
+        ? 'Tick the confirmation above to enable export.'
+        : '';
 
   async function generate() {
     if (!draft) return;
@@ -511,12 +660,9 @@
           />
         </label>
         <label>
-          <span>Release date <em>(ISO yyyy-mm-dd)</em></span>
+          <span>Release date</span>
           <input
-            type="text"
-            inputmode="numeric"
-            pattern="\d{4}-\d{2}-\d{2}"
-            placeholder="yyyy-mm-dd"
+            type="date"
             value={draft.releaseDate}
             on:input={(e) => { if (draft) { draft.releaseDate = e.currentTarget.value; void persist(); } }}
           />
@@ -592,10 +738,22 @@
     <div class="contrib__bar"><i style={`width: ${Math.round(((currentIndex + 1) / features.length) * 100)}%`}></i></div>
 
     <article class="contrib__panel">
-      <p class="contrib__eyebrow">
-        {currentFeature.category}
-        {#if changedFromBaseline(currentSupport)}<span class="contrib__badge">changed</span>{/if}
-      </p>
+      <div class="contrib__feature-head">
+        <p class="contrib__eyebrow">
+          {currentFeature.category}
+          {#if changedFromBaseline(currentSupport)}<span class="contrib__badge">changed</span>{/if}
+        </p>
+        {#if hasProof}
+          {#key proofKey}
+            <ProofPreview
+              refLabel={proofRefLabel}
+              shots={proofShots}
+              sourceUrl={proofSourceUrl}
+              sourceExtract={proofSourceExtract}
+            />
+          {/key}
+        {/if}
+      </div>
       <h2>{currentFeature.label}</h2>
       <p>{currentFeature.longDescription ?? currentFeature.shortDescription}</p>
 
@@ -657,27 +815,58 @@
           <input type="file" accept="image/*" multiple on:change={onFiles} />
           <span>{dragOver ? 'Drop images here' : 'Drag & drop screenshots here, or click to browse'}</span>
         </label>
+        {#if (currentSupport?.screenshots?.filter(isUserAdded).length ?? 0) > 0}
+          <p class="contrib__warn" role="alert">
+            <strong>⚠ Heads up — these screenshots may become public.</strong>
+            Anything you attach can end up in a public GitHub issue and repository. Double-check that
+            none of them expose sensitive data (credentials, API keys, tokens, personal info, private URLs,
+            internal hostnames…). Crop or redact before submitting.
+          </p>
+        {/if}
         {#each currentSupport?.screenshots ?? [] as shot (shot.id)}
-          <div class="contrib__shot">
-            {#if previews[shot.id]}<img src={previews[shot.id]} alt={shot.alt || 'screenshot preview'} />{/if}
-            <div class="contrib__shot-meta">
-              <code>{shot.filename}</code>
-              <input
-                type="text"
-                class:contrib__invalid={!shot.alt.trim()}
-                placeholder="Alt text (required)"
-                value={shot.alt}
-                on:input={(e) => setShotMeta(shot.id, 'alt', e.currentTarget.value)}
-              />
-              <input
-                type="text"
-                placeholder="Caption (optional)"
-                value={shot.caption ?? ''}
-                on:input={(e) => setShotMeta(shot.id, 'caption', e.currentTarget.value)}
-              />
+          {#if shot.removed}
+            <div class="contrib__shot contrib__shot--removed">
+              {#if shot.baselineSrc}
+                <button type="button" class="contrib__shot-zoom" on:click={() => openLightbox(shot)} aria-label="View removed screenshot full screen">
+                  <img src={shot.baselineSrc} alt={shot.inherited?.alt || 'removed screenshot'} />
+                </button>
+              {/if}
+              <div class="contrib__shot-meta">
+                <code>{shot.filename}</code>
+                <p class="contrib__removed-trace" role="status">
+                  <strong>Removed vs baseline ({draft.baseVersion}).</strong>
+                  This screenshot will be dropped from {draft.meta.toolName} {draft.version}.
+                </p>
+              </div>
+              <button type="button" class="contrib__ghost contrib__restore" on:click={() => restoreScreenshot(shot.id)}>Restore</button>
             </div>
-            <button type="button" class="contrib__del" on:click={() => removeScreenshot(shot.id)} aria-label="Remove screenshot">✕</button>
-          </div>
+          {:else}
+            <div class="contrib__shot" class:contrib__shot--baseline={shot.baselineSrc}>
+              {#if shotPreview(shot)}
+                <button type="button" class="contrib__shot-zoom" on:click={() => openLightbox(shot)} aria-label="View screenshot full screen">
+                  <img src={shotPreview(shot)} alt={shot.alt || 'screenshot preview'} />
+                </button>
+              {/if}
+              <div class="contrib__shot-meta">
+                <code>
+                  {shot.filename}{#if shot.baselineSrc} <span class="contrib__shot-tag">from baseline</span>{/if}
+                </code>
+                <input
+                  type="text"
+                  placeholder="Alt text (optional — can be written during review)"
+                  value={shot.alt}
+                  on:input={(e) => setShotMeta(shot.id, 'alt', e.currentTarget.value)}
+                />
+                <input
+                  type="text"
+                  placeholder="Caption (optional)"
+                  value={shot.caption ?? ''}
+                  on:input={(e) => setShotMeta(shot.id, 'caption', e.currentTarget.value)}
+                />
+              </div>
+              <button type="button" class="contrib__del" on:click={() => removeScreenshot(shot.id)} aria-label={shot.baselineSrc ? 'Remove baseline screenshot' : 'Remove screenshot'}>✕</button>
+            </div>
+          {/if}
         {/each}
       </div>
 
@@ -699,12 +888,33 @@
         </ul>
       {/if}
 
+      {#if addedScreenshots > 0 && !built}
+        <div class="contrib__warn" role="alert">
+          <strong>⚠ Before you export — {addedScreenshots} screenshot(s) you added will be bundled.</strong>
+          They are meant to be attached to a public GitHub issue and can end up in a public repository.
+          Make sure none of them expose sensitive data (credentials, API keys, tokens, personal info,
+          private URLs, internal hostnames…). Crop or redact anything questionable before submitting.
+          <label class="contrib__consent">
+            <input type="checkbox" bind:checked={screenshotConsent} />
+            <span>I confirm the screenshots I added contain no sensitive data and can be made public.</span>
+          </label>
+        </div>
+      {/if}
+
       <div class="contrib__actions">
         <button type="button" class="contrib__ghost" on:click={() => (step = 'features')}>← Back to features</button>
-        <button type="button" on:click={generate} disabled={busy || reviewErrors.length > 0}>
+        <button
+          type="button"
+          on:click={generate}
+          disabled={busy || reviewErrors.length > 0 || (addedScreenshots > 0 && !screenshotConsent)}
+        >
           {busy ? 'Building…' : 'Generate proposal'}
         </button>
       </div>
+
+      {#if exportBlockReason && !built}
+        <p class="contrib__muted">{exportBlockReason}</p>
+      {/if}
 
       {#if built}
         <div class="contrib__result">
@@ -728,6 +938,35 @@
   {/if}
 </section>
 
+{#if lightboxShot}
+  <div class="contrib__lightbox" role="dialog" aria-modal="true" aria-label="Screenshot preview">
+    <button class="contrib__lightbox-backdrop" type="button" aria-label="Close preview" on:click={closeLightbox}></button>
+    <div class="contrib__lightbox-panel" role="document">
+      {#if shotPreview(lightboxShot)}
+        <img src={shotPreview(lightboxShot)} alt={lightboxShot.alt || 'screenshot preview'} />
+      {/if}
+      <div class="contrib__lightbox-meta">
+        {#if lightboxShot.removed}
+          <p class="contrib__lightbox-removed">⛔ Removed vs baseline ({draft?.baseVersion})</p>
+        {/if}
+        <p class="contrib__lightbox-alt">{lightboxShot.alt?.trim() ? lightboxShot.alt : '⚠ No alt text yet'}</p>
+        {#if lightboxShot.caption?.trim()}<p class="contrib__lightbox-caption">{lightboxShot.caption}</p>{/if}
+        <code>{lightboxShot.filename}</code>
+      </div>
+      {#if featureShots.length > 1}
+        <div class="contrib__lightbox-nav">
+          <button type="button" on:click={() => moveLightbox(-1)} aria-label="Previous screenshot">‹</button>
+          <span>{(lightboxIndex ?? 0) + 1} / {featureShots.length}</span>
+          <button type="button" on:click={() => moveLightbox(1)} aria-label="Next screenshot">›</button>
+        </div>
+      {/if}
+      <button type="button" class="contrib__ghost" on:click={closeLightbox}>Close</button>
+    </div>
+  </div>
+{/if}
+
+<svelte:window on:keydown={onLightboxKey} />
+
 <style>
   .contrib { max-width: min(900px, 100%); margin: 0 auto; display: grid; gap: 16px; }
   .contrib__panel {
@@ -743,6 +982,14 @@
     text-transform: uppercase;
     letter-spacing: 0.18em;
     font: 700 0.75rem var(--font-display);
+  }
+  /* Feature-level header: category on the left, "Preview proof popup" on the
+     right so it reads as previewing the whole feature evidence, not just the
+     screenshots section. */
+  .contrib__feature-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .contrib__feature-head .contrib__eyebrow { margin-bottom: 10px; }
+  @media (max-width: 560px) {
+    .contrib__feature-head { flex-direction: column; }
   }
   h2 { margin: 0 0 12px; font: 900 clamp(1.6rem, 4vw, 2.4rem)/0.98 var(--font-display); text-transform: uppercase; }
   h3 { font: 800 1.1rem var(--font-display); margin: 0 0 8px; }
@@ -775,7 +1022,6 @@
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
   input[readonly] { opacity: 0.6; }
-  .contrib__invalid { border-color: var(--cell-no-ink); }
 
   .contrib__platforms { margin-top: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
   .contrib__platforms legend { padding: 0 6px; color: var(--fg-soft); font-size: 0.8rem; }
@@ -812,6 +1058,23 @@
   .contrib__shot img { width: 96px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
   .contrib__shot-meta { display: grid; gap: 6px; }
   .contrib__shot-meta code { font-size: 0.72rem; color: var(--fg-muted); word-break: break-all; }
+  /* Reset the global button styling so the thumbnail stays a plain zoom target. */
+  .contrib__shot-zoom {
+    padding: 0; border: 0; background: none; min-height: 0; cursor: zoom-in;
+    border-radius: var(--radius-sm); display: block; width: 96px;
+  }
+  .contrib__shot-zoom:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .contrib__shot--baseline { border-left: 3px solid var(--border-strong); }
+  .contrib__shot-tag {
+    display: inline-block; padding: 1px 6px; border-radius: 999px; font-size: 0.62rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-weight: 800; background: var(--bg); border: 1px solid var(--border); color: var(--fg-soft);
+  }
+  /* Explicit trace of a baseline screenshot the contributor removed. */
+  .contrib__shot--removed { border-color: var(--cell-no); border-left: 3px solid var(--cell-no); background: color-mix(in oklch, var(--cell-no) 8%, transparent); }
+  .contrib__shot--removed img { opacity: 0.4; filter: grayscale(1); }
+  .contrib__removed-trace { margin: 0; font-size: 0.8rem; color: var(--fg-soft); line-height: 1.45; }
+  .contrib__removed-trace strong { color: var(--cell-no-ink); }
+  .contrib__restore { min-height: 32px; align-self: center; padding: 6px 12px; font-size: 0.8rem; }
 
   .contrib__actions { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
   .contrib__actions--start { justify-content: flex-start; }
@@ -839,6 +1102,34 @@
   .contrib__del { min-height: 26px; min-width: 26px; padding: 0; border: 1px solid var(--border); background: var(--bg-row); color: var(--fg-muted); border-radius: var(--radius-sm); margin-left: auto; }
 
   .contrib__result { margin-top: 18px; border-top: 1px solid var(--border-soft); padding-top: 14px; }
+  .contrib__warn {
+    margin: 0; padding: 12px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--cell-partial); border-left-width: 4px;
+    background: color-mix(in oklch, var(--cell-partial) 16%, var(--bg-row));
+    color: var(--fg); font-size: 0.85rem; line-height: 1.5;
+  }
+  .contrib__warn strong { display: block; margin-bottom: 4px; color: var(--cell-partial-ink); }
+  .contrib__consent { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-weight: 700; cursor: pointer; }
+  .contrib__consent input { margin-top: 2px; flex: none; width: 16px; height: 16px; accent-color: var(--cell-partial); cursor: pointer; }
+
   .contrib__error { color: var(--cell-no-ink); margin-top: 12px; }
   .contrib__errlist { color: var(--cell-no-ink); margin: 12px 0 0; padding-left: 18px; font-size: 0.9rem; }
+
+  /* Fullscreen screenshot preview. */
+  .contrib__lightbox { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: oklch(0 0 0 / 0.72); }
+  .contrib__lightbox-backdrop { position: absolute; inset: 0; border: 0; background: transparent; cursor: zoom-out; min-height: 0; border-radius: 0; }
+  .contrib__lightbox-panel {
+    position: relative; z-index: 1; max-width: min(980px, 96vw); max-height: 92vh; margin: 0;
+    padding: 14px; border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--bg-elev); display: grid; gap: 10px; overflow: auto;
+  }
+  .contrib__lightbox-panel img { max-width: 100%; max-height: 70vh; display: block; object-fit: contain; border-radius: var(--radius-sm); }
+  .contrib__lightbox-meta { display: grid; gap: 4px; }
+  .contrib__lightbox-removed { margin: 0; color: var(--cell-no-ink); font-weight: 800; font-size: 0.85rem; }
+  .contrib__lightbox-alt { margin: 0; color: var(--fg); font-size: 0.95rem; }
+  .contrib__lightbox-caption { margin: 0; color: var(--fg-soft); font-size: 0.85rem; }
+  .contrib__lightbox-meta code { font-size: 0.72rem; color: var(--fg-muted); word-break: break-all; }
+  .contrib__lightbox-nav { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .contrib__lightbox-nav button { min-height: 34px; min-width: 34px; padding: 0; border: 1px solid var(--border); background: var(--bg-row); color: var(--fg); font-size: 1.3rem; line-height: 1; }
+  .contrib__lightbox-nav span { min-width: 44px; text-align: center; color: var(--fg-muted); font-size: 0.8rem; font-weight: 800; }
 </style>

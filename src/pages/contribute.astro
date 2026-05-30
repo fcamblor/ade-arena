@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import ContributeTunnel from '../components/ContributeTunnel.svelte';
+import Evidence from '../components/Evidence.astro';
 import { ORCHESTRATORS_BY_TOOL } from '../data';
 import { RATABLE_FEATURES } from '../lib/ratable-features';
 import type { ToolBaseline } from '../lib/contribution/types';
@@ -37,11 +38,21 @@ const baselines: ToolBaseline[] = Object.values(ORCHESTRATORS_BY_TOOL)
       note: s.note,
       sourceUrl: s.sourceUrl,
       sourceExtract: s.sourceExtract,
-      screenshotCount: s.screenshots?.length ?? 0,
+      screenshots: (s.screenshots ?? []).map((shot) => ({
+        src: shot.src,
+        alt: shot.alt,
+        caption: shot.caption,
+      })),
     })),
   }))
   .sort((a, b) => a.toolName.localeCompare(b.toolName));
 ---
 <Base title="Propose an orchestrator — ADE Arena">
   <ContributeTunnel features={features} baselines={baselines} client:load />
+  {/* The tunnel renders its own `.evidence` proof popovers client-side to preview
+      a feature's evidence. This hidden instance pulls Evidence's global styles +
+      delegated behaviour script onto the page so those popovers work. */}
+  <div hidden aria-hidden="true">
+    <Evidence refLabel="preview" />
+  </div>
 </Base>
