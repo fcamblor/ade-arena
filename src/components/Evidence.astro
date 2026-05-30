@@ -279,7 +279,14 @@ const hasShots = shots.length > 0;
     z-index: 999;
     width: min(640px, 92vw);
     max-height: min(88vh, 900px);
-    overflow: auto;
+    /* Vertical scroll only. The absolutely-positioned `.evidence__close` button
+     * rotates on hover; mid-rotation its square corners sweep ~1.4x past its
+     * axis-aligned box and poke a pixel beyond the right edge. With `overflow:
+     * auto` that briefly registers horizontal scrollable overflow → a transient
+     * scrollbar appears and the whole card visibly jumps. Clipping the x-axis
+     * (the card never needs to scroll horizontally) removes that overflow path. */
+    overflow-x: clip;
+    overflow-y: auto;
     padding: var(--s-4) var(--s-5);
     color: oklch(0.22 0.025 35);
     font-family: var(--font-body);
