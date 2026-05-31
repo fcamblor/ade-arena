@@ -440,9 +440,11 @@
 
   // Best-effort WebP transcode via the Canvas API (no dependency). Returns a new
   // `.webp` File, or the original untouched when the browser cannot decode/encode
-  // it (exotic format, animated GIF, decode error) or when re-encoding an
-  // already-WebP file would only make it bigger. The skill's Phase-1 format check
-  // is the backstop for the rare fall-through.
+  // it (exotic format, decode error) or when re-encoding an already-WebP file
+  // would only make it bigger. Note an animated GIF is decoded to its first
+  // frame only, so it is flattened to a static WebP rather than preserved —
+  // acceptable for screenshots. The skill's Phase-1 format check is the backstop
+  // for the rare fall-through.
   async function toWebpFile(file: File): Promise<File> {
     if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
       return file;
