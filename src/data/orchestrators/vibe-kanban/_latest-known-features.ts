@@ -77,12 +77,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'diff-whitespace-toggle',
-    support: 'yes',
-    note: 'Ignore Whitespace toggle in the file tree hides whitespace-only changes.',
+    support: 'no',
+    note: 'No reachable ignore-whitespace toggle in the 0.1.44 UI: none in the diff/changes view, and the command bar exposes no Diff Options entry. (An ignoreWhitespace flag exists in source but is not surfaced.)',
     screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/reviewing-code',
-    sourceExtract:
-      'The file tree shows all files that were added, modified, or deleted. […] toggle "Ignore Whitespace" to show/hide whitespace-only changes.',
   },
   {
     featureId: 'diff-multi-views',
@@ -133,12 +130,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'workflow-shell-hooks',
-    support: 'partial',
-    note: 'Setup script only (runs before the agent starts); no archival/lifecycle hooks documented.',
+    support: 'yes',
+    note: 'vk 0.1.44 exposes four per-repo lifecycle scripts: Setup (after worktree creation, before the agent), Cleanup (after the agent run, if changes were made), Archive (on workspace archival), plus Dev Server. Public docs still lag (Archive not yet listed).',
     screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/settings/projects-repositories',
+    sourceUrl:
+      'https://raw.githubusercontent.com/BloopAI/vibe-kanban/v0.1.44-20260424091429/packages/web-core/src/i18n/locales/en/settings.json',
     sourceExtract:
-      'Setup scripts: commands that run before the coding agent starts working. Use this to prepare the development environment.',
+      "Archive Script: 'This script runs from within the worktree when the workspace is archived. Use it for cleanup tasks like stopping services, releasing resources, or saving state.' — alongside setup, cleanup and dev-server scripts.",
   },
   {
     featureId: 'run-configurations',
@@ -166,11 +164,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'github-comment-sync',
-    support: 'partial',
-    note: 'One-way: GitHub PR comments are surfaced inside the Changes panel; in-app comments are sent to the agent, not pushed to GitHub.',
+    support: 'yes',
+    note: 'One-way PR→in-app ingestion fully works: when the workspace is linked to a PR, submitted review comments appear inline in the Changes panel (per-file count badge), toggled via the GitHub icon in the toolbar. The reverse direction is out of scope for this row.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/changes',
-    sourceExtract: 'Viewing GitHub PR comments within the Changes panel.',
+    sourceExtract:
+      'Click the GitHub icon in the changes panel toolbar to toggle GitHub comments; comments from the PR appear inline with the diff; badge shows comment count per file.',
   },
   {
     featureId: 'terminal-in-worktree',
@@ -191,8 +190,8 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'file-tree-browser',
-    support: 'partial',
-    note: 'Changed-files tree inside the diff panel; no full worktree browser documented.',
+    support: 'no',
+    note: 'No in-app full-worktree browser. The Changes panel exposes only a changed-files tree with name filtering; arbitrary files/directories in the worktree cannot be navigated or read from the UI.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/interface',
     sourceExtract: 'File tree: hierarchical view of changed files.',
@@ -205,12 +204,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'custom-ui-actions',
-    support: 'partial',
-    note: 'Slash commands surface LLM prompts in the chat; no user-defined shell-command buttons.',
+    support: 'no',
+    note: "Slash commands are pass-through to the agent's native CLI (Claude Code/Codex/OpenCode), not vk-authored; the command bar is a fixed built-in set. No way to declare custom UI action buttons (shell commands or LLM prompts).",
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/workspaces/slash-commands',
     sourceExtract:
-      'Type "/" at the beginning of a new line in the chat input and a typeahead menu will appear showing available commands.',
+      "Vibe Kanban discovers and exposes the same commands you'd have in the agent's native CLI, so the experience matches what you're used to.",
   },
   {
     featureId: 'session-handoff',
@@ -229,12 +228,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'shared-config',
-    support: 'yes',
-    note: 'Cloud mode exposes organization-wide settings and project settings, so the interesting bits of configuration can be shared with teammates.',
+    support: 'no',
+    note: 'No way to share the tool configuration with teammates: settings are per-machine/per-user and there is no committed, project-level config file (hooks, scripts, custom actions) that teammates can pick up from the repo.',
     screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/cloud/organizations',
-    sourceExtract:
-      'Settings — configuration that applies to all projects. Members can edit project settings independent of organization-wide controls.',
   },
   {
     featureId: 'pr-status-sync',
@@ -248,6 +244,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'remote-session-control',
     support: 'yes',
+    note: 'Remote Access (Settings → Remote Access, paired via cloud.vibekanban.com) lets you drive a locally-running host from another device — prompt/control agents on your Mac from your phone. Opt-in: requires pairing, so an unconfigured instance looks non-controllable.',
     screenshots: [],
     sourceUrl: 'https://vibekanban.com/docs/remote-access',
     sourceExtract:
@@ -312,21 +309,21 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'copy-from-origin-workspace',
-    support: 'no',
-    note: 'No mechanism documented; uncommitted files in the origin repo are flagged as a failure cause for worktree creation.',
+    support: 'yes',
+    note: "Repository 'Copy Files' setting: a comma-separated list of files (e.g. .env, .claude) copied from the original repo directory into the worktree, after creation and before the setup script runs.",
     screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
+    sourceUrl: 'https://vibekanban.com/docs/core-features/creating-projects',
     sourceExtract:
-      'Git worktree creation failed (usually due to uncommitted changes in the original repo). Commit or stash any uncommitted changes in your original repository.',
+      'Comma-separated list of files to copy from the original project directory to the worktree. These files will be copied after the worktree is created but before the setup script runs.',
   },
   {
     featureId: 'symlink-from-origin-workspace',
     support: 'no',
-    note: 'No symlink / shared-file mechanism documented.',
+    note: "No symlink mechanism. The 'Copy Files' repository setting performs a real copy of the listed files into the worktree, not a symlink; no ln -s / shared-file option exists. (Distinct from copy-from-origin-workspace, which Copy Files does support.)",
     screenshots: [],
-    sourceUrl: 'https://vibekanban.com/docs/workspaces/creating-workspaces',
+    sourceUrl: 'https://vibekanban.com/docs/core-features/creating-projects',
     sourceExtract:
-      'Vibe Kanban creates a git worktree — a separate working directory with its own branch.',
+      'Comma-separated list of files to copy from the original project directory to the worktree. These files will be copied after the worktree is created but before the setup script runs.',
   },
   {
     featureId: 'chat-rewind',
@@ -432,7 +429,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: 'chat-message-stacking',
     support: 'partial',
-    note: 'A follow-up message can be queued while the agent runs ("Message queued — will execute when current run finishes"), but QueueStatus is only empty | queued (a single queued message; re-queuing overwrites), so it is a queue-of-one rather than a stack of several messages.',
+    note: 'Partial: only one follow-up can be queued (queue-of-one — QueueStatus is empty|queued, one queued message per session; re-queue overwrites). The queued message is consumed at run finalization, i.e. sent only after the current turn ends — not injected mid-turn.',
     screenshots: [],
     sourceUrl:
       'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/workspace-chat/model/hooks/useSessionQueueInteraction.ts',
@@ -458,20 +455,18 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'chat-turn-diff',
-    support: 'yes',
-    note: 'Agent file_edit turns are grouped into AGGREGATED_DIFF_GROUP rows (AggregatedDiffGroupEntry) rendered inline in the conversation, showing the per-file changes a turn produced with a click-through (viewFileInChanges) — no manual commit required.',
+    support: 'partial',
+    note: 'Each chat turn renders its file edits inline as expandable diff entries (no manual commit), but there is no consolidated per-turn diff view: you scroll the whole conversation, and the click-through opens the global Changes panel (file-scoped, not turn-scoped).',
     screenshots: [],
     sourceUrl:
       'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/workspace-chat/ui/DisplayConversationEntry.tsx',
-    sourceExtract: 'AggregatedDiffGroupEntry renders per-turn file changes inline with a viewFileInChanges click-through.',
+    sourceExtract:
+      'AggregatedDiffGroupEntry renders per-turn file changes inline; viewFileInChanges opens the file in the global Changes panel, not a per-turn-scoped diff.',
   },
   {
     featureId: 'unarchive-worktree',
-    support: 'yes',
-    note: 'ArchiveWorkspace toggles the archived flag (workspacesApi.update(workspaceId, { archived: !wasArchived }), relabelled "Unarchive"); archiving does not delete the worktree, so unarchiving restores the full active workspace — session, files and history.',
+    support: 'no',
+    note: "Archived workspaces remain viewable via 'View Archive', but no unarchive action is reachable in the 0.1.44 UI — there is no surfaced affordance to restore an archived workspace to the active list.",
     screenshots: [],
-    sourceUrl:
-      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/actions/index.ts',
-    sourceExtract: "label: (workspace) => workspace?.archived ? 'Unarchive' : 'Archive'",
   },
 ];
