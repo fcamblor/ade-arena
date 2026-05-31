@@ -677,6 +677,17 @@
     else if (event.key === 'ArrowRight') moveLightbox(1);
   }
 
+  // Single window-level keydown dispatcher (Svelte allows one <svelte:window>).
+  // Lightbox navigation takes precedence while it is open; otherwise the "/"
+  // shortcut focuses the feature jump field.
+  function onWindowKeydown(event: KeyboardEvent) {
+    if (lightboxShot !== null) {
+      onLightboxKey(event);
+      return;
+    }
+    onFeatureKey(event);
+  }
+
   // ----- proof popup preview -----------------------------------------------
   // Renders the real `<Evidence>` ("Proof") popover for the current feature,
   // fed from the draft's current state so the contributor sees exactly how the
@@ -707,6 +718,142 @@
     void persist();
     if (atLast) step = 'review';
     else currentIndex += 1;
+  }
+
+  // ----- quick jump (feature search) ----------------------------------------
+  // A keyword combobox that jumps straight to a feature by title. With 77
+  // features across 6 categories, paging next/prev to reach a specific one is
+  // tedious; this lets a contributor type "worktree" or "mcp" and land there.
+  let jumpQuery = '';
+  let jumpOpen = false;
+  let jumpActive = 0; // index into `jumpResults` highlighted for keyboard nav
+  let jumpInput: HTMLInputElement | undefined;
+  const jumpListId = 'contrib-jump-list';
+
+  type JumpHit = { feature: ContributeFeature; index: number; score: number; marks: boolean[] };
+
+  // Score a query against a target. Higher is better; null means no match.
+  // Tiers: exact > prefix > word-start > substring > subsequence (fuzzy), with
+  // `marks` flagging which characters of `target` matched so we can highlight.
+  function scoreMatch(target: string, q: string): { score: number; marks: boolean[] } | null {
+    const t = target.toLowerCase();
+    const marks = new Array(target.length).fill(false);
+    if (!q) return { score: 0, marks };
+    if (t === q) { marks.fill(true); return { score: 1000, marks }; }
+
+    const idx = t.indexOf(q);
+    if (idx >= 0) {
+      for (let i = idx; i < idx + q.length; i++) marks[i] = true;
+      // Prefix beats mid-word; a match right after a separator beats mid-token.
+      const atStart = idx === 0;
+      const atWord = idx > 0 && /[\s\-/]/.test(t[idx - 1]);
+      return { score: atStart ? 800 : atWord ? 600 : 400, marks };
+    }
+
+    // Subsequence: every query char appears in order. Reward adjacency so
+    // "gwt" on "git worktrees" still reads as a sensible, contiguous-ish hit.
+    let ti = 0;
+    let streak = 0;
+    let bonus = 0;
+    for (let qi = 0; qi < q.length; qi++) {
+      let found = -1;
+      for (let k = ti; k < t.length; k++) {
+        if (t[k] === q[qi]) { found = k; break; }
+      }
+      if (found < 0) return null;
+      marks[found] = true;
+      streak = found === ti ? streak + 1 : 0;
+      bonus += streak;
+      ti = found + 1;
+    }
+    return { score: 100 + bonus, marks };
+  }
+
+  $: jumpResults = (() => {
+    const q = jumpQuery.trim().toLowerCase();
+    const hits: JumpHit[] = [];
+    features.forEach((feature, index) => {
+      const onLabel = scoreMatch(feature.label, q);
+      // Category matches still surface the feature but never outrank a title hit.
+      const onCat = scoreMatch(feature.category, q);
+      if (!onLabel && !onCat) return;
+      const score = onLabel ? onLabel.score : (onCat ? onCat.score / 4 : 0);
+      hits.push({
+        feature,
+        index,
+        score,
+        marks: onLabel?.marks ?? new Array(feature.label.length).fill(false),
+      });
+    });
+    // Higher score first, then keep canonical feature order for ties. We do NOT
+    // cap the list: with an empty query it shows every feature (a scrollable
+    // index across all categories), and a query keeps all matches ranked — so a
+    // contributor never wonders whether a feature is "missing" from the results.
+    hits.sort((a, b) => b.score - a.score || a.index - b.index);
+    return hits;
+  })();
+
+  // Clamp the highlighted row whenever the result set shrinks/changes.
+  $: if (jumpActive >= jumpResults.length) jumpActive = Math.max(0, jumpResults.length - 1);
+
+  // Per-feature verdict glyph + state, so each suggestion doubles as a progress
+  // readout (reviewed / changed / has remark) rather than a bare title.
+  function jumpMeta(featureId: string) {
+    const fs = draft?.features[featureId];
+    return {
+      support: fs?.support as SupportLevel | undefined,
+      reviewed: Boolean(fs?.reviewed),
+      changed: changedFromBaseline(fs),
+      remark: Boolean(fs?.reviewRemark?.trim()),
+    };
+  }
+
+  function openJump() {
+    jumpOpen = true;
+    jumpActive = 0;
+  }
+
+  function closeJump() {
+    jumpOpen = false;
+    jumpQuery = '';
+  }
+
+  function jumpTo(index: number) {
+    if (index < 0 || index >= features.length) return;
+    currentIndex = index;
+    closeJump();
+    jumpInput?.blur();
+  }
+
+  function onJumpKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!jumpOpen) openJump();
+      else jumpActive = Math.min(jumpActive + 1, jumpResults.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      jumpActive = Math.max(jumpActive - 1, 0);
+    } else if (e.key === 'Enter') {
+      if (jumpOpen && jumpResults[jumpActive]) {
+        e.preventDefault();
+        jumpTo(jumpResults[jumpActive].index);
+      }
+    } else if (e.key === 'Escape') {
+      if (jumpOpen) { e.preventDefault(); closeJump(); }
+    }
+  }
+
+  // Global "/" shortcut to focus the jump field, like a search box on a docs
+  // site — but never hijack typing already happening in another field.
+  function onFeatureKey(e: KeyboardEvent) {
+    if (step !== 'features') return;
+    if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el?.isContentEditable) return;
+    e.preventDefault();
+    jumpInput?.focus();
+    openJump();
   }
 
   // ----- review / export ----------------------------------------------------
@@ -956,13 +1103,94 @@
     </article>
   {:else if step === 'features' && draft && currentFeature}
     <div class="contrib__progress">
-      <span>{reviewedCount} / {features.length} reviewed</span>
+      <span class="contrib__reviewed">{reviewedCount} / {features.length} reviewed</span>
+
+      <!-- Jump-to-feature combobox: type a keyword, land on the matching feature.
+           Doubles as a progress map — each row shows that feature's verdict glyph
+           and review state. Sits between the counter and the prev/next nav. -->
+      <div class="contrib__jump" class:contrib__jump--open={jumpOpen}>
+        <span class="contrib__jump-icon" aria-hidden="true">⌕</span>
+        <input
+          bind:this={jumpInput}
+          type="text"
+          class="contrib__jump-input"
+          placeholder="Jump to a feature…"
+          autocomplete="off"
+        spellcheck="false"
+        role="combobox"
+        aria-expanded={jumpOpen}
+        aria-controls={jumpListId}
+        aria-autocomplete="list"
+        aria-activedescendant={jumpOpen && jumpResults[jumpActive] ? `contrib-jump-opt-${jumpResults[jumpActive].index}` : undefined}
+        bind:value={jumpQuery}
+        on:focus={openJump}
+        on:input={openJump}
+        on:keydown={onJumpKeydown}
+        on:blur={closeJump}
+      />
+      {#if jumpQuery}
+        <kbd class="contrib__jump-hint">↵ go</kbd>
+      {:else}
+        <kbd class="contrib__jump-hint">/</kbd>
+      {/if}
+
+      {#if jumpOpen}
+        <ul class="contrib__jump-list" id={jumpListId} role="listbox" aria-label="Matching features">
+          {#each jumpResults as hit, i (hit.feature.id)}
+            {@const meta = jumpMeta(hit.feature.id)}
+            <li
+              id={`contrib-jump-opt-${hit.index}`}
+              role="option"
+              aria-selected={i === jumpActive}
+              class="contrib__jump-opt"
+              class:contrib__jump-opt--active={i === jumpActive}
+              class:contrib__jump-opt--current={hit.index === currentIndex}
+              class:contrib__jump-opt--yes={meta.support === 'yes'}
+              class:contrib__jump-opt--partial={meta.support === 'partial'}
+              class:contrib__jump-opt--no={meta.support === 'no'}
+              class:contrib__jump-opt--unknown={!meta.support || meta.support === 'unknown'}
+            >
+              <!-- Mousedown (not click) so selection wins the race against the
+                   input's blur, which would otherwise close the list first. -->
+              <button type="button" on:mousedown|preventDefault={() => jumpTo(hit.index)} on:mouseenter={() => (jumpActive = i)}>
+                <span
+                  class="contrib__jump-glyph"
+                  class:contrib__jump-glyph--reviewed={meta.reviewed}
+                  class:contrib__glyph--yes={meta.support === 'yes'}
+                  class:contrib__glyph--no={meta.support === 'no'}
+                  class:contrib__glyph--partial={meta.support === 'partial'}
+                  class:contrib__glyph--unknown={meta.support === 'unknown' || !meta.support}
+                  aria-hidden="true"
+                >{meta.support ? SUPPORT_GLYPH[meta.support] : '·'}</span>
+                <span class="contrib__jump-text">
+                  <span class="contrib__jump-label">
+                    {#each hit.feature.label.split('') as ch, ci}{#if hit.marks[ci]}<mark>{ch}</mark>{:else}{ch}{/if}{/each}
+                  </span>
+                  <span class="contrib__jump-cat">{hit.feature.category}</span>
+                </span>
+                <span class="contrib__jump-tags">
+                  {#if meta.changed}<span class="contrib__jump-tag contrib__jump-tag--changed">changed</span>{/if}
+                  {#if meta.remark}<span class="contrib__jump-tag contrib__jump-tag--remark">remark</span>{/if}
+                  <span class="contrib__jump-num">#{hit.index + 1}</span>
+                </span>
+              </button>
+            </li>
+          {:else}
+            <li class="contrib__jump-empty" role="presentation">
+              No feature matches “{jumpQuery}”.
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      </div>
+
       <nav class="contrib__nav">
         <button type="button" class="contrib__step" on:click={goPrev} aria-label="Previous">‹</button>
         <span class="contrib__pos">#{currentIndex + 1}</span>
         <button type="button" class="contrib__step" on:click={goNext} aria-label="Next">›</button>
       </nav>
     </div>
+
     <div class="contrib__bar"><i style={`width: ${Math.round(((currentIndex + 1) / features.length) * 100)}%`}></i></div>
 
     <article class="contrib__panel">
@@ -1269,10 +1497,14 @@
   </div>
 {/if}
 
-<svelte:window on:keydown={onLightboxKey} on:paste={onPaste} />
+<svelte:window on:keydown={onWindowKeydown} on:paste={onPaste} />
 
 <style>
   .contrib { max-width: min(900px, 100%); margin: 0 auto; display: grid; gap: 16px; }
+  /* Grid items default to min-width:auto (their min-content); a wide panel would
+     then stretch the column past a narrow viewport and overflow the page. Letting
+     them shrink keeps the tunnel within the screen on mobile. */
+  .contrib > * { min-width: 0; }
   .contrib__panel {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
@@ -1314,11 +1546,11 @@
   .contrib__row { display: flex; gap: 8px; margin-top: 8px; }
   .contrib__row select { flex: 1 1 auto; }
 
-  .contrib__fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .contrib__fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-top: 16px; }
   .contrib__fields label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--fg-soft); }
   .contrib__fields label em { color: var(--fg-muted); font-style: normal; }
   .contrib__wide { grid-column: 1 / -1; }
-  @media (max-width: 560px) { .contrib__fields { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .contrib__fields { grid-template-columns: minmax(0, 1fr); } }
 
   input, select, textarea {
     border: 1px solid var(--border); border-radius: var(--radius-md);
@@ -1345,8 +1577,8 @@
   .contrib__tracking-title em { color: var(--fg-muted); font-style: normal; }
   .contrib__tracking-hint { margin: 4px 0 0; color: var(--fg-muted); font-size: 0.78rem; line-height: 1.45; }
   .contrib__tracking-add { min-height: 34px; padding: 6px 12px; font-size: 0.8rem; flex: none; }
-  .contrib__tracking-row { display: grid; grid-template-columns: minmax(120px, 0.7fr) 1fr 1.4fr auto; gap: 8px; align-items: center; }
-  @media (max-width: 560px) { .contrib__tracking-row { grid-template-columns: 1fr 1fr; } }
+  .contrib__tracking-row { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1.4fr) auto; gap: 8px; align-items: center; }
+  @media (max-width: 560px) { .contrib__tracking-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 
   .contrib__support { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .contrib__toggle {
@@ -1392,7 +1624,7 @@
   .contrib__remark-head em { color: var(--fg-muted); font-style: normal; font-weight: 600; font-size: 0.78rem; }
   .contrib__remark-hint { margin: 0; color: var(--fg-muted); font-size: 0.78rem; line-height: 1.45; }
 
-  .contrib__shots { margin-top: 18px; border-top: 1px solid var(--border-soft); padding-top: 14px; display: grid; gap: 12px; border-radius: var(--radius-md); transition: background 140ms ease; }
+  .contrib__shots { margin-top: 18px; min-width: 0; border-top: 1px solid var(--border-soft); padding-top: 14px; display: grid; gap: 12px; border-radius: var(--radius-md); transition: background 140ms ease; }
   .contrib__shots--drag { background: color-mix(in oklch, var(--accent) 12%, transparent); outline: 2px dashed var(--accent); outline-offset: 4px; }
   .contrib__shots-head { display: flex; align-items: center; justify-content: space-between; font-weight: 700; color: var(--fg-soft); }
   .contrib__dropzone {
@@ -1403,9 +1635,10 @@
   }
   .contrib__dropzone:hover { border-color: var(--accent); color: var(--fg-soft); }
   .contrib__dropzone input { display: none; }
-  .contrib__shot { display: grid; grid-template-columns: 96px 1fr auto; gap: 12px; align-items: start; border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 10px; }
+  .contrib__shot { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: start; border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 10px; }
   .contrib__shot img { width: 96px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-  .contrib__shot-meta { display: grid; gap: 6px; }
+  .contrib__shot-meta { display: grid; gap: 6px; min-width: 0; }
+  .contrib__shot-meta input { width: 100%; min-width: 0; }
   .contrib__shot-meta code { font-size: 0.72rem; color: var(--fg-muted); word-break: break-all; }
   /* Reset the global button styling so the thumbnail stays a plain zoom target. */
   .contrib__shot-zoom {
@@ -1435,14 +1668,104 @@
   .contrib__ghost { border-color: var(--border); background: var(--bg-row); color: var(--fg); }
   button:disabled { cursor: not-allowed; opacity: 0.45; }
 
-  .contrib__progress { display: flex; align-items: center; justify-content: space-between; color: var(--fg-soft); font-weight: 700; }
-  .contrib__nav { display: inline-flex; align-items: center; gap: 4px; }
+  .contrib__progress { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--fg-soft); font-weight: 700; }
+  .contrib__reviewed { flex: none; white-space: nowrap; }
+  /* On a roomy row the search occupies the centre; on narrow screens it drops to
+     its own full-width line below the counter + prev/next nav. */
+  @media (max-width: 560px) {
+    .contrib__reviewed { order: 1; }
+    .contrib__progress .contrib__nav { order: 2; margin-left: auto; }
+    .contrib__progress .contrib__jump { order: 3; flex-basis: 100%; }
+  }
+  .contrib__nav { display: inline-flex; align-items: center; gap: 4px; flex: none; }
   .contrib__pos { min-width: 3ch; text-align: center; font-variant-numeric: tabular-nums; color: var(--fg-muted); font-size: 0.85rem; }
   .contrib__step { min-height: 30px; min-width: 30px; padding: 0; border: 1px solid var(--border); background: var(--bg-row); color: var(--fg); font: 700 1.1rem/1 var(--font-display); }
   .contrib__bar { height: 8px; border-radius: 999px; background: var(--bg-row); overflow: hidden; border: 1px solid var(--border); }
   .contrib__bar i { display: block; height: 100%; background: var(--accent); transition: width 280ms ease; }
   .contrib__badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: color-mix(in oklch, var(--cell-partial) 40%, transparent); border: 1px solid var(--cell-partial); color: var(--cell-partial-ink); font-size: 0.7rem; letter-spacing: 0.1em; }
   .contrib__badge--remark { background: color-mix(in oklch, var(--accent) 22%, transparent); border-color: var(--accent); color: var(--accent); }
+
+  /* ----- jump-to-feature combobox (centre of the progress row) ------------- */
+  .contrib__jump { position: relative; flex: 1 1 220px; min-width: 0; display: flex; align-items: center; }
+  .contrib__jump-icon {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--fg-muted); font-size: 1rem; line-height: 1; pointer-events: none;
+  }
+  .contrib__jump-input {
+    flex: 1 1 auto; width: 100%; padding: 8px 44px 8px 33px;
+    background: var(--bg-elev); border: 1px solid var(--border);
+    font-size: 0.9rem; font-weight: 400; transition: border-color 140ms ease, background 140ms ease;
+  }
+  .contrib__jump-input::placeholder { color: var(--fg-faint); }
+  .contrib__jump-input:focus { border-color: var(--accent); background: var(--bg-row); }
+  /* Square off the bottom corners while the list is open so input + list read
+     as one attached surface. */
+  .contrib__jump--open .contrib__jump-input { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-color: var(--accent); }
+  .contrib__jump-hint {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    padding: 2px 7px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg-muted); font: 700 0.7rem var(--font-body);
+    letter-spacing: 0.04em; pointer-events: none;
+  }
+
+  .contrib__jump-list {
+    position: absolute; z-index: 30; top: calc(100% - 1px); left: 0; right: 0;
+    margin: 0; padding: 4px; list-style: none; display: grid; gap: 2px;
+    max-height: min(46vh, 360px); overflow-y: auto;
+    background: var(--bg-elev); border: 1px solid var(--accent);
+    border-top-color: var(--border-soft);
+    border-bottom-left-radius: var(--radius-md); border-bottom-right-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+  }
+  .contrib__jump-opt { margin: 0; }
+  /* Each option is a full-width plain button; reset the global accent button. */
+  .contrib__jump-opt button {
+    width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+    min-height: 0; padding: 9px 11px; text-align: left;
+    /* Each row is tinted by its support verdict (--row-tint set per status
+       below), turning the list into a colour-coded status map. Tints mix into
+       transparent (not a surface) so the verdict hue is preserved exactly —
+       mixing into bg-row would drift the hue across the oklch wheel. */
+    background: color-mix(in oklch, var(--row-tint, transparent) 15%, transparent);
+    border: 1px solid transparent; border-radius: var(--radius-sm);
+    color: var(--fg); font: inherit; cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  /* Status palette: the vivid -ink hues (not the dark cell fills) so the row
+     reads clearly as green / yellow / red / grey at a glance. */
+  .contrib__jump-opt--yes     { --row-tint: var(--cell-yes-ink); }
+  .contrib__jump-opt--partial { --row-tint: var(--cell-partial-ink); }
+  .contrib__jump-opt--no      { --row-tint: var(--cell-no-ink); }
+  .contrib__jump-opt--unknown { --row-tint: var(--cell-unknown-ink); }
+  .contrib__jump-opt button:hover,
+  .contrib__jump-opt--active button {
+    background: color-mix(in oklch, var(--row-tint, var(--fg-faint)) 30%, transparent);
+    border-color: color-mix(in oklch, var(--row-tint, var(--border)) 55%, var(--border));
+  }
+  .contrib__jump-opt--current button { box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 55%, transparent); }
+
+  .contrib__jump-glyph {
+    width: 1.4rem; text-align: center; font: 1.1rem/1 var(--font-body);
+    color: var(--fg-faint); opacity: 0.6;
+  }
+  /* A reviewed feature reads at full strength; unreviewed stays dim. */
+  .contrib__jump-glyph--reviewed { opacity: 1; }
+  .contrib__jump-text { display: grid; gap: 1px; min-width: 0; }
+  .contrib__jump-label {
+    font: 700 0.95rem var(--font-body); color: var(--fg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .contrib__jump-label mark { background: color-mix(in oklch, var(--accent) 32%, transparent); color: var(--fg); border-radius: 2px; }
+  .contrib__jump-cat { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-muted); }
+  .contrib__jump-tags { display: inline-flex; align-items: center; gap: 6px; }
+  .contrib__jump-tag {
+    padding: 1px 7px; border-radius: 999px; font: 800 0.62rem var(--font-body);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .contrib__jump-tag--changed { background: color-mix(in oklch, var(--cell-partial) 40%, transparent); border: 1px solid var(--cell-partial); color: var(--cell-partial-ink); }
+  .contrib__jump-tag--remark { background: color-mix(in oklch, var(--accent) 22%, transparent); border: 1px solid var(--accent); color: var(--accent); }
+  .contrib__jump-num { font-variant-numeric: tabular-nums; color: var(--fg-faint); font-size: 0.78rem; font-weight: 700; }
+  .contrib__jump-empty { padding: 14px 12px; color: var(--fg-muted); font-size: 0.88rem; }
 
   .contrib__drafts { margin-top: 22px; border-top: 1px solid var(--border-soft); padding-top: 14px; }
   .contrib__drafts ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
