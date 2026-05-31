@@ -198,6 +198,20 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'We added an SNCF jingle, a Paris Métro chime, and a Paris Métro pickpocket announcement as completion sounds.',
   },
   {
+    featureId: 'chat-transcript-export',
+    support: 'yes',
+    note: 'Right-click a chat to copy it as markdown (⌘⌥C). Past chat transcripts can also be attached to a new chat as a "Transcript of <name>.md" file, letting you fork or analyse a previous session.',
+    screenshots: [
+      {
+        src: '/screenshots/conductor/chat-transcript-export_20260531_1.png',
+        alt: 'Conductor new-chat view offering to add chat transcripts, with a "Transcript of Process contribution issue.md" file attached in the prompt input',
+      },
+    ],
+    sourceUrl: 'https://www.conductor.build/changelog',
+    sourceExtract:
+      'You can now right-click on a chat to copy it as markdown (or ⌘⌥C)',
+  },
+  {
     featureId: 'multi-sessions-per-worktree',
     support: 'yes',
     note: 'Multiple chat tabs per workspace; switching agents mid-chat opens a new tab.',

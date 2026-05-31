@@ -164,6 +164,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'The desktop app sends an OS notification when a Code session finishes a task and you aren\'t currently viewing that session.',
   },
   {
+    featureId: 'chat-transcript-export',
+    support: 'no',
+    note: 'No desktop-specific transcript export. The /export command and the JSONL session files under ~/.claude/projects belong to the Claude Code CLI substrate (available to any ADE wrapping it), not a capability owned by the desktop app.',
+    screenshots: [],
+  },
+  {
     featureId: 'multi-sessions-per-worktree',
     support: 'no',
     note: 'Every new session in the sidebar gets its own isolated worktree; sessions cannot be attached to the same worktree. The side-chat surface (Cmd+;) is a single ephemeral aside that reads the main thread but does not write back.',

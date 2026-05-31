@@ -110,6 +110,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'Sound Effects: play audio notifications when tasks complete, need attention, or encounter errors.',
   },
   {
+    featureId: 'chat-transcript-export',
+    support: 'no',
+    note: 'No full-session transcript export. Only a per-process "Copy Raw Logs" action (Y L) copying the current Logs panel of a single process/tool. The cloud "Export" covers project/issue data, not the agent conversation.',
+    screenshots: [],
+  },
+  {
     featureId: 'multi-sessions-per-worktree',
     support: 'yes',
     screenshots: [],
