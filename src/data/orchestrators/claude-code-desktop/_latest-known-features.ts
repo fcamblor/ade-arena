@@ -556,16 +556,16 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'The embedded preview pane has an "Annotate preview" mode: a drawing toolbar (freehand, line, rectangle, ellipse, text, colour palette) to mark regions over the rendered app, then an "Add to chat" button feeds the annotated screenshot back into the discussion.',
     screenshots: [
       {
+        src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_3.webp',
+        alt: 'Views menu listing the Preview pane next to the embedded browser preview rendering a local dev server',
+      },
+      {
         src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_1.webp',
         alt: 'Claude Code Desktop preview pane with the "Annotate preview" toolbar open — drawing tools and colour swatches with Cancel and Add to chat buttons',
       },
       {
         src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_2.webp',
         alt: 'Hand-drawn annotations (red circle, blue box, "Hello world!" text) over the embedded web preview, with the annotation toolbar and an Add to chat button',
-      },
-      {
-        src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_3.webp',
-        alt: 'Views menu listing the Preview pane next to the embedded browser preview rendering a local dev server',
       },
     ],
     sourceUrl: 'https://code.claude.com/docs/en/desktop',
