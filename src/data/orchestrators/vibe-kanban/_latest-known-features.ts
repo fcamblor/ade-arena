@@ -57,7 +57,16 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     sourceExtract:
       'Logs panel shows process execution logs. Process tabs: switch between different running processes. View stdout/stderr in real-time.',
   },
-  { featureId: 'ui-commit', support: 'unknown', screenshots: [] },
+  {
+    featureId: 'ui-commit',
+    support: 'no',
+    note: 'The git action registry exposes only PR, merge, rebase, push, change-target and link-pr — there is no commit/staging surface or commit-message field. The coding agent commits its own work.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/actions/index.ts',
+    sourceExtract:
+      "GitPanel action map covers 'pull-request', 'link-pr', merge, rebase, 'change-target' and push — no commit/stage action.",
+  },
   {
     featureId: 'diff-viewer',
     support: 'yes',
@@ -77,9 +86,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'diff-multi-views',
-    support: 'unknown',
-    note: 'Changes panel is workspace-scoped (current pending changes); no documented selector for per-commit / per-turn / branch-vs-target scopes.',
+    support: 'no',
+    note: 'The changes panel is fed by a single workspace-branch-vs-target diff stream (git/diff/ws); the only toggles are display modes (split/inline, ignore-whitespace, wrap), not scope selectors (per-commit, uncommitted-only).',
     screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/hooks/useDiffStream.ts',
+    sourceExtract: 'Single diff source GET /workspaces/{id}/git/diff/ws with only a stats_only param.',
   },
   {
     featureId: 'self-hosted',
@@ -312,9 +324,13 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'chat-rewind',
-    support: 'unknown',
-    note: 'No rewind-to-past-message feature documented in the chat interface.',
+    support: 'yes',
+    note: 'Editing a prior chat message re-runs from that point: later processes are deleted and (by default) the worktree is git-reset to that message, so both conversation history and filesystem state roll back.',
     screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/workspace-chat/model/hooks/useMessageEditRetry.ts',
+    sourceExtract:
+      'followUp with retry_process_id and perform_git_reset (default true) — "Your worktree will be restored to this commit."',
   },
   {
     featureId: 'predefined-deterministic-workflows',
@@ -345,19 +361,111 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   },
   {
     featureId: 'chat-user-questions',
-    support: 'unknown',
-    note: 'No documented inline rendering of agent user-question tools (AskUserQuestion-style) in the Vibe Kanban chat surface.',
+    support: 'yes',
+    note: 'Agent ask_user_question tool calls render as an interactive AskUserQuestionBanner — clickable single-select buttons, multi-select with a confirm button, and a free-text/"Other" answer — instead of raw markdown.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/ui/src/components/AskUserQuestionBanner.tsx',
+    sourceExtract:
+      'AskUserQuestionBanner handles single-select option buttons, multi-select with confirm, and custom free-text answers.',
+  },
+  {
+    featureId: 'readonly-plan-research-mode',
+    support: 'yes',
+    note: 'Both the Claude and Codex executors expose a `plan` config toggle: when on, permission_mode() returns Plan and a PreToolUse hook blocks every editing tool except ExitPlanMode/AskUserQuestion — a read-only planning mode (per-executor config, not a one-click chat toggle).',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/crates/executors/src/executors/claude.rs',
+    sourceExtract:
+      'fn permission_mode(&self) -> PermissionMode { if self.plan { PermissionMode::Plan } … }',
+  },
+  {
+    featureId: 'in-app-voice-input',
+    support: 'no',
+    note: 'No getUserMedia / MediaRecorder / SpeechRecognition usage, mic icon or dictation code anywhere in packages/ui or packages/web-core.',
     screenshots: [],
   },
-  { featureId: 'readonly-plan-research-mode', support: 'unknown', screenshots: [] },
-  { featureId: 'in-app-voice-input', support: 'unknown', screenshots: [] },
-  { featureId: 'web-preview-annotation', support: 'unknown', screenshots: [] },
-  { featureId: 'web-preview-element-inspector', support: 'unknown', screenshots: [] },
-  { featureId: 'local-target-branch-merge', support: 'unknown', screenshots: [] },
-  { featureId: 'llm-assisted-merge-rebase', support: 'unknown', screenshots: [] },
-  { featureId: 'chat-message-stacking', support: 'unknown', screenshots: [] },
-  { featureId: 'multi-repository-view', support: 'unknown', screenshots: [] },
-  { featureId: 'multi-repository-chat-targeting', support: 'unknown', screenshots: [] },
-  { featureId: 'chat-turn-diff', support: 'unknown', screenshots: [] },
-  { featureId: 'unarchive-worktree', support: 'unknown', screenshots: [] },
+  {
+    featureId: 'web-preview-annotation',
+    support: 'no',
+    note: 'The embedded preview supports element inspection and Eruda DevTools, but there is no region/freehand annotation tool; the only "feed to chat" path is click-to-component element selection (tracked by web-preview-element-inspector).',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/pages/workspaces/PreviewBrowserContainer.tsx',
+    sourceExtract: 'Preview pane offers element inspection and DevTools, but no region-annotation surface.',
+  },
+  {
+    featureId: 'web-preview-element-inspector',
+    support: 'yes',
+    note: 'The embedded PreviewBrowser iframe has an inspect toggle ("Select element as context"): toggling posts click-to-component to the iframe, and a selected element is injected into the chat as a vk-component markdown block.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/ui/src/components/PreviewBrowser.tsx',
+    sourceExtract: 'aria-label="Select element as context" … setPendingComponentMarkdown(fenced)',
+  },
+  {
+    featureId: 'local-target-branch-merge',
+    support: 'yes',
+    note: 'The GitMerge action calls workspacesApi.merge(workspaceId, { repo_id }) to merge locally into the configured target branch — distinct from the Create-PR flow, and it refuses to merge directly while an open PR exists, confirming it is a local git merge.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/actions/index.ts',
+    sourceExtract:
+      'GitMerge → workspacesApi.merge(...): "This will merge your changes into the target branch."',
+  },
+  {
+    featureId: 'llm-assisted-merge-rebase',
+    support: 'yes',
+    note: 'Rebase (and merge) onto the chosen/target branch is available; on conflict the ResolveConflictsDialog hands the conflicted files to the coding agent with an LLM prompt built by buildResolveConflictsInstructions.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/lib/conflicts.ts',
+    sourceExtract:
+      'ResolveConflictsDialog: "Choose how you want the agent to resolve them." (buildResolveConflictsInstructions)',
+  },
+  {
+    featureId: 'chat-message-stacking',
+    support: 'partial',
+    note: 'A follow-up message can be queued while the agent runs ("Message queued — will execute when current run finishes"), but QueueStatus is only empty | queued (a single queued message; re-queuing overwrites), so it is a queue-of-one rather than a stack of several messages.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/workspace-chat/model/hooks/useSessionQueueInteraction.ts',
+    sourceExtract: "isQueued = queueStatus.status === 'queued' (single message, cancelQueue).",
+  },
+  {
+    featureId: 'multi-repository-view',
+    support: 'yes',
+    note: 'A workspace can contain several repositories; GitPanelContainer renders them all as RepoCards at once and the diff stream aggregates files keyed by repoName. Repos are selected at workspace-creation time and there is no dedicated per-repo filter toggle.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/pages/workspaces/GitPanelContainer.tsx',
+    sourceExtract: 'GitPanelContainer renders one RepoCard per repo; diff stream aggregates files keyed by repoName.',
+  },
+  {
+    featureId: 'multi-repository-chat-targeting',
+    support: 'yes',
+    note: 'Create-mode state holds repos: SelectedRepo[] with addRepo (dedup-guarded), each with its own target branch — a single task/session/chat operates across all selected repositories in one workspace.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/create-mode/model/useCreateModeState.ts',
+    sourceExtract: 'repos: SelectedRepo[] + addRepo (duplicate-guarded), each with its own target branch.',
+  },
+  {
+    featureId: 'chat-turn-diff',
+    support: 'yes',
+    note: 'Agent file_edit turns are grouped into AGGREGATED_DIFF_GROUP rows (AggregatedDiffGroupEntry) rendered inline in the conversation, showing the per-file changes a turn produced with a click-through (viewFileInChanges) — no manual commit required.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/features/workspace-chat/ui/DisplayConversationEntry.tsx',
+    sourceExtract: 'AggregatedDiffGroupEntry renders per-turn file changes inline with a viewFileInChanges click-through.',
+  },
+  {
+    featureId: 'unarchive-worktree',
+    support: 'yes',
+    note: 'ArchiveWorkspace toggles the archived flag (workspacesApi.update(workspaceId, { archived: !wasArchived }), relabelled "Unarchive"); archiving does not delete the worktree, so unarchiving restores the full active workspace — session, files and history.',
+    screenshots: [],
+    sourceUrl:
+      'https://github.com/BloopAI/vibe-kanban/blob/v0.1.44-20260424091429/packages/web-core/src/shared/actions/index.ts',
+    sourceExtract: "label: (workspace) => workspace?.archived ? 'Unarchive' : 'Archive'",
+  },
 ];

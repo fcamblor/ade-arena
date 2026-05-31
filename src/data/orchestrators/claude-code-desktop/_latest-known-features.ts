@@ -524,15 +524,111 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       },
     ],
   },
-  { featureId: 'readonly-plan-research-mode', support: 'unknown', screenshots: [] },
-  { featureId: 'in-app-voice-input', support: 'unknown', screenshots: [] },
-  { featureId: 'web-preview-annotation', support: 'unknown', screenshots: [] },
-  { featureId: 'web-preview-element-inspector', support: 'unknown', screenshots: [] },
-  { featureId: 'local-target-branch-merge', support: 'unknown', screenshots: [] },
-  { featureId: 'llm-assisted-merge-rebase', support: 'unknown', screenshots: [] },
-  { featureId: 'chat-message-stacking', support: 'unknown', screenshots: [] },
-  { featureId: 'multi-repository-view', support: 'unknown', screenshots: [] },
-  { featureId: 'multi-repository-chat-targeting', support: 'unknown', screenshots: [] },
+  {
+    featureId: 'readonly-plan-research-mode',
+    support: 'yes',
+    note: 'Plan mode is a first-class permission mode in the Code tab, with its own "plan" pane and the Cmd+Shift+M permission-mode menu — Claude explores and proposes a plan without editing source.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'Plan mode | `plan` | Claude reads files and runs commands to explore, then proposes a plan without editing your source code.',
+  },
+  {
+    featureId: 'in-app-voice-input',
+    support: 'yes',
+    note: 'A microphone button sits in the Code-tab composer toolbar (next to the permission-mode and add buttons) for dictating prompts, including in local sessions.',
+    screenshots: [
+      {
+        src: '/screenshots/claude-code-desktop/in-app-voice-input_20260531_1.webp',
+        alt: 'Claude Code Desktop composer toolbar showing a microphone icon for voice dictation, next to the permission-mode menu and the add button, in a local worktree session',
+      },
+    ],
+  },
+  {
+    featureId: 'web-preview-annotation',
+    support: 'yes',
+    note: 'The embedded preview pane has an "Annotate preview" mode: a drawing toolbar (freehand, line, rectangle, ellipse, text, colour palette) to mark regions over the rendered app, then an "Add to chat" button feeds the annotated screenshot back into the discussion.',
+    screenshots: [
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_1.webp',
+        alt: 'Claude Code Desktop preview pane with the "Annotate preview" toolbar open — drawing tools and colour swatches with Cancel and Add to chat buttons',
+      },
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_2.webp',
+        alt: 'Hand-drawn annotations (red circle, blue box, "Hello world!" text) over the embedded web preview, with the annotation toolbar and an Add to chat button',
+      },
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-annotation_20260531_3.webp',
+        alt: 'Views menu listing the Preview pane next to the embedded browser preview rendering a local dev server',
+      },
+    ],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'From the preview pane, you can: Interact with your running app directly in the embedded browser',
+  },
+  {
+    featureId: 'web-preview-element-inspector',
+    support: 'yes',
+    note: 'The preview pane has a "Select an element" action (Cmd+Shift+S): hovering shows an inspector overlay (selector, dimensions, accessibility role) and selecting attaches the DOM node as a context chip in the chat composer. Claude also inspects the DOM during auto-verify.',
+    screenshots: [
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-element-inspector_20260531_1.webp',
+        alt: 'Claude Code Desktop preview pane in element-selection mode, with an "Exit selection mode (⇧⌘S)" tooltip',
+      },
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-element-inspector_20260531_2.webp',
+        alt: 'Inspector overlay over a hovered element showing the selector h1.brand__title, its dimensions and accessibility role (heading, keyboard-focusable)',
+      },
+      {
+        src: '/screenshots/claude-code-desktop/web-preview-element-inspector_20260531_3.webp',
+        alt: 'The selected element attached as a context chip (<h1 class="brand__title">…) in the Claude Code Desktop chat composer',
+      },
+    ],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract: '`Cmd` `Shift` `S` — Select an element in preview',
+  },
+  {
+    featureId: 'local-target-branch-merge',
+    support: 'no',
+    note: 'Integration is PR-centric: the only merge surfaced is GitHub PR auto-merge (squash, server-side once CI passes). No UI action merges the current worktree into a configured local target branch.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'Auto-merge: when enabled, Claude merges the PR once all checks pass. The merge method is squash.',
+  },
+  {
+    featureId: 'llm-assisted-merge-rebase',
+    support: 'no',
+    note: 'No dedicated UI action to merge/rebase onto a chosen branch with LLM-resolved conflicts. The agent can resolve conflicts only as an ad-hoc task; integration stays PR-centric (commit → PR → GitHub-side auto-fix/auto-merge).',
+    screenshots: [],
+  },
+  {
+    featureId: 'chat-message-stacking',
+    support: 'yes',
+    note: 'Messages typed while Claude is mid-turn are queued and delivered at the next pause, so follow-ups stack without interrupting the running action. The queue flushes at the next LLM pause rather than strict end-of-turn.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'type a correction and press Enter to send it without stopping the running action. Claude reads the correction as soon as the current action completes',
+  },
+  {
+    featureId: 'multi-repository-view',
+    support: 'partial',
+    note: 'Multiple repositories are supported only in remote (cloud) sessions — add repos via the "+" next to the repo pill, each with its own branch selector. Local sessions are single-folder, and there is no consolidated always-on multi-repo browse view.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'Remote sessions also support multiple repositories. […] click the + button next to the repo pill to add additional repositories to the session. Each repo gets its own branch selector.',
+  },
+  {
+    featureId: 'multi-repository-chat-targeting',
+    support: 'partial',
+    note: 'A single remote session can target several repositories at once (e.g. a shared library and its consumers); limited to remote sessions, not local.',
+    screenshots: [],
+    sourceUrl: 'https://code.claude.com/docs/en/desktop',
+    sourceExtract:
+      'This is useful for tasks that span multiple codebases, such as updating a shared library and its consumers.',
+  },
   {
     featureId: 'unarchive-worktree',
     support: 'no',
