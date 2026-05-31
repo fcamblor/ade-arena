@@ -38,8 +38,8 @@ const features: Feature[] = [
     category: 'workflow',
     shortDescription: 'Run the agent directly inside an existing repository, without creating a git worktree.',
     whyImportant: {
-      short: "Working in-place matters when a task is too small to justify a worktree, or when the project's build setup doesn't tolerate parallel checkouts.",
-      long: 'Multi-worktree setups can clash with heavy native build caches, IDE locks, or repos that ship hardcoded absolute paths. Running the agent directly in the existing checkout keeps the orchestrator usable on those projects without forcing a worktree everywhere.',
+      short: "Sometimes it's simply more practical to work directly in the origin workspace than to spin up a dedicated worktree.",
+      long: "Not every task is worth a fresh worktree: a quick fix, a throwaway experiment, or a project whose build setup (heavy native caches, IDE locks, hardcoded absolute paths) doesn't tolerate parallel checkouts. Letting the agent run directly inside the existing checkout keeps the orchestrator usable in those cases instead of forcing a worktree for everything.",
     },
   },
   {
@@ -50,8 +50,8 @@ const features: Feature[] = [
     longDescription:
       'A single worktree can host multiple independent agent sessions running in parallel, each with its own context, model, and topic — useful to reset context, mix models, or split unrelated subjects without leaving the worktree. Each session must also be visually attached to its parent worktree in the UI, so it stays obvious at a glance which sessions share the same workspace.',
     whyImportant: {
-      short: 'Multiple sessions let you split investigation, implementation, and review without changing workspace.',
-      long: 'A single worktree can carry more than one conversation: one agent can explore, another can implement, and another can review. This matters when you want parallelism but still want all changes to converge in one branch.',
+      short: 'Multiple sessions let you split work, reset or curate your context, and even merge separate discussions — all on one workspace.',
+      long: 'A single worktree can carry more than one conversation: one agent explores, another implements, another reviews. It also gives you control over context — spin up a fresh session to reset a polluted one, or join several discussions into a single thread — while every change still converges on one branch.',
     },
   },
   {
@@ -62,8 +62,8 @@ const features: Feature[] = [
     longDescription:
       'Run arbitrary shell scripts at predefined points of the discussion/worktree lifecycle — e.g. on worktree creation, archival, session start/stop — to bootstrap services, seed data, or clean up resources.',
     whyImportant: {
-      short: "Lifecycle hooks wire the orchestrator into your project's bootstrap and cleanup needs without manual steps.",
-      long: 'Most repos need extra steps before an agent can be productive: install dependencies, seed a database, copy local config. Hooks make those steps automatic and reproducible across every worktree the team creates.',
+      short: 'Lifecycle hooks initialize each worktree automatically, so parallel developments stay isolated without re-running boilerplate.',
+      long: 'Running developments in parallel means every worktree must be a self-contained, ready-to-run environment: install dependencies, seed a database, start services, copy local config. Hooks fire that initialization on worktree creation (and clean up on archival) so contributors never repeat the same boilerplate by hand — keeping isolated workspaces reproducible across the team.',
     },
   },
   {
@@ -94,8 +94,8 @@ const features: Feature[] = [
     category: 'workflow',
     shortDescription: 'Expose files from the source repo inside the agent worktree via symlinks (ln -s).',
     whyImportant: {
-      short: 'Symlinks keep large or frequently-changing local files in sync across worktrees without duplication.',
-      long: 'For files that change often (state databases, build caches) or are too large to copy, symlinks share them across worktrees at zero storage cost and with no risk of drift between copies.',
+      short: 'Symlinks share local-only files (.env, Claude config, …) and large or fast-changing files across worktrees without duplication.',
+      long: 'For local-only files every worktree needs — .env files, Claude/agent configuration, secrets — or files too large or too volatile to copy (state databases, build caches), symlinks expose the origin checkout copy at zero storage cost and with no risk of drift between worktrees.',
     },
   },
   {
@@ -106,8 +106,8 @@ const features: Feature[] = [
     longDescription:
       'A dedicated gitignored directory (e.g. .context) lets sessions persist artifacts like plans, notes or handoff files that subsequent sessions on the same worktree can reference.',
     whyImportant: {
-      short: 'A shared context dir keeps plans and notes alive across sessions on the same worktree.',
-      long: 'When chat history is reset or a session is replaced, useful artifacts like an implementation plan would be lost. A gitignored shared directory lets sessions hand off context to one another without polluting the repo.',
+      short: "A shared context dir keeps plans, notes — even other sessions' transcripts — reachable so work can be resumed, forked, or analyzed.",
+      long: "When chat history is reset or a session is replaced, useful artifacts like an implementation plan would be lost. A gitignored shared directory lets sessions hand off context to one another — and, by exposing files and even other discussions' transcripts, lets a session resume, fork, or analyze the work another one started, without polluting the repo.",
     },
   },
   {
@@ -293,6 +293,10 @@ const features: Feature[] = [
     shortDescription: 'Commit changes directly from the UI with file selection and a manual or AI-generated commit message.',
     longDescription:
       'The orchestrator provides a built-in commit surface — file staging checkboxes, a commit message field, and optionally an AI-generated message — so the user can commit without leaving the ADE. "Partial" when file selection or message generation is missing. A simple "commit all" one-click with no staging control does NOT qualify as "yes".',
+    whyImportant: {
+      short: "Committing from the UI lets you bound and checkpoint the agent's work without dropping to a terminal.",
+      long: "Reviewing agent output means deciding what to keep: staging the right files, writing a meaningful message, and snapshotting progress. A built-in commit surface — with file selection and an optional AI-generated message — keeps that checkpoint loop inside the orchestrator instead of forcing a context switch to the command line.",
+    },
   },
   {
     id: 'diff-viewer',
@@ -412,8 +416,8 @@ const features: Feature[] = [
     longDescription:
       'In-app web preview pane that renders the output of a local HTTP server. "Partial" covers an external-browser launch or a pane that merely displays the preview. A "yes" requires an embedded preview integrated with the ADE workflow. Annotation and element inspection are tracked as separate feature rows.',
     whyImportant: {
-      short: 'Web preview closes the loop for UI work without leaving the orchestrator.',
-      long: 'For frontend changes, screenshots and browser interaction are part of the acceptance criteria. A built-in preview helps the agent and the human verify layout, flows, and visual regressions faster.',
+      short: 'Web preview closes the loop for UI work without leaving the orchestrator — and, paired with per-worktree ports, without juggling them by hand.',
+      long: "For frontend changes, screenshots and browser interaction are part of the acceptance criteria. A built-in preview helps the agent and the human verify layout, flows, and visual regressions faster. Paired with per-worktree port allocation, it also removes the need to track which port a worktree is running on — each worktree's live app is one click away to test its current state.",
     },
   },
   {

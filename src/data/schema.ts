@@ -25,12 +25,12 @@ export const FeatureSchema = z.object({
   status: z.enum(['approved', 'waiting-for-review']).optional(),
   shortDescription: z.string(),
   longDescription: z.string().optional(),
-  whyImportant: z
-    .object({
-      short: z.string(),
-      long: z.string(),
-    })
-    .optional(),
+  // Mandatory: a feature's rationale is at least as load-bearing as its label
+  // and description — every row must explain why it matters.
+  whyImportant: z.object({
+    short: z.string(),
+    long: z.string(),
+  }),
 });
 export type Feature = z.infer<typeof FeatureSchema>;
 
