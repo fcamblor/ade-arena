@@ -170,4 +170,12 @@ if (!process.env.PUBLIC_SITE_URL && process.env.CI) {
 export default defineConfig({
   integrations: [svelte(), versionManifest(), securityHeaders()],
   site: siteUrl,
+  // Force component CSS to external <link> stylesheets (served from 'self')
+  // instead of inline <style> blocks. The strict CSP pins inline styles by
+  // per-build SHA-256 hash (see securityHeaders()), so any inline <style>
+  // whose hash drifts between the deployed HTML and the deployed headers.json
+  // gets blocked — which silently strips a component's styling. Keeping CSS
+  // external means `style-src 'self'` covers it permanently, with no hash
+  // dependency, leaving only Astro's single constant inline island style.
+  build: { inlineStylesheets: 'never' },
 });
