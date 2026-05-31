@@ -71,7 +71,7 @@ export const FEATURE_IDS = [
   'shared-config',
   'shared-discussion-workflows',
   // platform
-  'cloud-execution',
+  'remote-agent-execution',
   'local-execution',
   'self-hosted',
   'plugin-system',

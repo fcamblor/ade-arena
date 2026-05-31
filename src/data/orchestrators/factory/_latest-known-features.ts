@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'yes', note: 'Desktop app grants supervised access to local filesystem, browser, and command line.', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'yes', note: 'Web-based interface at app.factory.ai.', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'yes', note: 'Web-based interface at app.factory.ai.', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'macOS, Windows, and Linux supported.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'yes', note: 'Factory Droid Core plus BYOK (Anthropic, OpenAI, Google).', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },

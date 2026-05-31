@@ -15,7 +15,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     note: 'No orchestrator-managed sandbox: agent CLIs run with the host user’s permissions inside the worktree. Any confinement is whatever the underlying agent provides.',
     screenshots: [],
   },
-  { featureId: 'cloud-execution', support: 'no', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'no', screenshots: [] },
   {
     featureId: 'local-execution',
     support: 'yes',

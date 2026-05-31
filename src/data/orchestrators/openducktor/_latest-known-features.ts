@@ -14,7 +14,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [] 
   },
   { 
-    featureId: 'cloud-execution', 
+    featureId: 'remote-agent-execution', 
     support: 'no', 
     note: 'Focuses on local desktop and web runner executions.',
     screenshots: [] 

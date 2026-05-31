@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'yes', note: 'Browser-based application available with a mobile responsive UI via server mode.', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'yes', note: 'Browser-based application available with a mobile responsive UI via server mode.', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'macOS and Linux pre-built binaries available.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'yes', note: 'Anthropic, OpenAI, xAI, Ollama, OpenRouter.', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },

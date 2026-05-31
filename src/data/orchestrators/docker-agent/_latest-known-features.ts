@@ -20,7 +20,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       '--working-dir string  Set the working directory for the session (applies to tools and relative paths).',
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'no',
     note: 'Executes locally as a CLI / standalone binary; no managed cloud runtime is offered.',
     screenshots: [],

@@ -601,13 +601,13 @@ const features: Feature[] = [
 
   // ───────────────────────── platform ─────────────────────────
   {
-    id: 'cloud-execution',
-    label: 'Cloud execution',
+    id: 'remote-agent-execution',
+    label: 'Remote agent execution',
     category: 'platform',
-    shortDescription: 'The orchestrator runs agents in a cloud environment, not locally.',
+    shortDescription: 'The orchestrator runs agents in a remote environment, not locally.',
     whyImportant: {
-      short: 'Cloud execution lets long-running agents work while your laptop is closed.',
-      long: "Tasks that take hours, run on weak hardware, or depend on cloud-only resources benefit from running off the local machine. Cloud execution also unlocks parallelism a single developer machine couldn't sustain.",
+      short: 'Remote agent execution lets long-running agents work while your laptop is closed.',
+      long: "Tasks that take hours, run on weak hardware, or depend on remote-only resources benefit from running off the local machine. Remote agent execution also unlocks parallelism a single developer machine couldn't sustain.",
     },
   },
   {

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Ensures the catalog of valid feature IDs stays in lockstep between
-# `src/data/features.ts` (application code) and the union of
-# `supabase/migrations/*_features_catalog*.sql` migration files
-# (database state).
+# `src/data/features.ts` (application code) and the effective state of the
+# `supabase/migrations/*_features_catalog*.sql` migration files (database
+# state) — i.e. everything inserted minus everything later deleted, since
+# migrations are append-only and renames/removals ship as new migrations.
 #
 # Without this hook, a contributor could add a new feature ID to
 # `features.ts` and ship it without a corresponding catalog-sync
@@ -39,9 +40,36 @@ if (( ${#catalog_files[@]} == 0 )); then
   exit 2
 fi
 
-sql_ids=$(grep -hoE "'[a-z][a-z0-9-]*'" "${catalog_files[@]}" \
+# Every ID ever referenced across the catalog migrations (inserts, but also
+# the WHERE/SET clauses of rename migrations).
+all_ids=$(grep -hoE "'[a-z][a-z0-9-]*'" "${catalog_files[@]}" \
   | tr -d "'" \
   | sort -u)
+
+# IDs removed via `delete from features_catalog ... ;`. Migrations are
+# append-only (see .claude/rules/sql-migrations-are-append-only.md): we never
+# edit the original seed, so a rename/removal lands as a NEW migration that
+# deletes the old ID. We must subtract those, otherwise an ID that was seeded
+# once would look "present" forever. The awk tracks the span of each
+# `delete from features_catalog` statement (up to its terminating `;`) and
+# harvests the quoted IDs inside it — `feature_id = '...'` clauses on the
+# ratings/feature_skips tables are not part of such a statement and are
+# therefore ignored.
+deleted_ids=$(awk '
+  /^[[:space:]]*--/ { next }   # skip SQL comment lines (they may mention "delete from")
+  tolower($0) ~ /delete[[:space:]]+from[[:space:]]+(public\.)?features_catalog/ { indel = 1 }
+  indel {
+    s = $0
+    while (match(s, /'\''[a-z][a-z0-9-]*'\''/)) {
+      print substr(s, RSTART + 1, RLENGTH - 2)
+      s = substr(s, RSTART + RLENGTH)
+    }
+    if ($0 ~ /;/) indel = 0
+  }
+' "${catalog_files[@]}" | sort -u)
+
+# Effective catalog state = everything inserted, minus everything later deleted.
+sql_ids=$(comm -23 <(echo "$all_ids") <(echo "$deleted_ids"))
 
 missing_in_sql=$(comm -23 <(echo "$ts_ids") <(echo "$sql_ids"))
 missing_in_ts=$(comm -13 <(echo "$ts_ids") <(echo "$sql_ids"))

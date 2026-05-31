@@ -16,7 +16,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
     screenshots: [],
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'no',
     note: 'No SaaS cloud runtime; T3 Code is a local Node.js server (loopback) optionally exposed over LAN/Tailscale/SSH.',
     screenshots: [],

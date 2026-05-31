@@ -23,7 +23,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'On macOS, Codex uses the built-in Seatbelt framework. On Windows, Codex uses the native Windows sandbox when you run in PowerShell and the Linux sandbox implementation when you run in WSL2. On Linux, Codex uses bubblewrap.',
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'partial',
     note: 'Local execution is the default for the desktop app; "Codex cloud" offers optional background/parallel runs in an OpenAI-managed cloud environment, accessible from the app.',
     screenshots: [],

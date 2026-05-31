@@ -16,7 +16,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'When you start or move an agent into a worktree from the Agents Window, Cursor creates a separate checkout for that agent. Each task gets its own files, dependencies, and changes while your main checkout stays untouched.',
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'yes',
     screenshots: [],
     sourceUrl: 'https://cursor.com/blog/cursor-3',

@@ -26,12 +26,12 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'For Git repositories, each session gets its own isolated copy of your project using Git worktrees, so changes in one session don’t affect other sessions until you commit them. Worktrees are stored in `<project-root>/.claude/worktrees/` by default.',
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'yes',
     note: 'Environment selector in the prompt area exposes a Remote option that runs the session on Anthropic-hosted cloud; sessions continue even after closing the app. SSH sessions are an additional remote option.',
     screenshots: [
       {
-        src: '/screenshots/claude-code-desktop/cloud-execution_20260521_1.webp',
+        src: '/screenshots/claude-code-desktop/remote-agent-execution_20260521_1.webp',
         alt: 'Claude Code Desktop environment selector dropdown showing Local (checked), Cloud > Default, Remote Control, and SSH sections.',
         caption: 'Environment selector dropdown with the Cloud > Default option highlighted, allowing sessions to run on Anthropic-hosted infrastructure.',
       },

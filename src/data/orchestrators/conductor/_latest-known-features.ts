@@ -29,7 +29,7 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
       'An isolated workspace is a separate, git-backed copy of a project for one stream of work. […] The files on disk for one workspace. Each workspace has its own working tree.',
   },
   {
-    featureId: 'cloud-execution',
+    featureId: 'remote-agent-execution',
     support: 'no',
     note: 'Conductor v0.52.3 runs locally on macOS. A "Conductor Cloud" tier is announced as Early Access (not tested), so cloud execution is not generally available.',
     screenshots: [],

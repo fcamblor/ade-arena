@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'yes', note: 'Hosted cloud version available.', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'yes', note: 'Hosted cloud version available.', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'macOS, Windows, and Linux desktop apps available.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'yes', note: 'Works with Claude Code, Codex, GitHub Copilot CLI, OpenClaw, OpenCode, Hermes, Gemini, Pi, Cursor Agent, Kimi, and Kiro CLI.', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },

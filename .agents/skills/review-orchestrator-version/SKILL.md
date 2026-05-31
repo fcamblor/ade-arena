@@ -129,7 +129,7 @@ The main agent's job in this loop is **strictly orchestration**:
 
 For each feature kept by the filter, print one header line and spawn a subagent. Wait for it to complete before moving on.
 
-**Optional cross-feature hint.** Before launching, the main agent decides whether prior decisions are relevant to this feature (e.g. reviewing `multi-model` after having locked `local-execution` and `cloud-execution`). When yes, include a 2–5-line excerpt of the rolling recap memo in the subagent's prompt under a clearly-labeled "Prior decisions from this run" section. When no, omit it — most features are independent.
+**Optional cross-feature hint.** Before launching, the main agent decides whether prior decisions are relevant to this feature (e.g. reviewing `multi-model` after having locked `local-execution` and `remote-agent-execution`). When yes, include a 2–5-line excerpt of the rolling recap memo in the subagent's prompt under a clearly-labeled "Prior decisions from this run" section. When no, omit it — most features are independent.
 
 **Subagent prompt (template):**
 

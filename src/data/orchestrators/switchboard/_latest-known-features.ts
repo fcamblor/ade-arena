@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'no', note: 'Local desktop application.', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'no', note: 'Local desktop application.', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'Available for macOS, Windows, and Linux.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'no', note: 'Exclusively a front-end for Claude Code CLI sessions.', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },

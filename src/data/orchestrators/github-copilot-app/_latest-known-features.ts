@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'unknown', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'unknown', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'Available in technical preview on Windows, macOS, and Linux.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'no', note: 'Uses GitHub Copilot agent exclusively.', screenshots: [] },
   { featureId: 'pr-creation', support: 'yes', note: 'Agent Merge addresses review comments, fixes failing checks, and merges.', screenshots: [] },

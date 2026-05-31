@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'unknown', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'unknown', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'unknown', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'Currently available on macOS. Windows and Linux coming soon.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'yes', note: 'Supports Claude Agent, Codex, Gemini CLI, and Junie (JetBrains).', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },

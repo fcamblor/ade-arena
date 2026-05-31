@@ -3,7 +3,7 @@ import type { FeatureSupport } from '../../schema';
 export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   { featureId: 'git-worktrees', support: 'yes', note: 'Visual Git management and worktrees supported natively.', screenshots: [] },
   { featureId: 'sandbox-isolation', support: 'unknown', screenshots: [] },
-  { featureId: 'cloud-execution', support: 'no', note: 'Local-first desktop application.', screenshots: [] },
+  { featureId: 'remote-agent-execution', support: 'no', note: 'Local-first desktop application.', screenshots: [] },
   { featureId: 'local-execution', support: 'yes', note: 'Desktop application for macOS, Windows, and Linux.', screenshots: [] },
   { featureId: 'multiple-model-families', support: 'yes', note: 'Supports Claude Code, Codex, Opencode, and Copilot.', screenshots: [] },
   { featureId: 'pr-creation', support: 'unknown', screenshots: [] },
