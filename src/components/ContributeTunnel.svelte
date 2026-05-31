@@ -430,13 +430,62 @@
     return dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
   }
 
+  // The published dataset is 100% WebP and its heaviest screenshot sits around
+  // ~150 KB. We re-encode every upload to WebP here, at the source, so a
+  // proposal is consistent with the rest of the repo instead of carrying a
+  // multi-MB PNG. The width cap is the largest sensible screenshot for the
+  // comparison table; anything wider is downscaled.
+  const SHOT_MAX_WIDTH = 2000;
+  const SHOT_WEBP_QUALITY = 0.85;
+
+  // Best-effort WebP transcode via the Canvas API (no dependency). Returns a new
+  // `.webp` File, or the original untouched when the browser cannot decode/encode
+  // it (exotic format, animated GIF, decode error) or when re-encoding an
+  // already-WebP file would only make it bigger. The skill's Phase-1 format check
+  // is the backstop for the rare fall-through.
+  async function toWebpFile(file: File): Promise<File> {
+    if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') {
+      return file;
+    }
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, SHOT_MAX_WIDTH / bitmap.width);
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        bitmap.close();
+        return file;
+      }
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close();
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/webp', SHOT_WEBP_QUALITY),
+      );
+      // toBlob ignores the type on browsers without WebP encode support and
+      // falls back to PNG — keep the original then rather than ship a PNG.
+      if (!blob || blob.type !== 'image/webp') return file;
+      // No format gain to be had on an already-WebP file: keep the smaller one
+      // and avoid a second lossy pass.
+      if (file.type === 'image/webp' && blob.size >= file.size) return file;
+      const base = file.name.replace(/\.[^.]+$/, '') || 'screenshot';
+      return new File([blob], `${base}.webp`, { type: 'image/webp' });
+    } catch {
+      return file;
+    }
+  }
+
   async function addFiles(files: File[]) {
     if (!draft || !currentFeature) return;
     const images = files.filter((f) => f.type.startsWith('image/'));
     if (images.length === 0) return;
     const fs = featureState();
     if (!fs) return;
-    for (const file of images) {
+    for (const original of images) {
+      const file = await toWebpFile(original);
       const n = nextUsedIndex(fs);
       const id = uuid();
       const shot: DraftScreenshot = {

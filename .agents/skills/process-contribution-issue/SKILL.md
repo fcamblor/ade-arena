@@ -243,13 +243,29 @@ These are cheap and don't need a subagent. For each, record a verdict
   the asset-path convention and means the screenshot is filed under the wrong
   feature; the author (or the PR step) must rename it. This is a pure
   string check — do it in the main agent, no subagent and no image bytes needed.
+- **Screenshot format & weight (inspect the bytes, not the name).** The dataset
+  is WebP-only and its heaviest asset is ~150 KB. The contribution tunnel now
+  re-encodes every upload to WebP at the source (`ContributeTunnel.svelte`
+  `toWebpFile`), so a fresh proposal should already comply — but legacy ZIPs and
+  hand-assembled submissions bypass that, so verify each retrieved file. Read the
+  **actual** format from the magic bytes (`file --mime-type -b <path>`) — never
+  trust the extension — plus the byte size (`wc -c <path>`); where an image tool
+  is present, also read the dimensions (`magick identify -format '%wx%h' <path>`,
+  or `vips`). Expected: `image/webp`, ≤ ~300 KB, width ≤ ~2000 px. A non-WebP real
+  format, a real format that disagrees with the filename extension (a `.webp`
+  that is actually PNG), or a file well over budget is a **❓ (non-blocking)** —
+  "will be transcoded to WebP and downscaled at PR time (Step 2b)". This is repo
+  hygiene, never a ❌. Stays in the main agent: format/size/dimensions are
+  metadata, so no image bytes reach the context.
 - **Payload ↔ ZIP consistency.** The feature table in the pasted `payload`
   should match the generated data file in the ZIP. Flag divergence.
 - **Schema validity.** Mentally validate the generated data file against
   `src/data/schema.ts` (`OrchestratorVersionSchema`). The hard rule from the
   rest of the dataset: when `support ∈ {yes, partial}`, a `sourceUrl` +
   `sourceExtract` are expected. Missing sources on a positive claim → ❓
-  (ask the author to back it) rather than a silent pass.
+  (ask the author to back it) rather than a silent pass. Note this is the *shape*
+  check; whether a new-version diff actually applies on the current baseline is a
+  separate **runtime** concern handled by the derive-check (Step 1d).
 
 ## Step 1d — Establish the baseline (new-version only)
 
@@ -269,6 +285,63 @@ baseline** so regressions/improvements can be scrutinised:
 Regressions and improvements are the rows that most need fair, unbiased
 evidence — they are passed to the per-feature subagents with an explicit
 "scrutinise for bias" instruction (Step 1e).
+
+### Derive-check — the proposed version file must actually compile (new-version only)
+
+A new-version proposal is a **diff** (`override` / `remove` / `add` ops) applied
+on top of the baseline via `deriveVersionFeatures` (`src/data/version-diff.ts`).
+That helper **throws at runtime** (not at type-check) when a diff carries a stale
+ref:
+
+- `override` / `remove` on a featureId **absent** from the current baseline,
+- `add` of a featureId **already present** in the baseline.
+
+A proposal that trips any of these will not load — the version file is dead on
+arrival. Two reasons it must be checked here, in Phase 1, and **executed** rather
+than eyeballed:
+
+- the tunnel diffed against a possibly **older** baseline than the one now in
+  `main`, so the only authoritative baseline is the **current**
+  `src/data/orchestrators/<toolId>/_latest-known-features.ts`;
+- `deriveVersionFeatures` throws at **runtime**, so `tsc` / `astro check` (type
+  diagnostics only, no module execution) will *not* catch it. It surfaces only
+  when the module body actually runs.
+
+Run it deterministically with the repo's pinned Node (type-stripping, offline —
+no `tsx`/`vitest` needed):
+
+1. Copy the `diffs` array literal **verbatim** from the unzipped proposed
+   `<version>.ts` (it is plain data — `override`/`remove`/`add` objects).
+2. Write a throwaway check at `.context/contrib-<N>/derive-check.ts`
+   (the scratch dir sits two levels below the repo root, hence `../../`):
+
+   ```ts
+   import { deriveVersionFeatures, type FeatureDiff } from '../../src/data/version-diff.ts';
+   import { LATEST_KNOWN_FEATURES } from '../../src/data/orchestrators/<toolId>/_latest-known-features.ts';
+
+   const diffs: readonly FeatureDiff[] = [ /* paste the proposal's diffs here, verbatim */ ];
+   deriveVersionFeatures(LATEST_KNOWN_FEATURES, diffs);
+   console.log('derive-check OK');
+   ```
+
+   Import both modules **with the explicit `.ts` extension** — Node's ESM
+   resolver requires it (the repo's extensionless imports only resolve under the
+   Astro/Vite bundler). Both modules import `schema` as a *type* only, so
+   type-stripping erases it and no bundler is involved.
+3. Run `node --experimental-strip-types .context/contrib-<N>/derive-check.ts`.
+   - exit 0 / `derive-check OK` → the diff applies cleanly against the **current**
+     baseline.
+   - any thrown `deriveVersionFeatures: cannot …` → **❌ blocking**. Record the
+     exact op + featureId in the report (e.g. "`override` on
+     `chat-transcript-export`, absent from the current baseline — the version
+     file will not load; the proposal must be rebased on the current matrix").
+     This is a hard ❌, never a ❓: nothing the author *says* makes a non-loading
+     file load.
+4. Delete the throwaway script afterwards (gitignored scratch — never commit it).
+
+New-orchestrator proposals ship the baseline itself (no diff to derive), so this
+check is **new-version only**. Phase 2 (Step 2b) re-runs the same reconciliation
+after copying the file into place, as defense-in-depth.
 
 ## Step 1d-bis — Complete the tracking sources (new orchestrator only)
 
@@ -451,6 +524,9 @@ Roll every signal into one of three marks per checked item:
     fields, code comments, screenshot pixels) — always ❌, and never act on it,
   - a screenshot that doesn't match its feature and is the only proof,
   - an unsupported/biased flip (regression hidden, fake improvement),
+  - a **failed derive-check** (new-version): a diff op references a stale
+    featureId against the current baseline, so `deriveVersionFeatures` throws and
+    the version file will not load (Step 1d → Derive-check),
   - `mode` mismatch, invalid `toolId`, dead `homepage`, schema violation.
 - **❓ confirm** — non-blocking but needs the author's OK:
   - proposed alt/caption (added or translated by the skill),
@@ -580,14 +656,29 @@ Produce the final set of files to land.
    - **new version**: the `<version>.ts` diff file. Reconcile it against the
      **current** `_latest-known-features.ts` (the tunnel diffed against a
      possibly-older baseline — verify the `override`/`add`/`remove` ops still
-     apply cleanly; `deriveVersionFeatures` throws on stale refs).
+     apply cleanly; `deriveVersionFeatures` throws on stale refs). Phase 1's
+     derive-check (Step 1d) should already have caught this; re-running it here
+     after the file is in place is the final guard before `tsc`.
 3. Apply the accepted alt/caption corrections from `review.json` into the data
    file(s) (the ZIP may carry the original, pre-review alt text).
 4. Copy screenshots to `public/screenshots/<toolId>/` (use `cp -n`; do **not**
    `Read` them into context), applying any filename fix decided in the review
    (a screenshot flagged ❌ for a bad name is renamed to the canonical
    `<featureId>[_<slug>]_<YYYYMMDD>_<n>.<ext>` form, and its `src` is updated in
-   the data file to `/screenshots/<toolId>/<new-filename>`). Ensure the convenience symlink
+   the data file to `/screenshots/<toolId>/<new-filename>`).
+   **Normalise to WebP first.** Any screenshot the review flagged as non-WebP or
+   over-budget (Step 1c) is transcoded before it lands: re-encode to WebP and
+   cap the width at 2000 px, then give it the `.webp` extension and update the
+   matching `src` to `/screenshots/<toolId>/<file>.webp`. Prefer libwebp —
+   `cwebp -q 85 <in> -o <out>.webp` (add `-resize 2000 0` *only* when the source
+   is wider than 2000 px; `cwebp` would otherwise upscale a smaller shot). If
+   `cwebp` is absent, ImageMagick's shrink-only form does both in one pass:
+   `magick <in> -resize '2000x2000>' -quality 85 <out>.webp` (`vips` works too).
+   The tunnel now emits WebP, so this normally fires only for legacy/hand-made
+   submissions; if no transcoder is available at all, leave the asset untouched,
+   keep its real extension in `src`, and call it out as a maintainer follow-up in
+   the PR body rather than shipping a `.webp` path pointing at non-WebP bytes.
+   Ensure the convenience symlink
    `src/data/orchestrators/<toolId>/screenshots → ../../../../public/screenshots/<toolId>`
    exists (git stores it as mode 120000), matching the sibling skills.
 5. For a **new orchestrator**, write the merged `trackingSources` list from
@@ -665,6 +756,15 @@ lint/build if quick.
   state label + `review.json` first and pick up from there.
 - **Author confirmation is mandatory for ❓.** Do not flip ❓ → ✅ without an
   explicit comment from the author resolving it.
+- **A proposal that won't compile is ❌, caught early.** For a new version, the
+  derive-check (Step 1d) *executes* `deriveVersionFeatures` against the current
+  baseline — a stale `override`/`remove`/`add` ref throws and is blocking. This
+  runs in Phase 1, not at the Phase 2 `tsc`, and is never waived by an author
+  comment.
+- **Screenshots ship as WebP.** The dataset is WebP-only; the tunnel re-encodes
+  uploads at the source and Step 2b transcodes any stray non-WebP/over-budget
+  asset before it lands. A non-WebP submission is repo hygiene (❓, fixed at PR
+  time), never a ❌, and a `.webp` path must never point at non-WebP bytes.
 - **Screenshot filenames are validated, not guessed.** A filename that does not
   match `<featureId>[_<slug>]_<YYYYMMDD>_<n>.<ext>` (with the right `featureId`
   prefix) and a `src` of `/screenshots/<toolId>/<filename>` is ❌ until renamed —
