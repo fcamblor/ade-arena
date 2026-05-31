@@ -20,6 +20,12 @@ interface Props {
   variant?: 'cell' | 'inline';
   /** ARIA label for screen readers describing what this proof attests to. */
   ariaLabel?: string;
+  /** Feature recap shown above the proof. Only set for feature-row proofs —
+   *  meta proofs (pricing, platform, codebase, model wiring) omit these and
+   *  keep the bare header → proof layout. */
+  featureTitle?: string;
+  featureDescription?: string;
+  whyImportant?: string;
 }
 
 const {
@@ -29,6 +35,9 @@ const {
   screenshots = [],
   variant = 'cell',
   ariaLabel,
+  featureTitle,
+  featureDescription,
+  whyImportant,
 } = Astro.props;
 
 // `shots` / `hasShots` drive the trigger's screenshot badge below. The card
@@ -94,6 +103,9 @@ const hasShots = shots.length > 0;
     sourceExtract={sourceExtract}
     screenshots={shots}
     ariaLabel={ariaLabel}
+    featureTitle={featureTitle}
+    featureDescription={featureDescription}
+    whyImportant={whyImportant}
   />
 </details>
 
@@ -360,15 +372,19 @@ const hasShots = shots.length > 0;
     }
     /* Stagger child reveals so the body composes itself after the card lands. */
     .evidence[open]:not([data-closing]) > .evidence__card > .evidence__head,
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__recap,
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__divider,
     .evidence[open]:not([data-closing]) > .evidence__card > .evidence__gallery,
     .evidence[open]:not([data-closing]) > .evidence__card > .evidence__quote,
     .evidence[open]:not([data-closing]) > .evidence__card > .evidence__foot {
       animation: evidenceChildIn .42s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
-    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__head    { animation-delay: 80ms; }
-    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__gallery { animation-delay: 140ms; }
-    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__quote   { animation-delay: 200ms; }
-    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__foot    { animation-delay: 260ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__head     { animation-delay: 80ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__recap  { animation-delay: 130ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__divider  { animation-delay: 180ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__gallery  { animation-delay: 225ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__quote    { animation-delay: 270ms; }
+    .evidence[open]:not([data-closing]) > .evidence__card > .evidence__foot     { animation-delay: 315ms; }
     @keyframes evidenceChildIn {
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -441,6 +457,107 @@ const hasShots = shots.length > 0;
     color: oklch(0.42 0.03 60 / 0.85);
     text-align: right;
     line-height: 1.3;
+  }
+
+  /* ---------- Feature recap (case summary, above the proof) ---------- */
+  /* Title + description (left column) sit across from the "why this matters"
+   * callout (right column) on desktop; the callout drops below the whole block
+   * on narrow viewports. Stacked by default; split from the desktop breakpoint
+   * up, only when a why is present (--split). */
+  .evidence__recap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-4);
+  }
+  @media (min-width: 721px) {
+    .evidence__recap--split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--s-5);
+      align-items: start;
+    }
+  }
+  .evidence__feature-title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    color: oklch(0.19 0.03 40);
+    text-wrap: balance;
+  }
+  .evidence__feature-desc {
+    margin: var(--s-2) 0 0 0;
+    max-width: 64ch;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: oklch(0.36 0.025 45);
+  }
+
+  /* "Why this matters" annotation — a parchment note with a stamped index tab,
+   * echoing the dossier / case-file language (no accent stripe). */
+  .evidence__why {
+    position: relative;
+    margin: 0;
+    padding: calc(var(--s-3) + 5px) var(--s-4) var(--s-3);
+    background:
+      radial-gradient(circle at 80% 0%, oklch(0 0 0 / 0.025) 0.5px, transparent 1.2px),
+      oklch(0.93 0.035 88);
+    background-size: 7px 7px, 100% 100%;
+    border: 1px solid oklch(0.6 0.05 68 / 0.45);
+    border-radius: 2px;
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.55),
+      0 1px 2px oklch(0 0 0 / 0.06);
+  }
+  .evidence__why-label {
+    position: absolute;
+    top: -9px;
+    left: var(--s-3);
+    padding: 3px 8px;
+    background: oklch(0.46 0.13 55);
+    color: oklch(0.97 0.02 88);
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border-radius: 2px;
+    box-shadow: 0 1px 2px oklch(0 0 0 / 0.28);
+  }
+  .evidence__why-text {
+    margin: 0;
+    max-width: 64ch;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: oklch(0.27 0.03 50);
+  }
+
+  /* Labelled hand-off into the proof exhibits — dashed rules flanking a red
+   * stamp word, tying back to the header's "On record" mark and dashed border. */
+  .evidence__divider {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin: var(--s-4) 0 var(--s-3);
+  }
+  .evidence__divider::before,
+  .evidence__divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed oklch(0.62 0.04 60 / 0.55);
+  }
+  .evidence__divider-label {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+    /* pad the right so the optical centre accounts for the letter-spacing
+     * trailing the final glyph */
+    padding-left: 0.3em;
+    font-size: 0.62rem;
+    font-weight: 900;
+    color: oklch(0.46 0.16 28);
   }
 
   .evidence__quote {

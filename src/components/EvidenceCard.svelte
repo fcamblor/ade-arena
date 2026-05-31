@@ -20,6 +20,14 @@
   export let sourceExtract: string | undefined = undefined;
   export let screenshots: Array<{ src: string; alt: string; caption?: string }> = [];
   export let ariaLabel: string | undefined = undefined;
+  // Feature recap (only passed for feature-row proofs — meta proofs like
+  // pricing/platform/codebase/model-wiring leave these undefined and keep the
+  // bare header → proof layout). When present, the card opens with the feature
+  // title + description and a "why this matters" annotation, then a labelled
+  // divider hands off to the proof exhibits below.
+  export let featureTitle: string | undefined = undefined;
+  export let featureDescription: string | undefined = undefined;
+  export let whyImportant: string | undefined = undefined;
 
   function prettyUrl(u: string): string {
     try {
@@ -35,6 +43,8 @@
   $: shots = screenshots.filter((s) => s && s.src);
   $: hasShots = shots.length > 0;
   $: hasQuote = Boolean(sourceUrl && sourceExtract);
+  $: hasFeature = Boolean(featureTitle);
+  $: hasProof = hasShots || hasQuote || Boolean(sourceUrl);
 </script>
 
 <div class="evidence__backdrop" data-close aria-hidden="true"></div>
@@ -51,6 +61,33 @@
   <button type="button" class="evidence__close" data-close aria-label="Close proof" title="Close">
     <span aria-hidden="true">×</span>
   </button>
+
+  {#if hasFeature}
+    <!-- Title + description form one column; the "why this matters" callout
+         sits across from that whole block on desktop (split modifier, set when
+         a why is present) and drops below it on narrow viewports — see the
+         @media rule in Evidence.astro. -->
+    <div class="evidence__recap{whyImportant ? ' evidence__recap--split' : ''}">
+      <div class="evidence__feature">
+        <h3 class="evidence__feature-title">{featureTitle}</h3>
+        {#if featureDescription}
+          <p class="evidence__feature-desc">{featureDescription}</p>
+        {/if}
+      </div>
+      {#if whyImportant}
+        <aside class="evidence__why">
+          <span class="evidence__why-label">Why this matters</span>
+          <p class="evidence__why-text">{whyImportant}</p>
+        </aside>
+      {/if}
+    </div>
+
+    {#if hasProof}
+      <div class="evidence__divider" role="separator" aria-label="Proof on file">
+        <span class="evidence__divider-label">Proof</span>
+      </div>
+    {/if}
+  {/if}
 
   {#if hasShots}
     <div

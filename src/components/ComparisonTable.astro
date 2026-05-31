@@ -645,6 +645,9 @@ const rankingTools = getRankingTools();
                             sourceExtract={s?.sourceExtract}
                             screenshots={s?.screenshots}
                             ariaLabel={`Show source for ${feature.label} on ${orch.toolName}`}
+                            featureTitle={feature.label}
+                            featureDescription={feature.longDescription ?? feature.shortDescription}
+                            whyImportant={feature.whyImportant?.long ?? feature.whyImportant?.short}
                           />
                         )}
                       </td>
