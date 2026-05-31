@@ -254,8 +254,9 @@ export const LATEST_KNOWN_FEATURES: FeatureSupport[] = [
   {
     featureId: `in-app-voice-input`,
     support: `no`,
-    note: `The web composer supports only text typing, slash commands, @-mentions and image drag-and-drop. No voice, microphone, dictation or speech-to-text input exists in the source or docs.`,
-    sourceUrl: `https://deepwiki.com/pingdotgg/t3code/3.1-chat-interface-and-state-management`,
+    note: `The web composer accepts only text, slash commands, @-mentions and image attachments — paste and drag-and-drop are guarded to image MIME types only. No voice, microphone, dictation or speech-to-text input exists in the codebase.`,
+    sourceUrl: `https://github.com/pingdotgg/t3code/blob/main/apps/web/src/components/chat/ChatComposer.tsx`,
+    sourceExtract: `if (!file.type.startsWith("image/")) { error = "Unsupported file type for '[…]'. Please attach image files only." }`,
     screenshots: [],
   },
   {
