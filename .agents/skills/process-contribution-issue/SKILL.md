@@ -653,12 +653,35 @@ Produce the final set of files to land.
 2. Copy the data files into place:
    - **new orchestrator**: `src/data/orchestrators/<toolId>/_meta.ts`,
      `_latest-known-features.ts`, `<version>.ts`.
-   - **new version**: the `<version>.ts` diff file. Reconcile it against the
-     **current** `_latest-known-features.ts` (the tunnel diffed against a
-     possibly-older baseline — verify the `override`/`add`/`remove` ops still
-     apply cleanly; `deriveVersionFeatures` throws on stale refs). Phase 1's
-     derive-check (Step 1d) should already have caught this; re-running it here
-     after the file is in place is the final guard before `tsc`.
+   - **new version**: where the accepted state lands depends on whether the
+     proposed version **is the latest known version** of the orchestrator:
+     - **Proposal targets the latest known version** (the common case — the
+       tunnel diffs against `LATEST_KNOWN_FEATURES`): **fold the accepted feature
+       states directly into `_latest-known-features.ts`**, do **not** ship a diff
+       in the version file. `LATEST_KNOWN_FEATURES` *is* the canonical matrix for
+       the latest version, so a `<version>.ts` that re-diffs against itself is
+       redundant and brittle. Keep `<version>.ts` as the plain
+       `features: LATEST_KNOWN_FEATURES` form (drop any `deriveVersionFeatures`
+       diff and any `status: 'waiting-for-review'` once the version is published).
+       Apply each accepted op to the baseline array in place: `override` → edit
+       that feature's row, `add` → append the new feature row, `remove` → delete
+       it. (This also dissolves any derive-check failure from Step 1d, since there
+       is no longer a diff to apply.)
+
+       **Preserve history on older versions.** Folding a changed value into the
+       latest baseline retroactively rewrites every older `<oldVersion>.ts` that
+       resolves through `LATEST_KNOWN_FEATURES`. For **each feature whose value
+       moved**, pin the *previous* value on the older version files by adding an
+       `override` op to every `<oldVersion>.ts` that should keep the old support
+       (so the historical matrix stays truthful). If the orchestrator has **no
+       older version files**, there is nothing to pin — skip this.
+     - **Proposal targets a non-latest version**: keep it as a `<version>.ts`
+       diff file. Reconcile it against the **current** `_latest-known-features.ts`
+       (the tunnel diffed against a possibly-older baseline — verify the
+       `override`/`add`/`remove` ops still apply cleanly; `deriveVersionFeatures`
+       throws on stale refs). Phase 1's derive-check (Step 1d) should already have
+       caught this; re-running it here after the file is in place is the final
+       guard before `tsc`.
 3. Apply the accepted alt/caption corrections from `review.json` into the data
    file(s) (the ZIP may carry the original, pre-review alt text).
 4. Copy screenshots to `public/screenshots/<toolId>/` (use `cp -n`; do **not**
