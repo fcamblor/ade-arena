@@ -244,7 +244,7 @@ const rankingTools = getRankingTools();
 </section>
 
 
-<section class="comparator" aria-labelledby="comparator-title">
+<section class="comparator" aria-labelledby="comparator-title" data-compact>
   <header class="comparator__intro">
     <div>
       <p class="comparator__eyebrow">Main event</p>
@@ -255,12 +255,26 @@ const rankingTools = getRankingTools();
         Every feature, every tool, every verdict. Headers stay pinned — scroll vertically through the card, horizontally through the lineup.
       </p>
     </div>
-    <ul class="legend" aria-label="Verdict legend">
-      <li><span class="legend__dot legend__dot--yes" aria-hidden="true">●</span>Supported</li>
-      <li><span class="legend__dot legend__dot--partial" aria-hidden="true">◐</span>Partial</li>
-      <li><span class="legend__dot legend__dot--no" aria-hidden="true">○</span>No</li>
-      <li><span class="legend__dot legend__dot--unknown" aria-hidden="true">?</span>Unknown</li>
-    </ul>
+    <div class="comparator__aside">
+      <button
+        type="button"
+        class="density-toggle"
+        data-density-toggle
+        aria-pressed="false"
+        title="Detailed view — expand every row to reveal descriptions, notes and the model-wiring band. Each row can also be expanded on its own via the chevron in its feature cell."
+      >
+        <span class="density-toggle__switch" aria-hidden="true">
+          <span class="density-toggle__thumb"></span>
+        </span>
+        <span class="density-toggle__label">Detailed view</span>
+      </button>
+      <ul class="legend" aria-label="Verdict legend">
+        <li><span class="legend__dot legend__dot--yes" aria-hidden="true">●</span>Supported</li>
+        <li><span class="legend__dot legend__dot--partial" aria-hidden="true">◐</span>Partial</li>
+        <li><span class="legend__dot legend__dot--no" aria-hidden="true">○</span>No</li>
+        <li><span class="legend__dot legend__dot--unknown" aria-hidden="true">?</span>Unknown</li>
+      </ul>
+    </div>
   </header>
 
   <div class="table-shell" role="region" aria-label="Comparison table" tabindex="0">
@@ -617,7 +631,20 @@ const rankingTools = getRankingTools();
                 <tr class="row--feature">
                   <th scope="row" class="cell--feature">
                     <div class="feature">
-                      <p class="feature__label">{feature.label}</p>
+                      <button
+                        type="button"
+                        class="feature__toggle"
+                        data-feature-toggle
+                        aria-expanded="false"
+                        aria-label={`Toggle details for ${feature.label}`}
+                      >
+                        <span class="feature__chevron" aria-hidden="true">
+                          <svg viewBox="0 0 16 16" width="12" height="12" focusable="false">
+                            <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                          </svg>
+                        </span>
+                        <span class="feature__label">{feature.label}</span>
+                      </button>
                       <p class="feature__body">{feature.longDescription ?? feature.shortDescription}</p>
                       <div class="feature-rating-slot" data-feature-id={feature.id}></div>
                     </div>
@@ -901,6 +928,71 @@ const rankingTools = getRankingTools();
   .legend__dot--partial  { color: var(--cell-partial-ink); }
   .legend__dot--no       { color: var(--cell-no-ink); }
   .legend__dot--unknown  { color: var(--cell-unknown-ink); }
+
+  /* ============ Density toggle (compact view) ============ */
+  .comparator__aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--s-3);
+  }
+  .density-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 6px 10px;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    background: var(--bg-elev);
+    color: var(--fg-soft);
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .density-toggle:hover,
+  .density-toggle:focus-visible {
+    color: var(--fg);
+    border-color: var(--border);
+    outline: none;
+  }
+  .density-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .density-toggle__switch {
+    position: relative;
+    width: 30px;
+    height: 16px;
+    border-radius: 999px;
+    background: oklch(0.3 0.012 28);
+    box-shadow: inset 0 0 0 1px var(--border);
+    transition: background .15s ease, box-shadow .15s ease;
+    flex-shrink: 0;
+  }
+  .density-toggle__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--fg-muted);
+    transition: transform .18s ease, background .15s ease;
+  }
+  .density-toggle[aria-pressed="true"] {
+    color: var(--bg);
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .density-toggle[aria-pressed="true"] .density-toggle__switch {
+    background: color-mix(in oklch, var(--bg) 35%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--bg) 45%, transparent);
+  }
+  .density-toggle[aria-pressed="true"] .density-toggle__thumb {
+    transform: translateX(14px);
+    background: var(--bg);
+  }
 
   /* ============ Table shell ============ */
   .table-shell {
@@ -1478,7 +1570,42 @@ const rankingTools = getRankingTools();
     margin: 0;
     line-height: 1.35;
     font-weight: 500;
+    min-width: 0;
   }
+  /* Per-row disclosure: the feature title doubles as the expand/collapse
+     control. Chevron points right when collapsed, rotates down when the row
+     is expanded into its detailed layout. */
+  .feature__toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .feature__toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
+  }
+  .feature__chevron {
+    flex-shrink: 0;
+    display: inline-flex;
+    margin-top: 2px;
+    color: var(--fg-faint);
+    transition: transform .18s ease, color .15s ease;
+  }
+  .feature__chevron svg { display: block; }
+  .feature__toggle:hover .feature__chevron,
+  .feature__toggle:focus-visible .feature__chevron { color: var(--accent); }
+  .row--feature[data-expanded] .feature__chevron { transform: rotate(90deg); }
   .feature__body {
     margin: 0;
     color: var(--fg-muted);
@@ -1748,8 +1875,50 @@ const rankingTools = getRankingTools();
   }
   .tool__preview-banner-text { min-width: 0; }
 
+  /* ============ Row density (compact ⇄ detailed) ============
+     Compact is the default: every feature row renders as a single line —
+     title + verdict glyphs with an inline (i) proof icon. A row opts into the
+     detailed layout (long description, per-cell notes, rating widget, stacked
+     proof) by gaining `data-expanded`, toggled per row by the chevron in its
+     feature cell. The header switch just expands/collapses all rows at once.
+     The "Model wiring" meta band isn't a per-row toggle, so it follows the
+     global compact flag on the section. Pure CSS, no re-render. */
+  .comparator[data-compact] .row--wiring { display: none; }
+
+  .row--feature:not([data-expanded]) .feature__body,
+  .row--feature:not([data-expanded]) .feature-rating-slot,
+  .row--feature:not([data-expanded]) .cell__note {
+    display: none;
+  }
+  /* Tighter rows once the prose is gone. */
+  .row--feature:not([data-expanded]) .feature { padding: var(--s-3); gap: 0; }
+  .row--feature:not([data-expanded]) .cell { padding: var(--s-3); }
+  /* Verdict glyph + proof icon share one line in the collapsed cell. */
+  .row--feature:not([data-expanded]) .cell__glyph { font-size: 1.2rem; vertical-align: middle; }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<style is:global>
+  /* Collapsed rows: inline the per-cell proof affordance (info icon +
+     screenshot badge) right after the verdict glyph instead of stacking it on
+     its own line, so collapsed rows stay short. The proof markup is owned by
+     the <Evidence> child component, whose scoped styles are out of reach from
+     ComparisonTable's scoped block — hence this global rule. The "Proof" word
+     is dropped, leaving just the icon(s). */
+  .row--feature:not([data-expanded]) .evidence--cell {
+    display: inline-block;
+    margin: 0 0 0 var(--s-2);
+    vertical-align: middle;
+  }
+  .row--feature:not([data-expanded]) .evidence--cell .evidence__trigger-label {
+    display: none;
+  }
+  /* Drop the badge's left margin (the label it used to sit next to is gone). */
+  .row--feature:not([data-expanded]) .evidence--cell .evidence__shot-badge {
+    margin-left: 0;
   }
 </style>
 
@@ -1954,5 +2123,72 @@ const rankingTools = getRankingTools();
           apply();
         });
       });
+  })();
+
+  // Row-density control. Compact is the default; each feature row carries its
+  // own `data-expanded` flag (toggled by the chevron in its feature cell), and
+  // the header switch is just "expand all / collapse all". The switch's pressed
+  // state mirrors the per-row reality — it reads as "on" only when every row is
+  // expanded — and the section's `data-compact` flag (which gates the model-
+  // wiring band) is derived the same way. The all-or-nothing choice is
+  // remembered in localStorage so it survives reloads.
+  (() => {
+    const STORAGE_KEY = 'ade-arena:detailed-view';
+    const toggle = document.querySelector<HTMLButtonElement>('[data-density-toggle]');
+    const comparator = document.querySelector<HTMLElement>('.comparator');
+    if (!toggle || !comparator) return;
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('.row--feature'),
+    );
+
+    const setRow = (row: HTMLElement, expanded: boolean) => {
+      row.toggleAttribute('data-expanded', expanded);
+      row
+        .querySelector<HTMLButtonElement>('[data-feature-toggle]')
+        ?.setAttribute('aria-expanded', String(expanded));
+    };
+
+    // Derive the global switch + the wiring-band flag from the rows: detailed
+    // means every row is expanded.
+    const syncGlobal = () => {
+      const allExpanded =
+        rows.length > 0 && rows.every((r) => r.hasAttribute('data-expanded'));
+      comparator.toggleAttribute('data-compact', !allExpanded);
+      toggle.setAttribute('aria-pressed', String(allExpanded));
+    };
+
+    const setAll = (expanded: boolean) => {
+      for (const row of rows) setRow(row, expanded);
+      syncGlobal();
+      try {
+        window.localStorage.setItem(STORAGE_KEY, expanded ? '1' : '0');
+      } catch {
+        /* ignore persistence failure */
+      }
+    };
+
+    // Initial state: compact by default, detailed only if explicitly stored.
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(STORAGE_KEY);
+    } catch {
+      /* localStorage unavailable (private mode / blocked) — keep the default */
+    }
+    if (stored === '1') setAll(true);
+
+    toggle.addEventListener('click', () => {
+      setAll(toggle.getAttribute('aria-pressed') !== 'true');
+    });
+
+    // Per-row chevrons toggle just their own row, then re-derive the global
+    // switch so it stays truthful (and drops persistence on partial states).
+    for (const row of rows) {
+      row
+        .querySelector<HTMLButtonElement>('[data-feature-toggle]')
+        ?.addEventListener('click', () => {
+          setRow(row, !row.hasAttribute('data-expanded'));
+          syncGlobal();
+        });
+    }
   })();
 </script>

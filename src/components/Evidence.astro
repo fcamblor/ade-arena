@@ -50,7 +50,20 @@ const hasShots = shots.length > 0;
   <summary class="evidence__trigger" aria-label={ariaLabel}>
     {variant === 'cell' ? (
       <>
-        <span class="evidence__chevron" aria-hidden="true"></span>
+        <svg
+          class="evidence__info-icon"
+          viewBox="0 0 24 24"
+          width="13"
+          height="13"
+          aria-hidden="true"
+          focusable="false"
+        >
+          {/* Universally-read (i) affordance — clearer than a chevron that
+              this opens an informational proof popover. */}
+          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6" />
+          <circle cx="12" cy="7.7" r="1.15" fill="currentColor" />
+          <path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+        </svg>
         <span class="evidence__trigger-label">Proof</span>
         {hasShots && (
           <span
@@ -174,15 +187,13 @@ const hasShots = shots.length > 0;
     text-underline-offset: 3px;
   }
   .evidence--cell[open] > .evidence__trigger { color: var(--accent); }
-  .evidence__chevron {
-    width: 7px;
-    height: 7px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: rotate(-45deg);
+  .evidence__info-icon {
+    display: block;
+    flex-shrink: 0;
     transition: transform .18s ease;
   }
-  .evidence--cell[open] .evidence__chevron { transform: rotate(45deg); }
+  .evidence--cell > .evidence__trigger:hover .evidence__info-icon,
+  .evidence--cell > .evidence__trigger:focus-visible .evidence__info-icon { transform: scale(1.12); }
   .evidence__trigger-label { display: inline-block; }
 
   /* Tiny badge next to the "Proof" label hinting that screenshots are attached.
@@ -390,8 +401,6 @@ const hasShots = shots.length > 0;
       to   { opacity: 1; transform: translateY(0); }
     }
   }
-  /* Trigger chevron animates in sync with open state. */
-  .evidence__chevron { transition: transform .22s cubic-bezier(0.22, 1, 0.36, 1); }
 
   /* Close affordance — a small red stamp mark, top-right of the card. */
   .evidence__close {
