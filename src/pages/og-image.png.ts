@@ -2,7 +2,6 @@ import type { APIRoute } from 'astro';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 
@@ -24,7 +23,13 @@ const FG_MUTED = '#a89891';
 // We override its built-in `ui-monospace` font reference for the "vs" letters
 // with a TTF we actually load below (resvg has no system-font fallback we
 // can rely on across build environments).
-const FAVICON_PATH = fileURLToPath(new URL('../../public/favicon.svg', import.meta.url));
+//
+// Anchored on the project root (`process.cwd()`) rather than `import.meta.url`:
+// since Astro 6 this endpoint is prerendered from a bundled chunk under
+// `dist/.prerender/chunks/`, so a path relative to the module file would
+// resolve to a non-existent `dist/public/favicon.svg`. `astro build` always
+// runs from the project root, where `public/favicon.svg` lives.
+const FAVICON_PATH = join(process.cwd(), 'public', 'favicon.svg');
 const ICON_SVG = readFileSync(FAVICON_PATH, 'utf-8')
   .replace(/font-family="[^"]*"/g, 'font-family="Big Shoulders Display"');
 

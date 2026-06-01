@@ -48,7 +48,7 @@ export const FeatureSupportSchema = z.object({
   support: SupportLevelSchema,
   note: z.string().max(280).optional(),
   screenshots: z.array(ScreenshotSchema).default([]),
-  sourceUrl: z.string().url().optional(),
+  sourceUrl: z.url().optional(),
   sourceExtract: z.string().optional(),
 });
 export type FeatureSupport = z.infer<typeof FeatureSupportSchema>;
@@ -60,7 +60,7 @@ export type Platform = z.infer<typeof PlatformSchema>;
 // Same shape as the source fields on FeatureSupport, hoisted here so it can
 // be attached to orchestrator-level metadata.
 export const MetaSourceSchema = z.object({
-  sourceUrl: z.string().url(),
+  sourceUrl: z.url(),
   sourceExtract: z.string(),
 });
 export type MetaSource = z.infer<typeof MetaSourceSchema>;
@@ -88,7 +88,7 @@ export type TrackingSourceKind = z.infer<typeof TrackingSourceKindSchema>;
 export const TrackingSourceSchema = z.object({
   kind: TrackingSourceKindSchema,
   label: z.string(),
-  url: z.string().url(),
+  url: z.url(),
   notes: z.string().optional(),
 });
 export type TrackingSource = z.infer<typeof TrackingSourceSchema>;
@@ -120,7 +120,7 @@ export const ModelIntegrationSchema = z.object({
   vendor: z.string(),
   kind: ModelIntegrationKindSchema,
   notes: z.string().optional(),
-  sourceUrl: z.string().url().optional(),
+  sourceUrl: z.url().optional(),
   sourceExtract: z.string().optional(),
 });
 export type ModelIntegration = z.infer<typeof ModelIntegrationSchema>;
@@ -138,7 +138,7 @@ export const OrchestratorVersionSchema = z.object({
     })
     .optional(),
   releaseDate: z.string(),
-  homepage: z.string().url(),
+  homepage: z.url(),
   logo: z.string().optional(),
   vendor: z.string().optional(),
   pricing: z.enum(['free', 'freemium', 'paid', 'oss']).optional(),
@@ -150,7 +150,11 @@ export const OrchestratorVersionSchema = z.object({
   codebase: z.enum(['open-source', 'proprietary']).optional(),
   codebaseSource: MetaSourceSchema.optional(),
   platforms: z.array(PlatformSchema).min(1),
-  platformSources: z.record(PlatformSchema, MetaSourceSchema),
+  // Zod 4: z.record() with an enum key is now exhaustive (it would demand an
+  // entry for every Platform). platformSources only carries the supported
+  // platforms, so use partialRecord; the superRefine below enforces that each
+  // declared platform actually has a source.
+  platformSources: z.partialRecord(PlatformSchema, MetaSourceSchema),
   /** Strong restriction on the underlying model/agent the ADE can drive — only
    *  populated when meaningful (single vendor / closed set). Rendered as a
    *  warning notice in the header. Tools that broadly support BYOK or many
@@ -159,7 +163,7 @@ export const OrchestratorVersionSchema = z.object({
   modelRestriction: z
     .object({
       message: z.string(),
-      sourceUrl: z.string().url().optional(),
+      sourceUrl: z.url().optional(),
     })
     .optional(),
   notes: z.string().optional(),
@@ -172,7 +176,7 @@ export const OrchestratorVersionSchema = z.object({
   misc: z
     .object({
       message: z.string(),
-      sourceUrl: z.string().url().optional(),
+      sourceUrl: z.url().optional(),
     })
     .optional(),
   features: z.array(FeatureSupportSchema),
@@ -180,7 +184,7 @@ export const OrchestratorVersionSchema = z.object({
   for (const platform of data.platforms) {
     if (!data.platformSources[platform]) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         path: ['platformSources', platform],
         message: `Missing platformSources entry for platform "${platform}". Every supported platform must be backed by a sourceUrl + sourceExtract.`,
       });
