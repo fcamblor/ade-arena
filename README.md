@@ -43,7 +43,3 @@ A (private) external repostiory references release tags from here, then fetches 
 builds the frontend per-env with the right `PUBLIC_SUPABASE_URL` etc. This
 keeps the build environment-aware (dev vs prod each get a build with the
 matching Supabase project URL) instead of shipping a single pre-built bundle.
-
-## Roadmap
-
-See [ROADMAP.md](./ROADMAP.md).
