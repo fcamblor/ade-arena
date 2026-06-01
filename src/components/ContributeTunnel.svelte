@@ -34,8 +34,9 @@
   export let features: ContributeFeature[] = [];
   export let baselines: ToolBaseline[] = [];
 
-  // Glyphs mirror the comparison grid (ComparisonTable.astro `supportGlyph`) so
-  // the tunnel reads the same as the homepage: ● yes / ◐ partial / ○ no / ? unknown.
+  // Glyphs mirror the comparison grid (where the same marks are drawn as SVG
+  // geometry) so the tunnel reads the same as the homepage:
+  // ● yes / ◐ partial / ○ no / ? unknown.
   const SUPPORT_GLYPH: Record<SupportLevel, string> = {
     yes: '●',
     partial: '◐',

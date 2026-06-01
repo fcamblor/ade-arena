@@ -64,7 +64,6 @@ const hasShots = shots.length > 0;
           <circle cx="12" cy="7.7" r="1.15" fill="currentColor" />
           <path d="M12 11v6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
         </svg>
-        <span class="evidence__trigger-label">Proof</span>
         {hasShots && (
           <span
             class="evidence__shot-badge"
@@ -194,7 +193,6 @@ const hasShots = shots.length > 0;
   }
   .evidence--cell > .evidence__trigger:hover .evidence__info-icon,
   .evidence--cell > .evidence__trigger:focus-visible .evidence__info-icon { transform: scale(1.12); }
-  .evidence__trigger-label { display: inline-block; }
 
   /* Tiny badge next to the "Proof" label hinting that screenshots are attached.
    *
@@ -207,7 +205,6 @@ const hasShots = shots.length > 0;
     display: inline-flex;
     align-items: center;
     gap: 3px;
-    margin-left: 5px;
     padding: 2px 5px 2px 4px;
     border-radius: 2px;
     background: oklch(0.92 0.04 80);

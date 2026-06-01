@@ -85,12 +85,6 @@ const supportLabel: Record<SupportLevel, string> = {
   no: 'No',
   unknown: 'Unknown',
 };
-const supportGlyph: Record<SupportLevel, string> = {
-  yes: '●',
-  partial: '◐',
-  no: '○',
-  unknown: '?',
-};
 const categoryLabel: Record<FeatureCategory, string> = {
   workflow: 'Workflow',
   collaboration: 'Collaboration',
@@ -662,21 +656,37 @@ const rankingTools = getRankingTools();
                         data-display-mode={displayMode(orch)}
                         data-version-status={versionStatus(orch)}
                       >
-                        <span class="cell__glyph" aria-label={supportLabel[level]} role="img">{supportGlyph[level]}</span>
+                        <div class="cell__verdict">
+                          <span class="cell__glyph" aria-label={supportLabel[level]} role="img">
+                            {/* Verdict marks are vector geometry (●→disc, ◐→half-ring, ○→ring,
+                                ?→centered text) rather than ●◐○ font glyphs — see the .cell__glyph
+                                comment in the stylesheet for why. */}
+                            <svg class="cell__glyph-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                              {level === 'yes' && <circle cx="12" cy="12" r="8" fill="currentColor" />}
+                              {(level === 'no' || level === 'partial') && (
+                                <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2.2" />
+                              )}
+                              {level === 'partial' && <path d="M12 5 A7 7 0 0 0 12 19 Z" fill="currentColor" />}
+                              {level === 'unknown' && (
+                                <text x="12" y="12" text-anchor="middle" dominant-baseline="central" class="cell__glyph-mark">?</text>
+                              )}
+                            </svg>
+                          </span>
+                          {hasEvidence && (
+                            <Evidence
+                              variant="cell"
+                              refLabel={`${orch.toolId.replace(/-/g, ' ')} · ${feature.id.replace(/-/g, ' ')}`}
+                              sourceUrl={s?.sourceUrl}
+                              sourceExtract={s?.sourceExtract}
+                              screenshots={s?.screenshots}
+                              ariaLabel={`Show source for ${feature.label} on ${orch.toolName}`}
+                              featureTitle={feature.label}
+                              featureDescription={feature.longDescription ?? feature.shortDescription}
+                              whyImportant={feature.whyImportant?.long ?? feature.whyImportant?.short}
+                            />
+                          )}
+                        </div>
                         {s?.note && <p class="cell__note">{s.note}</p>}
-                        {hasEvidence && (
-                          <Evidence
-                            variant="cell"
-                            refLabel={`${orch.toolId.replace(/-/g, ' ')} · ${feature.id.replace(/-/g, ' ')}`}
-                            sourceUrl={s?.sourceUrl}
-                            sourceExtract={s?.sourceExtract}
-                            screenshots={s?.screenshots}
-                            ariaLabel={`Show source for ${feature.label} on ${orch.toolName}`}
-                            featureTitle={feature.label}
-                            featureDescription={feature.longDescription ?? feature.shortDescription}
-                            whyImportant={feature.whyImportant?.long ?? feature.whyImportant?.short}
-                          />
-                        )}
                       </td>
                     );
                   })}
@@ -1640,19 +1650,47 @@ const rankingTools = getRankingTools();
   .row--feature:hover .cell--no      { background-color: color-mix(in oklch, var(--cell-no) 75%, oklch(0.25 0.018 28)); }
   .row--feature:hover .cell--partial { background-color: color-mix(in oklch, var(--cell-partial) 75%, oklch(0.25 0.018 28)); }
 
+  /* Verdict line: status pill + proof affordance ((i) / screenshot badge) on a
+     single row, vertically centered against each other. This MUST be an inner
+     wrapper rather than `display:flex` on the <td> itself — flexing the cell
+     drops its `table-cell` display and collapses the whole column. */
+  .cell__verdict {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    flex-wrap: wrap;
+  }
+  /* Verdict marks are drawn as vector geometry (disc / ring / half-ring / a
+     centered "?"), not the ●◐○ text glyphs they replace. A text glyph's ink is
+     positioned by the font's metrics — it does NOT sit at the line-box center —
+     which is why the pill used to need a per-font `translateY(-0.061em)` nudge
+     to line up with the proof icons. An SVG circle is symmetric about its
+     viewBox center by construction, so the mark, the (i) and the screenshot
+     badge — all three now symmetric SVGs — share one centerline under
+     `.cell__verdict { align-items: center }` with no optical fudge factor.
+     `font-size` stays the single size knob: the SVG is 1em square. */
   .cell__glyph {
-    display: inline-block;
+    display: inline-flex;
     font-size: 1.4rem;
     line-height: 1;
-    font-family: var(--font-body);
+  }
+  .cell__glyph-svg {
+    display: block;
+    width: 1em;
+    height: 1em;
+  }
+  .cell__glyph-mark {
+    font-family: var(--font-display);
+    font-size: 18px; /* viewBox units (box is 24 tall) */
+    font-weight: 800;
+    fill: currentColor;
   }
   .cell--yes     .cell__glyph { color: var(--cell-yes-ink); }
   .cell--no      .cell__glyph { color: var(--cell-no-ink); }
   .cell--partial .cell__glyph { color: var(--cell-partial-ink); }
   .cell--unknown .cell__glyph {
     color: var(--cell-unknown-ink);
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: 1.15rem;
   }
 
   .cell__note {
@@ -1893,8 +1931,7 @@ const rankingTools = getRankingTools();
   /* Tighter rows once the prose is gone. */
   .row--feature:not([data-expanded]) .feature { padding: var(--s-3); gap: 0; }
   .row--feature:not([data-expanded]) .cell { padding: var(--s-3); }
-  /* Verdict glyph + proof icon share one line in the collapsed cell. */
-  .row--feature:not([data-expanded]) .cell__glyph { font-size: 1.2rem; vertical-align: middle; }
+  .row--feature:not([data-expanded]) .cell__glyph { font-size: 1.2rem; }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -1902,23 +1939,26 @@ const rankingTools = getRankingTools();
 </style>
 
 <style is:global>
-  /* Collapsed rows: inline the per-cell proof affordance (info icon +
-     screenshot badge) right after the verdict glyph instead of stacking it on
-     its own line, so collapsed rows stay short. The proof markup is owned by
-     the <Evidence> child component, whose scoped styles are out of reach from
-     ComparisonTable's scoped block — hence this global rule. The "Proof" word
-     is dropped, leaving just the icon(s). */
-  .row--feature:not([data-expanded]) .evidence--cell {
-    display: inline-block;
-    margin: 0 0 0 var(--s-2);
-    vertical-align: middle;
-  }
-  .row--feature:not([data-expanded]) .evidence--cell .evidence__trigger-label {
-    display: none;
-  }
-  /* Drop the badge's left margin (the label it used to sit next to is gone). */
-  .row--feature:not([data-expanded]) .evidence--cell .evidence__shot-badge {
-    margin-left: 0;
+  /* The per-cell proof affordance (info icon + screenshot badge) now sits in the
+     `.cell__verdict` flex row right after the status pill, in both compact and
+     detailed modes. Drop the stacking `margin-top` it carries by default so it
+     stays centered on the pill — the wrapper's `gap` provides the spacing. The
+     proof markup is owned by the <Evidence> child component, whose scoped styles
+     are out of reach from ComparisonTable's scoped block — hence this global
+     rule.
+
+     `display: flex` matters for the centerline: as a `display:block` <details>,
+     the element wraps its inline-level <summary> in a line box sized by its own
+     line-height, and the summary baseline-aligns to the TOP of that taller box —
+     leaving the (i)/badge a hair above the verdict mark. Flexing the details
+     collapses it to exactly the summary's height (its only in-flow child; the
+     card is position:fixed, the backdrop display:none), so the row's
+     `align-items: center` lines the mark, the (i) and the badge on one centerline
+     with no nudge. */
+  .cell__verdict .evidence--cell {
+    margin: 0;
+    display: flex;
+    align-items: center;
   }
 </style>
 
