@@ -53,7 +53,7 @@ export const FeatureSupportSchema = z.object({
 });
 export type FeatureSupport = z.infer<typeof FeatureSupportSchema>;
 
-export const PlatformSchema = z.enum(['macos', 'windows', 'linux', 'web']);
+export const PlatformSchema = z.enum(['macos', 'windows', 'linux', 'web', 'android', 'ios']);
 export type Platform = z.infer<typeof PlatformSchema>;
 
 // A single piece of evidence backing a meta-field (pricing, platform, …).

@@ -54,6 +54,8 @@
     { value: 'windows', label: 'Windows' },
     { value: 'linux', label: 'Linux' },
     { value: 'web', label: 'Web' },
+    { value: 'android', label: 'Android' },
+    { value: 'ios', label: 'iOS' },
   ];
   // Tracking-source kinds mirror `TrackingSourceKindSchema` in src/data/schema.ts.
   // These are the places the dataset watches to stay current on an ADE; the

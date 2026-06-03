@@ -71,12 +71,16 @@ const platformLabel: Record<Platform, string> = {
   windows: 'Windows',
   linux: 'Linux',
   web: 'Any OS · web',
+  android: 'Android',
+  ios: 'iOS',
 };
 const platformTooltip: Record<Platform, string> = {
   macos: 'Runs on macOS',
   windows: 'Runs on Windows',
   linux: 'Runs on Linux',
   web: 'Browser-based — runs on any OS',
+  android: 'Runs on Android',
+  ios: 'Runs on iOS',
 };
 
 const supportLabel: Record<SupportLevel, string> = {
@@ -1326,6 +1330,8 @@ const rankingTools = getRankingTools();
   .tool__platform--windows { color: oklch(0.85 0.1 220);  border-color: oklch(0.4 0.05 220); }
   .tool__platform--linux   { color: oklch(0.85 0.1 85);   border-color: oklch(0.4 0.06 85); }
   .tool__platform--web     { color: oklch(0.85 0.1 145);  border-color: oklch(0.4 0.05 145); }
+  .tool__platform--android { color: oklch(0.85 0.1 190);  border-color: oklch(0.4 0.05 190); }
+  .tool__platform--ios     { color: oklch(0.85 0.08 350); border-color: oklch(0.4 0.05 350); }
 
   .tool__notice {
     margin: 0;
