@@ -30,6 +30,26 @@ From the name, derive the `toolId`:
 - Slugify: lowercase, ASCII, words joined by `-`, must match `^[a-z0-9-]+$`.
 - Look up `src/data/orchestrators/<toolId>/`. If it exists → **known orchestrator**, jump to Step 3. Otherwise → **new orchestrator**, go to Step 2.
 
+### Version normalisation
+
+The version string that ends up in the dataset must be **canonical semver**, to
+stay consistent with the rest of the dataset (`0.52.3`, `1.1.27`, …):
+
+- Prefer the version from the **GitHub release tags** over a marketing version.
+- **Strip release-tag prefixes**: `desktop-v1.12.1` → `1.12.1`, `v3.4.17` → `3.4.17`, `app-2.0.0` → `2.0.0`.
+- When the marketing/site version and the canonical tag **disagree**, surface the discrepancy to the user and let them choose **before** freezing it. (superset shipped a site version `2.0.74` while the canonical tag was `desktop-v1.12.1` → persisted as `1.12.1`.)
+
+### Name-collision guard
+
+If the user flags a confusable name or domain (e.g. *"this is super.engineering,
+NOT superconductor.com"*), record it as an **exclusion list**. It is used two ways:
+
+- every research subagent in Step 2 is told to treat pages from an excluded
+  domain as **not** about this orchestrator, and to reject any citation sourced
+  from one;
+- it is forwarded to `review-orchestrator-version` at hand-off (Step 4) as
+  `--exclude <domain>` so the feature-research pass keeps honouring it.
+
 ---
 
 ## Step 2 — Bootstrap a new orchestrator
@@ -54,18 +74,36 @@ When `src/data/orchestrators/<toolId>/` does not exist:
 
 The agent must return **candidates with URLs verified to resolve** (HTTP 200), and a short note per candidate explaining why it is relevant. When the agent is uncertain a URL belongs to the right vendor (name collisions, parked domains…), it must flag it as `unverified` rather than asserting.
 
-**Second**, present the discovered candidates via `AskUserQuestion`:
+**Second**, present the discovered candidates for confirmation.
 
-- Use **one multi-select question** titled e.g. *"Which sources should be tracked for `<toolName>`?"*.
-- Each candidate becomes one option, formatted as `"<kind> — <label> — <url>"` so the user sees the kind/URL at a glance.
-- Do **not** add an "Other" option manually if the tool already exposes a free-form entry — the user can paste any number of custom URLs the agent missed. If the host's `AskUserQuestion` does not expose a free-form fallback, add an explicit "Other (add URLs)" option that, when selected, triggers a follow-up free-form prompt.
-- Verified candidates are listed first; `unverified` ones are suffixed with ` (unverified)` so the user knows to double-check before selecting.
+> ⚠️ **AskUserQuestion caps at 4 options.** A real orchestrator surfaces 10–15
+> candidate sources (superset surfaced 14), so a one-option-per-candidate
+> multi-select is **impossible** — do not attempt it. Use the
+> curated-default-shortlist pattern instead.
 
-After the user answers:
+1. **Curate a default set.** From the discovered candidates, keep the
+   actionable release/tracking sources (homepage, docs, changelog, blog, GitHub
+   releases/commits, RSS, Discord, X, YouTube) and set aside one-off
+   announcement/aggregator pages (Product Hunt, Show HN, LinkedIn company page,
+   community hubs).
+2. **Present them as a numbered plain-text table**, two groups — *"keeping by
+   default"* and *"setting aside"* — each row `# | kind | label | url`, with
+   `(unverified)` suffixed on any URL the subagent could not confirm resolves to
+   the right vendor.
+3. **Ask the user to subtract/add**, in plain text: *"Keep this default set?
+   Tell me any numbers to drop or any extra URLs to add."* (This is exactly what
+   the superset session did: *"keeping 1–10, setting aside 11–14"* — the user
+   replied "ok 1–10".)
+4. Parse the reply: drop the numbers they rejected, parse any extra URL(s) they
+   pasted (newline-, space- or comma-separated). For each added URL, infer the
+   `kind` from the host (`github.com/.../releases` → `github-releases`,
+   `twitter.com|x.com` → `twitter`, `youtube.com` → `youtube`, `*.rss|/feed` →
+   `rss`); ask a tight ≤4-option `AskUserQuestion` only when the URL alone is
+   ambiguous.
 
-1. Keep every option they selected.
-2. Parse any free-form text they entered as additional URL(s) — accept newline-, space- or comma-separated lists. For each, ask a tight follow-up `AskUserQuestion` to assign a `kind` from the allowed set when the URL alone is ambiguous; otherwise infer the kind from the host (e.g. `github.com/.../releases` → `github-releases`, `twitter.com|x.com` → `twitter`, `youtube.com` → `youtube`, `*.rss|/feed` → `rss`).
-3. Discard everything else (rejected candidates, unverified non-selected).
+`AskUserQuestion` is still the right primitive for the **small closed enums**
+later in this step (pricing model, platforms) — the cap only bites on the long
+source list, which is why that one goes through text.
 
 Persist the retained set into `trackingSources` as `{ kind, label, url, notes? }`.
 
@@ -76,6 +114,7 @@ Do **not** prompt the user up-front for vendor / platforms / pricing / model res
 - **Vendor** — company / organization behind the tool. Evidence: an "About" / footer / docs mention; record the source URL even though the schema does not store it (use it to justify the value to the user).
 - **Supported platforms** (subset of `macos | windows | linux | web`) — for each, capture a `sourceUrl` (typically the install / download / docs page) + a `sourceExtract` quote that names the platform. The Zod schema **requires** a `platformSources` entry for every listed platform.
 - **Pricing model** (`free | freemium | paid | oss`) — with `pricingSource.sourceUrl` + `sourceExtract` quoting the pricing page or license.
+- **Codebase** (`open-source | proprietary`) — with `codebaseSource.sourceUrl` + `sourceExtract`. Evidence: a public source repo + its license (e.g. ELv2, MIT) ⇒ `open-source`; no public source ⇒ `proprietary`. **Independent of pricing** — an open-source codebase can still ship as a paid SaaS, so infer it separately (superset = open-source ELv2, orca = open-source MIT, superconductor = proprietary). The field is `codebase` + `codebaseSource` in the schema (`src/data/schema.ts`).
 - **Model restriction** — only populate when the tool drives a **closed set** of models/agents (e.g. "Claude Code + Codex only"). Tools with broad BYOK/multi-provider support must leave this empty — model breadth belongs to the `multi-model` feature row.
 
 For each field, the subagent must return either:
@@ -90,7 +129,7 @@ After research, **only** ask the user about fields the subagent returned as `unk
 
 Create three files under `src/data/orchestrators/<toolId>/`:
 
-- `_meta.ts` — implements `OrchestratorMeta` (see `src/data/version-diff.ts`). Mandatory fields: `toolId`, `toolName`, `homepage`, `platforms`, `platformSources`. Optional but recommended: `vendor`, `pricing`, `pricingSource`, `modelRestriction`, `trackingSources`. Follow the existing examples (`src/data/orchestrators/cursor/_meta.ts`, `src/data/orchestrators/conductor/_meta.ts`).
+- `_meta.ts` — implements `OrchestratorMeta` (see `src/data/version-diff.ts`). Mandatory fields: `toolId`, `toolName`, `homepage`, `platforms`, `platformSources`. Optional but recommended: `vendor`, `pricing`, `pricingSource`, `codebase`, `codebaseSource`, `modelRestriction`, `trackingSources`. Follow the existing examples (`src/data/orchestrators/cursor/_meta.ts`, `src/data/orchestrators/conductor/_meta.ts`).
 
 - `_latest-known-features.ts` — seed with **one `unknown` entry per feature** in `src/data/features.ts`, in the canonical order. This gives `review-orchestrator-version` the full to-do list to walk through:
   ```ts
@@ -138,7 +177,15 @@ export default OrchestratorVersionSchema.parse(data);
 
 This skill does **not** research feature support. Instead, it delegates to the dedicated review skill, which walks every uncovered feature with the user, dispatching a fresh research agent per feature and persisting only what the user confirms.
 
-Briefly summarise to the user what was just bootstrapped (toolId, version, whether the orchestrator was newly created, count of `unknown` feature rows seeded), then **invoke the `review-orchestrator-version` skill** with arguments `<toolId>@<version> --only-unreviewed` (using whatever skill-invocation mechanism the host agent provides — a slash command, a Skill tool call, an inline include of its SKILL.md, etc.; the argument string is what matters).
+Briefly summarise to the user what was just bootstrapped (toolId, version, whether the orchestrator was newly created, count of `unknown` feature rows seeded), then **invoke the `review-orchestrator-version` skill**.
+
+Build the argument string:
+
+- Always: `<toolId>@<version> --only-unreviewed`.
+- Append `--exclude <domain>` for each entry in the name-collision exclusion list captured in Step 1.
+- **Ask the user how to run the feature review** (`AskUserQuestion`, yes/no): interactive feature-by-feature (the default), **or** an unsupervised agentic pass. If they pick the agentic pass, append `--agentic`. This matters because all three recent bootstraps (superset, superconductor, orca) asked to switch to the agentic pass *after* the interactive loop had already started — offering it up front avoids that detour.
+
+Invoke with the assembled argument string (using whatever skill-invocation mechanism the host agent provides — a slash command, a Skill tool call, an inline include of its SKILL.md, etc.; the argument string is what matters).
 
 The review skill takes over and:
 
