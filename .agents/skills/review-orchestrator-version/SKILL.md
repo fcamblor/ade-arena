@@ -24,12 +24,14 @@ No assumption is made about the surrounding ADE, IDE, or coding agent.
 
 ## Optional arguments
 
-The skill accepts two optional arguments (whitespace-separated, any order):
+The skill accepts these optional arguments (whitespace-separated, any order):
 
 - `<toolId>@<version>` — pre-selects the orchestrator + version and **skips Step 1 entirely**. Example: `cursor@3.4.17`. The target file `src/data/orchestrators/<toolId>/<version>.ts` must already exist; otherwise the skill aborts with an error pointing the user at `add-orchestrator-version`.
 - `--only-unreviewed` (or `scope=unreviewed` in args) — restricts the per-feature loop to entries whose `support` is `unknown` or whose `featureId` is missing from `_latest-known-features.ts`. Default: walk every feature.
+- `--agentic` (or `mode=agentic`) — **opt-in, never the default.** Replaces the interactive, one-feature-at-a-time loop (Step 3) with an unsupervised parallel research pass (Step 3-bis): a fan-out of research subagents scores the whole matrix at once, persisting only verdicts it can back with a verbatim quote and leaving everything else `unknown`. It **never** flips `status` to `'approved'` — the result always stays `waiting-for-review` for a later human/interactive pass. This is the workflow the superset / superconductor / orca bootstrap sessions all reached for by hand; `--agentic` makes it first-class instead of improvised.
+- `--exclude <domain-or-name>` (repeatable, or `exclude=<a>,<b>`) — name-collision guard. Records an exclusion list (e.g. `superconductor.com` when the target is `super.engineering`) that is injected into **every** research subagent prompt and used to invalidate any citation coming from an excluded domain. `add-orchestrator-version` forwards this when the user flagged a collision at bootstrap.
 
-Both arguments are independent and can be combined. `add-orchestrator-version` invokes this skill with both set after bootstrapping a new orchestrator.
+All arguments are independent and can be combined (`--agentic --only-unreviewed` = unsupervised pass over the `unknown` rows only). `add-orchestrator-version` invokes this skill with `<toolId>@<version> --only-unreviewed` after a bootstrap, optionally adding `--agentic` and `--exclude …` when the user asked for an unsupervised pass.
 
 ---
 
@@ -108,6 +110,61 @@ This memo lives only in the main agent's context. It is **not** persisted to dis
 
 ---
 
+## Step 2-bis — Build the local doc corpus (shared by both modes)
+
+Before any research subagent runs — interactive **or** agentic — fetch the
+first-party documentation **once** into a local text corpus, then have every
+subagent read the cache instead of re-fetching the same pages dozens of times.
+This is the single highest-leverage practice extracted from the bootstrap
+sessions: it saves tokens/time **and** turns "the subagent promises it quoted
+verbatim" into a fact that can be mechanically verified.
+
+### 2bis-a. Fetch once
+
+1. Take the `trackingSources` from `_meta.ts`, ordered by the **source-priority
+   ladder** (see 2bis-c). Fetch the first-party tier (official docs, changelog,
+   release notes, public repo README/docs) — skip social/aggregator pages for
+   the corpus; those are weak evidence and rarely quotable.
+2. Write each fetched page as **plain text** under
+   `.context/corpus/<toolId>/<NN>-<slug>.txt` (e.g. `01-docs-home.txt`,
+   `02-changelog.txt`). `.context/` is git-ignored, so the corpus never leaks
+   into a commit. Prepend a one-line header to each file: `# SOURCE: <url>`.
+3. If a doc site has many pages, crawl the docs tree breadth-first up to a
+   reasonable budget (the superconductor run cached ~26 pages). Log the page
+   count to the user.
+4. Reuse an existing corpus if one is already present for this `<toolId>` and
+   the user has not asked for a refresh — re-fetch only on `--refresh-corpus`
+   or when the directory is empty/stale.
+
+### 2bis-b. Verbatim-citation invariant (applies to BOTH modes)
+
+Every `sourceExtract` a subagent proposes for a `yes`/`partial` verdict **must
+be a substring present in the corpus** (or in a page the subagent explicitly
+fetched live and recorded). Enforcement:
+
+- Subagents are told to quote **only** from the corpus files they were given.
+- Before the final commit (Step 4), the main agent runs, for each `yes`/`partial`
+  entry, a literal `grep -F "<sourceExtract>" .context/corpus/<toolId>/` (use a
+  trimmed, single-line form of the quote). **No match ⇒ the verdict is
+  downgraded to `unknown`** and flagged in the report as an unverifiable
+  citation.
+- This is exactly the guard that would have caught the superset `pr-creation`
+  bug, where the cited quote was real but described PR *merge*, not PR
+  *creation* — see the trap-pairs rule (Step 3a / 3-bis).
+
+### 2bis-c. Source-priority ladder
+
+Rank evidence; never let a weak source carry a strong verdict:
+
+1. **First-party canonical** — official docs, changelog, release notes, the
+   public source repo. Strongest; a `yes` should rest here.
+2. **First-party announcement** — vendor blog, official X/Discord release post.
+3. **Third-party / aggregator** — Product Hunt, Hacker News, review blogs.
+   **A verdict resting *only* on this tier is capped at `partial` and marked
+   `low-confidence`.** Never assert `yes` from an aggregator alone.
+
+---
+
 ## Step 3 — Per-feature review loop
 
 Iterate **in the order of `FEATURES`** in `src/data/features.ts`. When `--only-unreviewed` was passed, skip any feature whose current entry exists with `support ∈ {'yes', 'partial', 'no'}` — only walk the ones at `support: 'unknown'` or missing entirely.
@@ -149,8 +206,19 @@ FEATURE TO REVIEW:
 CURRENTLY PERSISTED ENTRY (verbatim, may be stale):
   <JSON of the FeatureSupport entry, or "missing">
 
-TRACKING SOURCES (use these as primary evidence):
+LOCAL DOC CORPUS (read these FIRST — already fetched, do not re-fetch):
+  .context/corpus/<toolId>/*.txt   (each file starts with "# SOURCE: <url>")
+  Quote ONLY from these files (or a page you explicitly fetch live and name).
+  Any sourceExtract you propose for yes/partial MUST be a verbatim substring
+  of the corpus — the main agent grep-verifies it before commit.
+
+TRACKING SOURCES (fall back to these if the corpus lacks the answer):
   <list of { kind, label, url } from _meta.ts>
+
+EXCLUSIONS (name-collision guard — may be empty):
+  <list of excluded domains/names from --exclude>
+  Treat any page from an excluded domain as NOT about this orchestrator.
+  A citation sourced from an excluded domain is INVALID → verdict "unknown".
 
 PRIOR DECISIONS FROM THIS RUN (optional, may be empty):
   <0-5 lines from the rolling recap, when relevant>
@@ -212,12 +280,27 @@ YOUR JOB (do all of this yourself; the main agent will not intervene):
          If the entry is missing entirely, replace the body with the single line
          "(no entry yet — feature has never been reviewed for this orchestrator)".
 
-  2. Re-investigate the tracking sources to challenge the entry. Decide a
-     verdict:
+  2. Re-investigate the corpus (then tracking sources) to challenge the entry.
+     Decide a verdict:
        - "confirm" : current entry stands; provide a fresh verbatim quote.
        - "revise"  : propose a corrected FeatureSupport object.
        - "unknown" : evidence is missing or ambiguous.
      Never guess. If you can't quote a source verbatim, verdict = "unknown".
+
+     TRAP PAIRS — features whose names invite confusion. Your quote must prove
+     THIS feature precisely, not an adjacent cousin. If the quote only proves
+     the cousin, verdict = "unknown" (NOT yes/partial):
+       - pr-creation       vs  pr merge / pr-status-sync
+       - self-hosted       vs  local-first / local-execution
+       - remote-exec       vs  remote-control / remote-session
+       - shared-config     vs  a skills/prompt registry
+       - multi-repo-view   vs  multiple git worktrees of ONE repo
+     This is the class of error behind the superset pr-creation mis-score.
+
+     SOURCE-PRIORITY LADDER (see skill Step 2bis-c): a verdict resting ONLY on a
+     third-party/aggregator page (Product Hunt, HN, review blog) is capped at
+     "partial" and you MUST set confidence:"low". Never assert yes from an
+     aggregator alone.
 
   3. Compute the "Research outcome" block (also embedded in step 4, after
      the Feature and Current persisted state blocks). Format:
@@ -288,6 +371,7 @@ NO image data; the main agent must see only this):
   "summary": "<≤120 chars: one-line human-readable result>",
   "recapLine": "<≤140 chars: terse line for the rolling memo>",
   "finalSupport": "yes" | "partial" | "no" | "unknown",  // resolved support after the user's decision
+  "confidence": "high" | "medium" | "low",                // strength of the evidence tier (ladder, Step 2bis-c)
   "screenshotPromptNeeded": true | false                  // true iff finalSupport ∈ {yes, partial} and outcome ≠ "paused"
 }
 
@@ -296,12 +380,14 @@ Examples:
   "summary": "live-logs → support=yes (source refreshed)",
   "recapLine": "- live-logs   yes   \"Live logs now stream bash output line-by-line.\" (cursor.com/changelog/05-07-26)",
   "finalSupport": "yes",
+  "confidence": "high",
   "screenshotPromptNeeded": true }
 
 { "outcome": "kept",
   "summary": "live-logs — no change",
   "recapLine": "- live-logs   yes   (unchanged)",
   "finalSupport": "yes",
+  "confidence": "high",
   "screenshotPromptNeeded": true }
 ```
 
@@ -309,8 +395,8 @@ Examples:
 
 When the subagent returns, the main agent:
 
-1. Prints the `summary` line (one line, prefixed with an indicator: `✔` for `changed`, `=` for `kept`, `?` for `marked-unknown`, `↷` for `skipped`, `⏸` for `paused`).
-2. Appends `recapLine` to the rolling recap memo (skipping `paused` outcomes).
+1. Prints the `summary` line (one line, prefixed with an indicator: `✔` for `changed`, `=` for `kept`, `?` for `marked-unknown`, `↷` for `skipped`, `⏸` for `paused`). Append a `⚠ low-confidence` / `⚠ medium-confidence` marker when the subagent reported `confidence` below `high`.
+2. Appends `recapLine` to the rolling recap memo (skipping `paused` outcomes), and records any `confidence ∈ {medium, low}` verdict in a session-wide **challenge list** surfaced in the Step 4 report.
 3. **Screenshot collection** (only when `screenshotPromptNeeded === true`) — see Step 3b-bis below.
 4. Tracks any screenshots added in a session-wide list (used in Step 4 to stage them for commit).
 5. If `outcome === "paused"`, breaks out of the loop and proceeds to Step 4 with what's already persisted.
@@ -385,13 +471,73 @@ Procedure:
 
 ---
 
+## Step 3-bis — Agentic pass (only when `--agentic` was passed)
+
+This **replaces** Step 3's interactive loop. It is opt-in and never the default.
+It is the workflow the superset / superconductor / orca sessions improvised by
+hand; here it is standardised.
+
+### 3bis-a. Heads-up + cost confirmation (mandatory)
+
+A full-matrix fan-out is expensive (the orca run spent ~1.46 M tokens across 57
+research agents). Before launching, the main agent **must**:
+
+1. Count the features in scope (whole matrix, or the `unknown`/missing subset
+   when combined with `--only-unreviewed`).
+2. Announce the order of magnitude to the user: `~N features → N research
+   subagents, roughly <budget> tokens`.
+3. Ask `AskUserQuestion` (yes/no) to proceed. Abort to the interactive loop if no.
+
+### 3bis-b. Fan-out
+
+- Build the corpus first (Step 2-bis) if not already present.
+- Dispatch research subagents in **parallel batches** (one subagent per batch of
+  features — the bootstrap sessions used ~8 batches for 58 features). Each batch
+  subagent is **read-only over the corpus** and returns structured verdicts; it
+  does **not** edit `_latest-known-features.ts` (parallel writers would race).
+- Each batch subagent receives: the corpus path, the feature rows in its batch
+  (id/label/category/short/long + currently-persisted entry), the
+  source-priority ladder, the **trap-pairs** rule, and the **exclusions** list —
+  the same evidence discipline as the interactive subagent prompt, minus all the
+  user-dialog/`AskUserQuestion`/screenshot steps (an agentic batch never prompts
+  the user).
+- Each verdict must carry: `support`, `note`, `sourceUrl`, `sourceExtract`
+  (verbatim from the corpus), `confidence`. Anything not backed by a verbatim
+  corpus quote stays `unknown` with an explanatory note only.
+
+### 3bis-c. Consolidate, verify, persist (main agent, sequentially)
+
+1. Collect all batch results into one ordered list (FEATURES order).
+2. **Verbatim verification** (Step 2bis-b): `grep -F` every `yes`/`partial`
+   `sourceExtract` against the corpus. No match ⇒ downgrade to `unknown` + flag.
+3. **Editorial disambiguation pass** on trap-pair features: re-read the quote;
+   if it proves a cousin feature rather than the target, downgrade.
+4. Write the consolidated matrix to `_latest-known-features.ts` in one pass
+   (single writer — no race). Screenshots are **not** collected in agentic mode.
+5. Record every `confidence ∈ {medium, low}` verdict in the challenge list.
+6. **Never** flip `status` to `'approved'` — leave `waiting-for-review`.
+
+Then go to Step 4 (validate, report, commit). The Step 4 status-flip prompt is
+**skipped** in agentic mode (unsupervised data is never auto-approved).
+
+---
+
 ## Step 4 — Finalise & commit
 
 Once the loop ends (all features done **or** user paused):
 
-1. **Status flip** — if every feature was reviewed (none `unknown`, none skipped) and the version file currently has `status: 'waiting-for-review'`, ask the user via `AskUserQuestion` (yes/no) whether to flip it to `'approved'`. Apply if yes (edit the version file to drop the `status` line or set it to `'approved'`).
+1. **Status flip** — if every feature was reviewed (none `unknown`, none skipped) and the version file currently has `status: 'waiting-for-review'`, ask the user via `AskUserQuestion` (yes/no) whether to flip it to `'approved'`. Apply if yes (edit the version file to drop the `status` line or set it to `'approved'`). **Skipped entirely in `--agentic` mode** — unsupervised data is never auto-approved.
 
-2. **Validate** — run:
+2. **Verbatim-citation check** (when a corpus exists, both modes) — for every `yes`/`partial` entry, `grep -F` the trimmed `sourceExtract` against `.context/corpus/<toolId>/`. Any quote that does not match is an unverifiable citation: **downgrade the entry to `unknown`** and list it in the report.
+
+3. **Matrix lint** (cheaper than a `tsc` round-trip — run it first):
+   - every `note` ≤ 280 chars;
+   - `sourceUrl` **and** `sourceExtract` present for every `yes`/`partial`;
+   - every screenshot `src` matches `^/screenshots/<toolId>/`;
+   - `support` ∈ the allowed enum; `featureId` present in `FEATURES`.
+   Fix any violation before running `tsc`.
+
+4. **Validate** — run:
 
    ```sh
    pnpm exec tsc --noEmit
@@ -399,13 +545,17 @@ Once the loop ends (all features done **or** user paused):
 
    Fix any Zod / TypeScript error before reporting success.
 
-3. **Summary report** — print:
+5. **Summary report** (canonical shape — identical for both modes):
+   - **Verdict distribution** table: counts of `yes` / `partial` / `no` / `unknown`.
    - Counts: reviewed / changed / skipped / still-unknown.
    - Per-feature diff lines for every changed entry (`featureId: oldSupport → newSupport`).
-   - List of screenshot files added under `public/screenshots/<toolId>/`.
+   - **`unknown` backlog** — the list of still-`unknown` featureIds, presented as the prioritised to-do for the next human/interactive pass.
+   - **Challenge list** — every `medium`/`low`-confidence verdict, plus any citation downgraded by the verbatim check, flagged for a human to double-check.
+   - List of screenshot files added under `public/screenshots/<toolId>/` (interactive mode only).
+   - In `--agentic` mode: the **token cost** of the fan-out.
    - The preview URL hint: `?preview=<toolId>@<version>`.
 
-4. **Commit** — create a git commit including both the updated `.ts` files and any new screenshot binaries. Stage them explicitly (avoid `git add -A`):
+6. **Commit** — create a git commit including both the updated `.ts` files and any new screenshot binaries. Stage them explicitly (avoid `git add -A`):
    - `src/data/orchestrators/<toolId>/_latest-known-features.ts`
    - `src/data/orchestrators/<toolId>/<version>.ts` (only when `status` was flipped)
    - `public/screenshots/<toolId>/*` (only the files actually added during this run)
