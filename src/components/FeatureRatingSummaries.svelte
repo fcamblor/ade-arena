@@ -63,7 +63,7 @@
     }
 
     let deltaLabel = '';
-    if (personal != null && avg != null && Math.abs(personal - avg) > 1.5) {
+    if (personal != null && avg != null && Math.abs(personal - avg) >= 1.5) {
       deltaLabel = personal > avg ? 'You value this more' : 'You value this less';
     }
 
@@ -75,11 +75,6 @@
     const onlyVoteIsMine = personal != null && votes === 1;
 
     const children: HTMLElement[] = [];
-    if (personal) {
-      children.push(
-        starRow('mine', 'You', personal, onlyVoteIsMine ? 'only vote so far' : '', 'Your rating'),
-      );
-    }
     if (avg != null && !onlyVoteIsMine) {
       children.push(
         starRow(
@@ -91,11 +86,13 @@
         ),
       );
     }
-    if (deltaLabel) {
-      const strong = document.createElement('strong');
-      strong.className = 'feature-rating__delta';
-      strong.textContent = deltaLabel;
-      children.push(strong);
+    if (personal) {
+      // The delta sits in the "You" row's meta slot — same column the
+      // community row uses for "4.2 · N votes" — coloured like the "You" ink.
+      const mineMeta = deltaLabel || (onlyVoteIsMine ? 'only vote so far' : '');
+      children.push(
+        starRow('mine', 'You', personal, mineMeta, 'Your rating', deltaLabel ? 'delta' : ''),
+      );
     }
     slot.el.replaceChildren(...children);
   }
@@ -111,6 +108,7 @@
     value: number,
     meta: string,
     title: string,
+    metaModifier = '',
   ): HTMLElement {
     const root = document.createElement('span');
     root.className = `feature-rating__row feature-rating__row--${variant}`;
@@ -142,7 +140,9 @@
 
     if (meta) {
       const metaEl = document.createElement('span');
-      metaEl.className = 'feature-rating__meta';
+      metaEl.className = metaModifier
+        ? `feature-rating__meta feature-rating__meta--${metaModifier}`
+        : 'feature-rating__meta';
       metaEl.textContent = meta;
       root.append(metaEl);
     }
@@ -269,16 +269,11 @@
     color: var(--fg-muted);
   }
 
-  .feature-rating__delta {
-    justify-self: start;
-    margin-top: 2px;
-    padding: 2px 7px;
-    border-radius: var(--radius-sm);
-    border: 1px solid color-mix(in oklch, var(--cell-partial-ink) 45%, var(--border));
-    background: var(--bg-row);
-    color: var(--cell-partial-ink);
-    font-size: 0.7rem;
-    font-weight: 700;
+  /* The "You value this more/less" delta, shown in the "You" row's meta slot,
+     picks up the same pale-green ink as the rest of that row. */
+  .feature-rating__meta--delta {
+    color: var(--rating-mine-ink);
+    font-weight: 800;
   }
   }
 </style>
