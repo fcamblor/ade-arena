@@ -1,7 +1,8 @@
-<script context="module" lang="ts">
-  import type { Session, SupabaseClient } from '@supabase/supabase-js';
-  import { fetchFeatureStats, fetchMyRatings, type RatingMap } from '../lib/ratings';
-  import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import type { RatingMap } from '../lib/ratings';
+  import type { FeatureStatsRow } from '../lib/supabase';
+  import { ensureSessionData, getFeatureStats, getRatings, onSessionChange } from '../lib/session-data';
 
   type RatingContext = {
     ratings: RatingMap;
@@ -9,39 +10,6 @@
     signedIn: boolean;
     userId: string;
   };
-
-  let cache: Promise<RatingContext> | null = null;
-
-  function loadRatingContext(): Promise<RatingContext> {
-    if (!cache) {
-      cache = (async () => {
-        // Ratings (mine) and community stats are both auth-gated (ADR 003),
-        // so anonymous visitors have nothing to show and don't need the SDK.
-        if (!hasSupabaseConfig() || !hasStoredSession()) {
-          return { ratings: {}, stats: {}, signedIn: false, userId: '' };
-        }
-        const supabase = await getSupabase();
-        const { data } = await supabase.auth.getSession();
-        const userId = data.session?.user.id ?? '';
-        const signedIn = Boolean(userId);
-        // Community stats are auth-gated (ADR 003); skip the call when anon.
-        const [ratings, stats] = await Promise.all([
-          signedIn ? fetchMyRatings(supabase) : Promise.resolve({}),
-          signedIn ? fetchFeatureStats(supabase) : Promise.resolve({}),
-        ]);
-        return { ratings, stats, signedIn, userId };
-      })();
-    }
-    return cache;
-  }
-
-  function invalidateRatingContext() {
-    cache = null;
-  }
-</script>
-
-<script lang="ts">
-  import { onMount } from 'svelte';
 
   type Slot = { el: HTMLElement; featureId: string };
 
@@ -149,28 +117,17 @@
     return root;
   }
 
-  function applyContext(ctx: RatingContext) {
+  async function render() {
+    const userId = activeUserId;
+    // Both reads are deduplicated against the other islands through the shared
+    // session-data layer, and resolve to empty data with no network call when
+    // anonymous (ratings and community stats are auth-gated, ADR 003).
+    const [ratings, stats] = await Promise.all([getRatings(), getFeatureStats()]);
     // Stale-session guard: drop updates that belong to a previous identity
     // (e.g. user signs out mid-fetch).
-    if (ctx.userId !== activeUserId) return;
+    if (activeUserId !== userId) return;
+    const ctx: RatingContext = { ratings, stats, signedIn: Boolean(userId), userId };
     for (const slot of slots) renderInto(slot, ctx);
-  }
-
-  async function refresh() {
-    applyContext(await loadRatingContext());
-  }
-
-  async function applySession(_supabase: SupabaseClient<Database>, session: Session | null) {
-    activeUserId = session?.user.id ?? '';
-    invalidateRatingContext();
-    if (!session) {
-      // Clear personal column without waiting on a fetch.
-      const ctx: RatingContext = { ratings: {}, stats: {}, signedIn: false, userId: '' };
-      applyContext(ctx);
-      return;
-    }
-    const ctx = await loadRatingContext();
-    applyContext(ctx);
   }
 
   onMount(() => {
@@ -182,19 +139,13 @@
     let unsubscribe: (() => void) | undefined;
 
     void (async () => {
-      // Only wire the auth listener when there's already a session — for
-      // anon visitors there's nothing to refresh, and skipping the
-      // listener avoids fetching the SDK chunk on the home/compare page.
-      if (hasSupabaseConfig() && hasStoredSession()) {
-        const supabase = await getSupabase();
-        const { data } = await supabase.auth.getSession();
-        activeUserId = data.session?.user.id ?? '';
-        const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-          void applySession(supabase, session);
-        });
-        unsubscribe = () => subscription.subscription.unsubscribe();
-      }
-      await refresh();
+      const snap = await ensureSessionData();
+      activeUserId = snap.userId;
+      await render();
+      unsubscribe = onSessionChange((next) => {
+        activeUserId = next.userId;
+        void render();
+      });
     })();
 
     return () => {

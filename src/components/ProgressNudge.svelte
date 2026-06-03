@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Session } from '@supabase/supabase-js';
-  import { fetchMyRatings } from '../lib/ratings';
-  import { getSupabase, hasStoredSession, hasSupabaseConfig } from '../lib/supabase';
+  import { ensureSessionData, getRatings, getSessionUserId, onSessionChange } from '../lib/session-data';
 
   export let total = 0;
   let count = 0;
@@ -13,8 +11,8 @@
   // a "dismissed" state from the previous session.
   const dismissalKey = (userId: string) => `ade-rating-nudge-dismissed:${userId}`;
 
-  async function refresh(session: Session | null) {
-    if (!session) {
+  async function refresh(userId: string) {
+    if (!userId) {
       // Signed out: clear nudge state and any per-user dismissal flag.
       count = 0;
       visible = false;
@@ -25,34 +23,30 @@
       }
       return;
     }
-    if (localStorage.getItem(dismissalKey(session.user.id)) === '1') {
+    if (localStorage.getItem(dismissalKey(userId)) === '1') {
       visible = false;
       return;
     }
-    const supabase = await getSupabase();
-    count = Object.keys(await fetchMyRatings(supabase)).length;
+    // Shares the ratings fetch with the leaderboard / rating-summary islands
+    // through the session-data layer, so it costs no extra network call.
+    count = Object.keys(await getRatings()).length;
     visible = count > 0 && count < total;
   }
 
   onMount(() => {
-    if (!hasSupabaseConfig()) return;
-    // Nudge is only useful for signed-in users; skip the SDK load entirely
-    // for anonymous visitors.
-    if (!hasStoredSession()) return;
     let cancelled = false;
     let unsubscribe: (() => void) | undefined;
 
     void (async () => {
-      const supabase = await getSupabase();
+      // ensureSessionData resolves without loading the SDK for anon visitors,
+      // so the nudge stays cheap when there's no session to act on.
+      const snap = await ensureSessionData();
       if (cancelled) return;
-      const { data } = await supabase.auth.getSession();
+      await refresh(snap.userId);
       if (cancelled) return;
-      await refresh(data.session);
-      if (cancelled) return;
-      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-        void refresh(session);
+      unsubscribe = onSessionChange((next) => {
+        void refresh(next.userId);
       });
-      unsubscribe = () => subscription.subscription.unsubscribe();
     })();
 
     return () => {
@@ -63,11 +57,8 @@
 
   function dismiss() {
     visible = false;
-    void (async () => {
-      const supabase = await getSupabase();
-      const { data } = await supabase.auth.getSession();
-      if (data.session) localStorage.setItem(dismissalKey(data.session.user.id), '1');
-    })();
+    const userId = getSessionUserId();
+    if (userId) localStorage.setItem(dismissalKey(userId), '1');
   }
 </script>
 

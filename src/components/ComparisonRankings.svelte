@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { SupabaseClient, Session } from '@supabase/supabase-js';
   import type { RankingToolData } from '../lib/static-comparison';
-  import { computeWeightedScores, fetchFeatureStats, fetchMyRatings, fetchUniqueVoterCount, type RatingMap } from '../lib/ratings';
-  import { EMPTY_PREFERENCES, fetchMyPreferences, isToolCompatibleWithOs, type UserPreferences } from '../lib/preferences';
+  import { computeWeightedScores, type RatingMap } from '../lib/ratings';
+  import { EMPTY_PREFERENCES, isToolCompatibleWithOs, type UserPreferences } from '../lib/preferences';
   import { RATABLE_FEATURES } from '../lib/ratable-features';
-  import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from '../lib/supabase';
+  import type { FeatureStatsRow } from '../lib/supabase';
+  import { ensureSessionData, getCommunityStats, getPreferences, getRatings, onSessionChange } from '../lib/session-data';
   import SignInButton from './SignInButton.svelte';
 
   export let tools: RankingToolData[] = [];
@@ -50,45 +50,26 @@
   $: visibleScores = showAll ? activeScores : activeScores.slice(0, DEFAULT_VISIBLE_COUNT);
   $: hasMoreScores = activeScores.length > DEFAULT_VISIBLE_COUNT;
 
-  async function applySession(supabase: SupabaseClient<Database>, session: Session | null) {
-    const wasSignedIn = signedIn;
-    signedIn = Boolean(session);
-    activeUserId = session?.user.id ?? '';
-    if (!session) {
-      personalRatings = {};
-      preferences = { ...EMPTY_PREFERENCES };
-      if (wasSignedIn) await refreshCommunityStats(supabase);
-      return;
-    }
-
-    const userId = session.user.id;
-    const [ratings, prefs] = await Promise.all([fetchMyRatings(supabase), fetchMyPreferences(supabase)]);
-    if (activeUserId === userId) {
-      personalRatings = ratings;
-      preferences = prefs;
-    }
-    if (!wasSignedIn) await refreshCommunityStats(supabase);
+  // Both loaders read through the shared session-data layer, so the ratings /
+  // preferences / community fetches are deduplicated across every island on
+  // the page (see src/lib/session-data.ts). When anonymous the accessors
+  // resolve to empty data with no network call (community stats are auth-gated,
+  // ADR 003). `userId` is captured up front as a stale-session guard, dropping
+  // results that belong to a previous identity if it flips mid-fetch.
+  async function loadPersonal() {
+    const userId = activeUserId;
+    const [ratings, prefs] = await Promise.all([getRatings(), getPreferences()]);
+    if (activeUserId !== userId) return;
+    personalRatings = ratings;
+    preferences = prefs;
   }
 
-  async function refreshCommunityStats(supabase: SupabaseClient<Database>) {
-    // Community stats are auth-gated (see ADR 003). Bail out for anon
-    // visitors so we don't hit a 401/403 every minute. Wrap fetches in a
-    // try/catch in case the JWT silently expires between two polls.
-    if (!signedIn) {
-      communityStats = {};
-      uniqueVoterCount = 0;
-      return;
-    }
-    try {
-      [communityStats, uniqueVoterCount] = await Promise.all([fetchFeatureStats(supabase), fetchUniqueVoterCount(supabase)]);
-    } catch (err) {
-      // Logged so a silently-expired JWT or a transient PostgREST error
-      // doesn't just turn the leaderboard into a row of zeros without
-      // any trail in the console.
-      console.warn('refreshCommunityStats failed', err);
-      communityStats = {};
-      uniqueVoterCount = 0;
-    }
+  async function loadCommunity(force = false) {
+    const userId = activeUserId;
+    const { stats, voterCount } = await getCommunityStats(force);
+    if (activeUserId !== userId) return;
+    communityStats = stats;
+    uniqueVoterCount = voterCount;
   }
 
   function getPreviewToolSet(raw: string): Set<string> {
@@ -167,31 +148,29 @@
     applyPreviewParam(params.get(PREVIEW_PARAM));
 
     void (async () => {
-      if (!hasSupabaseConfig()) {
-        ready = true;
-        return;
-      }
-      // The Coverage tab is fully objective and doesn't need Supabase; the
-      // Personal and Community tabs are both auth-gated. Anonymous visitors
-      // see "Sign in to unlock" hints (rendered via SignInButton), so we
-      // can skip the 55 KiB SDK fetch until after sign-in.
-      if (!hasStoredSession()) {
-        ready = true;
-        return;
+      // The Coverage tab is fully objective; Personal and Community are
+      // auth-gated. Anonymous visitors see "Sign in to unlock" hints, and
+      // ensureSessionData resolves without instantiating the 55 KiB SDK when
+      // there's no stored session.
+      const snap = await ensureSessionData();
+      signedIn = snap.signedIn;
+      activeUserId = snap.userId;
+      await Promise.all([loadPersonal(), loadCommunity()]);
+      ready = true;
+
+      if (snap.signedIn) {
+        // Community averages drift as new votes land; refresh on a slow poll.
+        interval = window.setInterval(() => {
+          void loadCommunity(true);
+        }, 60000);
       }
 
-      const supabase = await getSupabase();
-      const { data } = await supabase.auth.getSession();
-      await applySession(supabase, data.session);
-      await refreshCommunityStats(supabase);
-      interval = window.setInterval(() => {
-        void refreshCommunityStats(supabase);
-      }, 60000);
-      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-        void applySession(supabase, session);
+      unsubscribe = onSessionChange((next) => {
+        signedIn = next.signedIn;
+        activeUserId = next.userId;
+        void loadPersonal();
+        void loadCommunity();
       });
-      unsubscribe = () => subscription.subscription.unsubscribe();
-      ready = true;
     })();
 
     return () => {
