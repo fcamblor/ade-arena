@@ -64,9 +64,9 @@
     preferences = prefs;
   }
 
-  async function loadCommunity(force = false) {
+  async function loadCommunity() {
     const userId = activeUserId;
-    const { stats, voterCount } = await getCommunityStats(force);
+    const { stats, voterCount } = await getCommunityStats();
     if (activeUserId !== userId) return;
     communityStats = stats;
     uniqueVoterCount = voterCount;
@@ -139,7 +139,6 @@
   }
 
   onMount(() => {
-    let interval: number | undefined;
     let unsubscribe: (() => void) | undefined;
 
     const params = new URLSearchParams(window.location.search);
@@ -151,19 +150,13 @@
       // The Coverage tab is fully objective; Personal and Community are
       // auth-gated. Anonymous visitors see "Sign in to unlock" hints, and
       // ensureSessionData resolves without instantiating the 55 KiB SDK when
-      // there's no stored session.
+      // there's no stored session. Community averages are loaded once on mount
+      // — a page reload is enough to pick up newer numbers.
       const snap = await ensureSessionData();
       signedIn = snap.signedIn;
       activeUserId = snap.userId;
       await Promise.all([loadPersonal(), loadCommunity()]);
       ready = true;
-
-      if (snap.signedIn) {
-        // Community averages drift as new votes land; refresh on a slow poll.
-        interval = window.setInterval(() => {
-          void loadCommunity(true);
-        }, 60000);
-      }
 
       unsubscribe = onSessionChange((next) => {
         signedIn = next.signedIn;
@@ -174,7 +167,6 @@
     })();
 
     return () => {
-      if (interval !== undefined) window.clearInterval(interval);
       unsubscribe?.();
     };
   });

@@ -1,19 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
   import type { Feature } from '../data/schema';
   import type { FeatureScreenshot } from '../lib/feature-screenshots';
-  import { fetchMyRatings, upsertRating, type RatingMap } from '../lib/ratings';
-  import { deleteSkip, fetchMySkips, upsertSkip, type SkipMap } from '../lib/skips';
+  import { upsertRating, type RatingMap } from '../lib/ratings';
+  import { deleteSkip, upsertSkip, type SkipMap } from '../lib/skips';
   import {
     DAILY_OS_OPTIONS,
     EMPTY_PREFERENCES,
-    fetchMyPreferences,
     upsertPreferences,
     type DailyOs,
     type UserPreferences,
   } from '../lib/preferences';
-  import { getSupabase, hasSupabaseConfig, type Database } from '../lib/supabase';
+  import { getSupabase, hasSupabaseConfig } from '../lib/supabase';
+  import {
+    ensureSessionData,
+    getPreferences,
+    getRatings,
+    getSkips,
+    invalidateUserData,
+    onSessionChange,
+  } from '../lib/session-data';
   import SignInButton from './SignInButton.svelte';
   import StarRating from './StarRating.svelte';
   import WhyImportantPopover from './WhyImportantPopover.svelte';
@@ -23,7 +29,6 @@
   export let features: Feature[] = [];
   export let screenshotsByFeature: Record<string, FeatureScreenshot[]> = {};
 
-  let user: User | null = null;
   let ratings: RatingMap = {};
   let skips: SkipMap = {};
   let prefs: UserPreferences = { ...EMPTY_PREFERENCES };
@@ -53,10 +58,9 @@
   $: atLastFeature = currentIndex >= features.length - 1;
   $: currentSkipped = currentFeature ? Boolean(skips[currentFeature.id]) : false;
 
-  async function applySession(supabase: SupabaseClient<Database>, session: Session | null) {
-    user = session?.user ?? null;
-    activeUserId = user?.id ?? '';
-    if (!user) {
+  async function loadSession(userId: string) {
+    activeUserId = userId;
+    if (!userId) {
       ratings = {};
       skips = {};
       prefs = { ...EMPTY_PREFERENCES };
@@ -68,11 +72,13 @@
       return;
     }
 
-    const userId = user.id;
+    // All three reads go through the shared session-data layer, so they are
+    // deduplicated with the other islands on the page (e.g. ProgressNudge) and
+    // not refetched on the SDK's redundant INITIAL_SESSION replay.
     const [nextRatings, nextSkips, nextPrefs] = await Promise.all([
-      fetchMyRatings(supabase),
-      fetchMySkips(supabase),
-      fetchMyPreferences(supabase),
+      getRatings(),
+      getSkips(),
+      getPreferences(),
     ]);
     if (activeUserId !== userId) return;
     ratings = nextRatings;
@@ -103,18 +109,16 @@
         loading = false;
         return;
       }
-      const supabase = await getSupabase();
-      const { data } = await supabase.auth.getSession();
-      await applySession(supabase, data.session);
-      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-        void applySession(supabase, session);
+      const snap = await ensureSessionData();
+      await loadSession(snap.userId);
+      unsubscribe = onSessionChange((next) => {
+        void loadSession(next.userId);
       });
-      unsubscribe = () => subscription.subscription.unsubscribe();
       loading = false;
     })();
 
     const keyHandler = (event: KeyboardEvent) => {
-      if (!user || saving || event.defaultPrevented || phase !== 'features') return;
+      if (!activeUserId || saving || event.defaultPrevented || phase !== 'features') return;
       if (event.key === 'ArrowLeft') {
         event.preventDefault();
         goBack();
@@ -192,7 +196,7 @@
 
   async function savePreferences(next: UserPreferences) {
     prefs = next;
-    if (!user) return;
+    if (!activeUserId) return;
     if (!consent) {
       error = 'Check the privacy policy box above to save your preferences.';
       return;
@@ -200,7 +204,8 @@
     error = '';
     try {
       const supabase = await getSupabase();
-      await upsertPreferences(supabase, user.id, next);
+      await upsertPreferences(supabase, activeUserId, next);
+      invalidateUserData();
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to save your preferences.';
     }
@@ -234,13 +239,13 @@
 
   async function saveRating(rating: number) {
     if (saving) return;
-    if (!user || !currentFeature || !consent) return;
+    if (!activeUserId || !currentFeature || !consent) return;
     saving = true;
     error = '';
     const featureId = currentFeature.id;
     try {
       const supabase = await getSupabase();
-      await upsertRating(supabase, user.id, featureId, rating);
+      await upsertRating(supabase, activeUserId, featureId, rating);
       ratings = { ...ratings, [featureId]: rating };
       if (skips[featureId]) {
         try {
@@ -253,6 +258,9 @@
         delete nextSkips[featureId];
         skips = nextSkips;
       }
+      // Keep the shared cache honest for any later reader on this page; the
+      // local `ratings`/`skips` above already drive this island's own UI.
+      invalidateUserData();
       const nextCount = Object.keys(ratings).length;
       if (nextCount > 0 && nextCount % 10 === 0) {
         celebration = `${nextCount} down, ${features.length - nextCount} to go - your ranking is taking shape.`;
@@ -268,7 +276,7 @@
 
   async function skipOrKeep() {
     if (saving) return;
-    if (!user || !currentFeature) return;
+    if (!activeUserId || !currentFeature) return;
     const featureId = currentFeature.id;
     // If the feature already has a rating or a skip, just navigate forward — no DB write.
     if (ratings[featureId] || skips[featureId]) {
@@ -285,8 +293,9 @@
     error = '';
     try {
       const supabase = await getSupabase();
-      await upsertSkip(supabase, user.id, featureId);
+      await upsertSkip(supabase, activeUserId, featureId);
       skips = { ...skips, [featureId]: true };
+      invalidateUserData();
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unable to save skip.';
       return;
@@ -305,7 +314,7 @@
       <h2>Ratings are not configured yet</h2>
       <p>Add `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` to enable GitHub sign-in and voting.</p>
     </div>
-  {:else if !user}
+  {:else if !activeUserId}
     <div class="rate__panel rate__panel--intro">
       <p class="rate__eyebrow">Personal rating</p>
       <h2>Rate {features.length} features in about 8-10 minutes</h2>

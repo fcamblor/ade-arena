@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSupabase, hasStoredSession, hasSupabaseConfig, type Database, type FeatureStatsRow } from './supabase';
 import { fetchFeatureStats, fetchMyRatings, fetchUniqueVoterCount, type RatingMap } from './ratings';
+import { fetchMySkips, type SkipMap } from './skips';
 import { EMPTY_PREFERENCES, fetchMyPreferences, type UserPreferences } from './preferences';
 
 // Shared, per-page session-data layer consumed by every island that reads the
@@ -36,6 +37,7 @@ const listeners = new Set<Listener>();
 // identity: `invalidate()` drops them all whenever the identity changes, so a
 // stale promise can never leak across a sign-in/sign-out boundary.
 let ratingsPromise: Promise<RatingMap> | null = null;
+let skipsPromise: Promise<SkipMap> | null = null;
 let preferencesPromise: Promise<UserPreferences> | null = null;
 let featureStatsPromise: Promise<Record<string, FeatureStatsRow>> | null = null;
 let voterCountPromise: Promise<number> | null = null;
@@ -47,9 +49,22 @@ let readyPromise: Promise<SessionSnapshot> | null = null;
 
 function invalidate(): void {
   ratingsPromise = null;
+  skipsPromise = null;
   preferencesPromise = null;
   featureStatsPromise = null;
   voterCountPromise = null;
+}
+
+/**
+ * Drop the cached per-user data (ratings, skips, preferences) after a mutation
+ * so any later read on the same page sees fresh values. Community stats are
+ * left intact — they aren't written from the client. Callers that keep their
+ * own optimistic local copy still call this to keep the shared cache honest.
+ */
+export function invalidateUserData(): void {
+  ratingsPromise = null;
+  skipsPromise = null;
+  preferencesPromise = null;
 }
 
 function notify(snapshot: SessionSnapshot): void {
@@ -127,6 +142,14 @@ export function getRatings(): Promise<RatingMap> {
   return ratingsPromise;
 }
 
+export function getSkips(): Promise<SkipMap> {
+  if (!currentUserId) return Promise.resolve({});
+  if (!skipsPromise) {
+    skipsPromise = getSupabase().then(fetchMySkips);
+  }
+  return skipsPromise;
+}
+
 export function getPreferences(): Promise<UserPreferences> {
   if (!currentUserId) return Promise.resolve({ ...EMPTY_PREFERENCES });
   if (!preferencesPromise) {
@@ -136,10 +159,9 @@ export function getPreferences(): Promise<UserPreferences> {
 }
 
 // Community stats are auth-gated (ADR 003): anonymous visitors get empty data
-// with no network call. `force` re-fetches (used by the 60s leaderboard poll).
-export function getFeatureStats(force = false): Promise<Record<string, FeatureStatsRow>> {
+// with no network call. Loaded once per page; a reload picks up newer numbers.
+export function getFeatureStats(): Promise<Record<string, FeatureStatsRow>> {
   if (!currentUserId) return Promise.resolve({});
-  if (force) featureStatsPromise = null;
   if (!featureStatsPromise) {
     featureStatsPromise = getSupabase()
       .then(fetchFeatureStats)
@@ -153,16 +175,15 @@ export function getFeatureStats(force = false): Promise<Record<string, FeatureSt
   return featureStatsPromise;
 }
 
-export function getVoterCount(force = false): Promise<number> {
+export function getVoterCount(): Promise<number> {
   if (!currentUserId) return Promise.resolve(0);
-  if (force) voterCountPromise = null;
   if (!voterCountPromise) {
     voterCountPromise = getSupabase().then(fetchUniqueVoterCount);
   }
   return voterCountPromise;
 }
 
-export async function getCommunityStats(force = false): Promise<CommunityStats> {
-  const [stats, voterCount] = await Promise.all([getFeatureStats(force), getVoterCount(force)]);
+export async function getCommunityStats(): Promise<CommunityStats> {
+  const [stats, voterCount] = await Promise.all([getFeatureStats(), getVoterCount()]);
   return { stats, voterCount };
 }
