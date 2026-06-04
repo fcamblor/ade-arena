@@ -183,7 +183,29 @@ Build the argument string:
 
 - Always: `<toolId>@<version> --only-unreviewed`.
 - Append `--exclude <domain>` for each entry in the name-collision exclusion list captured in Step 1.
-- **Ask the user how to run the feature review** (`AskUserQuestion`, yes/no): interactive feature-by-feature (the default), **or** an unsupervised agentic pass. If they pick the agentic pass, append `--agentic`. This matters because all three recent bootstraps (superset, superconductor, orca) asked to switch to the agentic pass *after* the interactive loop had already started — offering it up front avoids that detour.
+- **Determine the feature-review mode.** Two cases:
+  - **The user's invocation already specified the mode.** If the triggering
+    message asked for an agentic/unsupervised pass — e.g. *"complète en version
+    agentique"*, *"agentic pass"*, *"unsupervised review"* — **do not re-ask**;
+    append `--agentic` directly. (Every recent agentic bootstrap — nimbalyst,
+    multica, cmux, factory, jetbrains-air, geniebuilder, antigravity, docker-agent
+    — typed *"version agentique"* in the trigger, yet a redundant
+    `AskUserQuestion` still fired. Detecting the intent up front removes that
+    friction.) Likewise, *"interactive"* / *"feature by feature"* in the message
+    means the default interactive loop — append nothing.
+  - **The mode is genuinely unspecified.** Then ask via `AskUserQuestion` (yes/no):
+    interactive feature-by-feature (the default), **or** an unsupervised agentic
+    pass. If they pick the agentic pass, append `--agentic`. Offering it up front
+    matters because older bootstraps (superset, superconductor, orca) only asked
+    to switch to the agentic pass *after* the interactive loop had already started.
+- **Forward a standing "challenge the sources" instruction.** If the invocation
+  told you to challenge/extend the ADE's tracking sources (e.g. *"n'hésite pas à
+  challenger les sources … en chercher de nouvelles"* — present in nearly every
+  recent agentic run), append `--enrich-sources`. This makes source enrichment an
+  explicit goal of the review pass rather than an ad-hoc improvisation. (See
+  `review-orchestrator-version` Step 2-bis: even without the flag the corpus build
+  enriches `trackingSources` when it finds valuable missing first-party sources;
+  the flag just makes the user's intent first-class.)
 
 Invoke with the assembled argument string (using whatever skill-invocation mechanism the host agent provides — a slash command, a Skill tool call, an inline include of its SKILL.md, etc.; the argument string is what matters).
 
