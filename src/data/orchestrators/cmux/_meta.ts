@@ -108,6 +108,7 @@ export const META: OrchestratorMeta = {
   trackingSources: [
     { kind: 'other', label: 'Homepage', url: 'https://cmux.com/' },
     { kind: 'docs', label: 'Documentation', url: 'https://cmux.com/docs/getting-started' },
+    { kind: 'changelog', label: 'Changelog', url: 'https://cmux.com/docs/changelog' },
     { kind: 'other', label: 'GitHub repository', url: 'https://github.com/manaflow-ai/cmux' },
     { kind: 'github-releases', label: 'GitHub Releases', url: 'https://github.com/manaflow-ai/cmux/releases' },
     { kind: 'twitter', label: '@manaflowai on X', url: 'https://x.com/manaflowai' },

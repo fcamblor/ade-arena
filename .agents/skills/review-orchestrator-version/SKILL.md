@@ -30,6 +30,8 @@ The skill accepts these optional arguments (whitespace-separated, any order):
 - `--only-unreviewed` (or `scope=unreviewed` in args) — restricts the per-feature loop to entries whose `support` is `unknown` or whose `featureId` is missing from `_latest-known-features.ts`. Default: walk every feature.
 - `--agentic` (or `mode=agentic`) — **opt-in, never the default.** Replaces the interactive, one-feature-at-a-time loop (Step 3) with an unsupervised parallel research pass (Step 3-bis): a fan-out of research subagents scores the whole matrix at once, persisting only verdicts it can back with a verbatim quote and leaving everything else `unknown`. It **never** flips `status` to `'approved'` — the result always stays `waiting-for-review` for a later human/interactive pass. This is the workflow the superset / superconductor / orca bootstrap sessions all reached for by hand; `--agentic` makes it first-class instead of improvised.
 - `--exclude <domain-or-name>` (repeatable, or `exclude=<a>,<b>`) — name-collision guard. Records an exclusion list (e.g. `superconductor.com` when the target is `super.engineering`) that is injected into **every** research subagent prompt and used to invalidate any citation coming from an excluded domain. `add-orchestrator-version` forwards this when the user flagged a collision at bootstrap.
+- `--enrich-sources` (or `enrich-sources` in args) — the user wants the pass to **challenge and extend** the orchestrator's `trackingSources`, not just consume them. Turns the opportunistic source-enrichment in Step 2-bis (2bis-d) into an explicit goal and makes the run commit the updated `_meta.ts` alongside the matrix. `add-orchestrator-version` forwards this when the invocation carried a standing "challenge the sources" instruction (which it almost always does in the recent agentic runs).
+- `--refresh-corpus` — force a re-fetch of the local doc corpus even if one already exists for this `<toolId>` (see Step 2-bis).
 
 All arguments are independent and can be combined (`--agentic --only-unreviewed` = unsupervised pass over the `unknown` rows only). `add-orchestrator-version` invokes this skill with `<toolId>@<version> --only-unreviewed` after a bootstrap, optionally adding `--agentic` and `--exclude …` when the user asked for an unsupervised pass.
 
@@ -129,6 +131,17 @@ verbatim" into a fact that can be mechanically verified.
    `.context/corpus/<toolId>/<NN>-<slug>.txt` (e.g. `01-docs-home.txt`,
    `02-changelog.txt`). `.context/` is git-ignored, so the corpus never leaks
    into a commit. Prepend a one-line header to each file: `# SOURCE: <url>`.
+
+   > ⚠️ **Fetch with `curl` (raw HTML → text), NOT `WebFetch`.** `WebFetch`
+   > returns a **summarised / paraphrased** rendering of the page, not its real
+   > wording — which silently breaks the verbatim-citation invariant (2bis-b):
+   > a `sourceExtract` quoted from a paraphrase will fail the `grep -F` check, or
+   > worse, *pass* against a quote the vendor never actually wrote. Fetch the raw
+   > page (`curl -sL <url>`), strip to the meaningful body (extract the
+   > `<article>` or `<body>` content, drop nav/script/style), and write that.
+   > The geniebuilder@0.7.2 run discovered this the hard way: re-fetching the 19
+   > pages as raw HTML made the docs corpus ~3× more complete (e.g. one page went
+   > 2.6k → 12.2k chars) and only then were truly-verbatim extracts possible.
 3. If a doc site has many pages, crawl the docs tree breadth-first up to a
    reasonable budget (the superconductor run cached ~26 pages). Log the page
    count to the user.
@@ -162,6 +175,47 @@ Rank evidence; never let a weak source carry a strong verdict:
 3. **Third-party / aggregator** — Product Hunt, Hacker News, review blogs.
    **A verdict resting *only* on this tier is capped at `partial` and marked
    `low-confidence`.** Never assert `yes` from an aggregator alone.
+
+### 2bis-d. Enrich `trackingSources` when the seeded set is thin
+
+The `trackingSources` in `_meta.ts` are a *starting point*, not a ceiling. While
+building the corpus, if you find valuable first-party sources that are **missing**
+from `_meta.ts` — most often a **public changelog/release-notes page** (the single
+richest source for dated feature evidence) or the rendered docs site behind a
+docs generator — treat extending the set as part of the job:
+
+- Crawl beyond the seeded sources when they are clearly insufficient. Recent runs
+  routinely went far past the seed: docker-agent's 3 seeded sources missed both
+  the rendered docs (`docker.github.io/docker-agent/`, ~70 pages) and the
+  `CHANGELOG.md`; cmux was missing its changelog (the richest source of all);
+  nimbalyst's corpus grew 39 → 72 pages; antigravity went past its 10 seeds to 52
+  pages.
+- **Persist** the genuinely-useful new sources into `_meta.ts`'s `trackingSources`
+  as `{ kind, label, url, notes? }` so the next pass inherits them. Do this
+  whenever `--enrich-sources` was passed, **or** whenever you discover a missing
+  changelog/docs root regardless of the flag (it is always net-positive).
+- The corpus itself stays git-ignored under `.context/`; only the `_meta.ts`
+  `trackingSources` edit is committed (staged in Step 4). docker-agent did exactly
+  this as a dedicated `enrich tracking sources` commit.
+
+### 2bis-e. Changelog dating — credit only what shipped by the target version
+
+A feature matrix is pinned to **one** version (`releaseDate` in the version file).
+A capability must be credited (`yes`/`partial`) **only when its earliest evidence
+is dated at or before that `releaseDate`**. A capability whose first appearance
+postdates the target version is `no` (it didn't exist yet) — or `unknown` if the
+introduction date can't be pinned down.
+
+- Use the changelog/release notes as the dating oracle: find the version that
+  introduced the capability and compare its date to the target `releaseDate`.
+- This is applied by hand in nearly every recent run and must be a first-class
+  rule: multica scored `no-worktree-mode` and `remote-session-control` as `no`
+  because `local_directory` (v0.3.10) and the iOS client (v0.3.8) postdate 0.3.6;
+  jetbrains-air kept `context-fill-indicator` at `no` because the widget shipped
+  in 261.681.18, after the 261.584.13 target; factory downgraded
+  `chat-user-questions` to `unknown` because its evidence dated to v0.134.0.
+- Subagents (both modes) must be handed the target `releaseDate` and told to
+  date-gate. State it explicitly alongside the trap-pairs rule.
 
 ---
 
@@ -296,6 +350,12 @@ YOUR JOB (do all of this yourself; the main agent will not intervene):
        - shared-config     vs  a skills/prompt registry
        - multi-repo-view   vs  multiple git worktrees of ONE repo
      This is the class of error behind the superset pr-creation mis-score.
+
+     DATING (see skill Step 2bis-e): this row is pinned to version <version>
+     released <releaseDate>. Credit yes/partial ONLY if your evidence is dated
+     at or before <releaseDate>. If the changelog shows the capability landed in
+     a LATER version, verdict = "no" (or "unknown" if you can't date it). Do not
+     credit a feature the target version did not yet ship.
 
      SOURCE-PRIORITY LADDER (see skill Step 2bis-c): a verdict resting ONLY on a
      third-party/aggregator page (Product Hunt, HN, review blog) is capped at
@@ -479,12 +539,17 @@ hand; here it is standardised.
 
 ### 3bis-a. Heads-up + cost confirmation (mandatory)
 
-A full-matrix fan-out is expensive (the orca run spent ~1.46 M tokens across 57
-research agents). Before launching, the main agent **must**:
+A full-matrix fan-out is expensive. Cost is dominated by the **batching factor**:
+the early orca run spent ~1.46 M tokens across 57 one-feature-per-agent calls,
+whereas the recent runs that batch ~58 features into **~8 research subagents**
+land around **0.5 M tokens** (nimbalyst ~0.53 M, multica ~0.53 M, factory ~0.47 M,
+antigravity ~0.58 M). Quote the batched figure (`~0.5 M` for a full 58-row matrix)
+unless you have reason to fan out more finely. Before launching, the main agent
+**must**:
 
 1. Count the features in scope (whole matrix, or the `unknown`/missing subset
    when combined with `--only-unreviewed`).
-2. Announce the order of magnitude to the user: `~N features → N research
+2. Announce the order of magnitude to the user: `~N features → ~8 research
    subagents, roughly <budget> tokens`.
 3. Ask `AskUserQuestion` (yes/no) to proceed. Abort to the interactive loop if no.
 
@@ -496,14 +561,28 @@ research agents). Before launching, the main agent **must**:
   subagent is **read-only over the corpus** and returns structured verdicts; it
   does **not** edit `_latest-known-features.ts` (parallel writers would race).
 - Each batch subagent receives: the corpus path, the feature rows in its batch
-  (id/label/category/short/long + currently-persisted entry), the
-  source-priority ladder, the **trap-pairs** rule, and the **exclusions** list —
-  the same evidence discipline as the interactive subagent prompt, minus all the
+  (id/label/category/short/long + currently-persisted entry), the target
+  **`releaseDate`** with the **date-gating** rule (Step 2bis-e — don't credit a
+  capability that shipped after the target version), the source-priority ladder,
+  the **trap-pairs** rule, and the **exclusions** list — the same evidence
+  discipline as the interactive subagent prompt, minus all the
   user-dialog/`AskUserQuestion`/screenshot steps (an agentic batch never prompts
   the user).
 - Each verdict must carry: `support`, `note`, `sourceUrl`, `sourceExtract`
   (verbatim from the corpus), `confidence`. Anything not backed by a verbatim
   corpus quote stays `unknown` with an explanatory note only.
+
+> 💾 **Make the fan-out resumable.** A full agentic pass is long and routinely
+> hits the host's session limit mid-flight — nearly every recent run
+> (nimbalyst, multica, cmux, factory, antigravity, docker-agent) was interrupted
+> and resumed with *"reprends"*. Two cheap safeguards make a resume nearly free:
+> 1. The corpus already lives on disk (`.context/corpus/<toolId>/`), so a resume
+>    never re-fetches — keep it (don't pass `--refresh-corpus` on a resume).
+> 2. As each batch subagent returns, append its raw verdicts to a scratch file
+>    `.context/corpus/<toolId>/_verdicts.jsonl` (git-ignored). On a resume, read
+>    it back and only re-dispatch batches whose verdicts are missing, rather than
+>    re-running the whole ~0.5 M-token fan-out. Delete the scratch file after the
+>    final commit.
 
 ### 3bis-c. Consolidate, verify, persist (main agent, sequentially)
 
@@ -511,11 +590,24 @@ research agents). Before launching, the main agent **must**:
 2. **Verbatim verification** (Step 2bis-b): `grep -F` every `yes`/`partial`
    `sourceExtract` against the corpus. No match ⇒ downgrade to `unknown` + flag.
 3. **Editorial disambiguation pass** on trap-pair features: re-read the quote;
-   if it proves a cousin feature rather than the target, downgrade.
-4. Write the consolidated matrix to `_latest-known-features.ts` in one pass
+   if it proves a cousin feature rather than the target, downgrade. Apply the
+   same scrutiny to **date-gating** (Step 2bis-e): if a `yes`/`partial` quote is
+   real but its capability shipped after `releaseDate`, downgrade.
+4. **Backfill preexisting sourceless verdicts (opportunistic, verdict
+   unchanged).** Even under `--only-unreviewed`, the matrix usually carries a few
+   already-`yes` rows seeded without a `sourceUrl`/`sourceExtract` (commonly
+   `local-execution`, `multiple-model-families`, `plugin-system`). The corpus is
+   already loaded, so attach a verbatim citation to any such row whose support is
+   provable from the corpus — **without changing the verdict**. This costs almost
+   nothing and removes lint debt the next pass would otherwise inherit; nearly
+   every recent run did it as a "bonus" (factory explicitly flagged the 6 it
+   *didn't* backfill as preexisting debt — don't leave that behind). If a
+   preexisting `yes` is *not* corpus-provable, leave it untouched and note it in
+   the challenge list rather than downgrading it (it was a prior human decision).
+5. Write the consolidated matrix to `_latest-known-features.ts` in one pass
    (single writer — no race). Screenshots are **not** collected in agentic mode.
-5. Record every `confidence ∈ {medium, low}` verdict in the challenge list.
-6. **Never** flip `status` to `'approved'` — leave `waiting-for-review`.
+6. Record every `confidence ∈ {medium, low}` verdict in the challenge list.
+7. **Never** flip `status` to `'approved'` — leave `waiting-for-review`.
 
 Then go to Step 4 (validate, report, commit). The Step 4 status-flip prompt is
 **skipped** in agentic mode (unsupervised data is never auto-approved).
@@ -557,11 +649,21 @@ Once the loop ends (all features done **or** user paused):
 
 6. **Commit** — create a git commit including both the updated `.ts` files and any new screenshot binaries. Stage them explicitly (avoid `git add -A`):
    - `src/data/orchestrators/<toolId>/_latest-known-features.ts`
+   - `src/data/orchestrators/<toolId>/_meta.ts` (only when `trackingSources` were enriched in Step 2bis-d)
    - `src/data/orchestrators/<toolId>/<version>.ts` (only when `status` was flipped)
    - `public/screenshots/<toolId>/*` (only the files actually added during this run)
    - `src/data/orchestrators/<toolId>/screenshots` (only when the symlink was just created)
 
-   Suggested conventional-commit subject: `chore(review): refresh <toolId>@<version> feature matrix`.
+   > ⚠️ **Working-tree hygiene.** These agentic passes are often run back-to-back
+   > on the same branch, so the working tree frequently carries **unrelated**
+   > changes from a sibling orchestrator (cmux saw stray `factory`/`jetbrains-air`
+   > edits; geniebuilder saw a stray `nimbalyst` edit; factory saw a stray
+   > `jetbrains-air` edit). `git status` before staging, stage **only** this run's
+   > paths listed above, and leave anything else untouched — never `git add -A`.
+
+   Suggested conventional-commit subject: `chore(review): refresh <toolId>@<version> feature matrix`. When `trackingSources` were enriched and you want them isolated, a separate `chore(review): enrich <toolId> tracking sources` commit is also fine (docker-agent did this).
+
+   After the commit, delete the resume scratch file if present: `rm -f .context/corpus/<toolId>/_verdicts.jsonl`.
 
    If the host agent exposes a project-specific commit helper / skill / slash-command, the user is free to use it instead — the requirement is just *a clean, conventional-commit-style commit that stages the listed paths*.
 

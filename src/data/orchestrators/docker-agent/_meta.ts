@@ -64,5 +64,18 @@ export const META: OrchestratorMeta = {
       label: 'Docker Agent docs',
       url: 'https://docs.docker.com/ai/docker-agent/',
     },
+    {
+      kind: 'docs',
+      label: 'cagent rendered docs site',
+      url: 'https://docker.github.io/docker-agent/',
+      notes:
+        'GitHub Pages site rendered from the repo docs/ tree — the exhaustive reference (CLI, TUI, configuration, providers, tools), far richer than the docs.docker.com landing.',
+    },
+    {
+      kind: 'changelog',
+      label: 'cagent CHANGELOG',
+      url: 'https://github.com/docker/cagent/blob/main/CHANGELOG.md',
+      notes: 'Full versioned history — primary source for dating a feature to a specific release.',
+    },
   ],
 };
